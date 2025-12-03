@@ -19,11 +19,33 @@
     </div>
 
     <!-- Tengah: Nama device -->
-    <div class="nama-esp text-center flex-grow-1 order-2 d-flex justify-content-center align-items-center">
-        <h5 class="mb-0 text-truncate" style="max-width: 100%;">
-            {{ session('selected_device_name', 'Timbangan tidak terhubung') }}
-        </h5>
-    </div>
+    @php
+        $deviceName = 'Timbangan tidak terhubung';
+        $deviceType = null;
+
+        if (Auth::check()) {
+            // Ambil device aktif milik user ini
+            $device = \App\Models\Update\Device::where('user_id', Auth::id())->where('status', 'in_use')->first();
+
+            if ($device) {
+                // ambil huruf pertama setelah "Timbangan-" → O atau P
+                if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                    $deviceType = $matches[1];
+                }
+
+                // gunakan nama device jika ada, fallback ke esp_id
+                $deviceName = $device->name ?: $device->esp_id;
+            }
+        }
+    @endphp
+
+    @if ($deviceType === 'O' || $deviceType === 'P')
+        <div class="nama-esp text-center flex-grow-1 order-2 d-flex justify-content-center align-items-center">
+            <h5 class="mb-0 text-truncate" style="max-width: 100%;">
+                {{ $deviceName }}
+            </h5>
+        </div>
+    @endif
 
     <!-- Kanan: User -->
     <div class="d-flex align-items-center gap-3 order-3 justify-content-end">

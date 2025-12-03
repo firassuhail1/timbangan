@@ -245,18 +245,18 @@
                                             <span><strong>Pcs:</strong> {{ $firstItem->Qty_order }}</span>
                                             <span><strong>Ctn:</strong>
                                                 {{ $orders->sum(fn($o) => $o->timbangans->count()) }}</span>
-                                            <span><strong>Less Ctn:</strong> 0</span>
-                                            <span><strong>Pcs Less:</strong> 0</span>
+                                            <span><strong>Less Ctn:</strong> {{ $firstItem->Less_Ctn }}</span>
+                                            <span><strong>Pcs Less:</strong> {{ $firstItem->Pcs_Less_Ctn }}</span>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
                                     <th>Carton Weight Std.</th>
-                                    <td>—</td>
+                                    <td>{{ number_format($firstItem->Carton_weight_std, 0) }}</td>
                                 </tr>
                                 <tr>
                                     <th>Pcs Weight Std.</th>
-                                    <td>—</td>
+                                    <td>{{ number_format($firstItem->Pcs_weight_std, 0) }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -273,7 +273,7 @@
                                 </tr>
                                 <tr>
                                     <th>Inspector</th>
-                                    <td>-</td>
+                                    <td>{{ $firstItem->Inspector }}</td>
                                 </tr>
                             </table>
 

@@ -1,23 +1,31 @@
 <?php
 
+use App\Http\Controllers\Api\DeviceLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\OrderSheetController;
+use App\Http\Controllers\Api\WeightController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Ordersheet\PackageController;
+use App\Http\Controllers\Ordersheet\Rekap\TimbanganBesarController;
 use App\Http\Controllers\Update\Admin\DeviceController;
 use App\Http\Controllers\Update\Admin\FirmwareController;
 use App\Http\Controllers\Update\User\SettingController;
 use App\Http\Controllers\Update\User\SwitchController;
+use App\Http\Controllers\Update\User\WifiController;
+use App\Models\Update\Device;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', [HomeController::class, 'index']);
 
 // Login & Logout
-Route::get('login', [LoginController::class, 'index'])->name('login');
+Route::get('login/view', [LoginController::class, 'index'])->name('login');
 Route::post('login/store', [LoginController::class, 'store'])->name('login.store');
 Route::get('login/admin', [LoginController::class, 'admin'])->name('login.admin');
+
+Route::get('/devices/list', [DeviceLoginController::class, 'listDevices'])->name('devices.list');
 
 Route::get('lupa-password', [LoginController::class, 'lupa'])->name('lupa.password');
 
@@ -48,6 +56,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function(){
 Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     Route::get('/home',[DashboardController::class, 'index'])->name('dashboard');
 
+    // ORDERSHEET
     Route::get('/ordersheet-view',[OrderSheetController::class, 'index'])->name('order.view');
 
     // tambah data ordersheet
@@ -58,7 +67,11 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     Route::get('/order/print', [OrderSheetController::class, 'print'])->name('order.print');
     Route::get('/print/{buyer}', [OrderSheetController::class, 'print'])->name('order.print.buyer');
 
-    // package
+    // rekap data
+    Route::get('/rekap/timbangan/besar', [TimbanganBesarController::class, 'index'])->name('rekap.besar');
+    Route::get('/rekap/get-Rekapdata', [TimbanganBesarController::class, 'getRekapData'])->name('rekap.getRekapData');
+
+    // PACKAGE
     Route::get('/ordersheet-package', [PackageController::class, 'getData'])->name('package.ordersheet');
     Route::get('/package/search', [PackageController::class, 'apiSearch']);
 
@@ -67,4 +80,10 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     Route::get('/devices/available', [SwitchController::class, 'available'])->name('login.devices.available');
 
     Route::post('/devices/switch', [SwitchController::class, 'switch'])->name('login.devices.switch');
+
+    // WIFI
+    Route::get('/wifi/config', [WifiController::class, 'getWifiConfig']);
+    Route::post('/wifi/update', [WifiController::class, 'updateWifi']);
+    Route::get('/wifi/check-latest', [WifiController::class, 'checkLatest']); // untuk frontend
 });
+

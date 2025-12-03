@@ -1,9 +1,27 @@
 <x-layout.home title="Ordersheet Package">
 
     <div class="page-heading d-flex justify-content-between align-items-center">
-        <div class="welcome">
+        @php
+            $deviceType = null;
+
+            if (Auth::check()) {
+                // Ambil device aktif milik user login saat ini
+                $device = \App\Models\Update\Device::where('user_id', Auth::id())->where('status', 'in_use')->first();
+
+                if ($device) {
+                    // ambil huruf pertama setelah "Timbangan-" → O atau P
+                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                        $deviceType = $matches[1];
+                    }
+                }
+            }
+        @endphp
+
+        @if ($deviceType === 'O')
+            <h5 class="welcome-message">Sistem Timbangan Ordersheet</h5>
+        @elseif ($deviceType === 'P')
             <h5 class="welcome-message">Sistem Timbangan Package</h5>
-        </div>
+        @endif
 
         <div class="text-end">
             <h6 id="current-day" class="mb-0 fw-bold"></h6>
@@ -29,10 +47,10 @@
                         </button>
 
                         <!-- WIFI Setting -->
-                        {{-- <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#wifi">
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#wifi">
                             <i class="fa-solid fa-wifi me-1"></i>
                             Wifi
-                        </button> --}}
+                        </button>
 
                         <!-- Device Selector -->
                         <div class="dropdown">
@@ -299,6 +317,7 @@
                     <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
+
                 <form id="wifiForm">
                     <div class="modal-body">
                         <div class="mb-3">
@@ -317,6 +336,20 @@
                             <i class="fa-solid fa-circle-xmark me-2"></i> Batal</button>
                     </div>
                 </form>
+
+                <!-- Tambahkan ini di dalam modal, sebelum </div> modal-content -->
+                <div id="wifiLoading"
+                    class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-90 d-none flex-column justify-content-center align-items-center"
+                    style="z-index: 9999;">
+                    <div class="spinner-border text-primary mb-4" style="width: 4rem; height: 4rem;"></div>
+                    <h5 id="wifiLoadingText" class="text-center">Mengirim konfigurasi...</h5>
+                    <div class="progress w-75 mt-4" style="height: 20px;">
+                        <div id="wifiProgressBar"
+                            class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                            style="width: 0%;">0%</div>
+                    </div>
+                    <small class="text-muted mt-2">Mohon tunggu hingga ESP terhubung kembali...</small>
+                </div>
             </div>
         </div>
     </div>
@@ -545,39 +578,42 @@
                 modal.show();
             });
 
-            // Load current WiFi config saat modal dibuka
             const wifiModalEl = document.getElementById('wifi');
+            const loadingEl = document.getElementById("wifiLoading");
+            const loadingTextEl = document.getElementById("wifiLoadingText");
+            const progressBar = document.getElementById("wifiProgressBar");
+
+            // Show config
             wifiModalEl.addEventListener('show.bs.modal', async function() {
                 try {
-                    const res = await fetch("/api/login/wifi/config", {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json"
-                        }
-                    });
+                    const res = await fetch("/user/wifi/config");
                     if (res.ok) {
                         const data = await res.json();
                         document.getElementById("ssidInput").value = data.ssid || '';
                         document.getElementById("passInput").value = data.password || '';
                     }
-                } catch (err) {
-                    console.error("Gagal load WiFi config:", err);
+                } catch (e) {
+                    console.error(e);
                 }
             });
 
-            // Submit form
+            // Handle save
             document.getElementById("wifiForm").addEventListener("submit", async function(e) {
                 e.preventDefault();
                 const ssid = document.getElementById("ssidInput").value;
                 const password = document.getElementById("passInput").value;
 
+                // tampilkan loading
+                loadingEl.style.display = "flex";
+                loadingTextEl.innerText = "Mengirim ke server...";
+                progressBar.style.width = "10%";
+
                 try {
-                    const res = await fetch("/api/login/wifi/update", {
+                    const res = await fetch("/user/wifi/update", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "Accept": "application/json",
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+                            "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content
                         },
                         body: JSON.stringify({
                             ssid,
@@ -585,15 +621,55 @@
                         })
                     });
 
-                    if (res.ok) {
-                        alert("WiFi ESP berhasil diperbarui. ESP akan reconnect otomatis.");
-                        const modal = bootstrap.Modal.getInstance(wifiModalEl);
-                        modal.hide();
-                    } else {
-                        const errData = await res.json();
-                        alert("Gagal update WiFi ESP! " + (errData.message || ''));
+                    if (!res.ok) {
+                        alert("Gagal update WiFi ESP!");
+                        loadingEl.style.display = "none";
+                        return;
                     }
+
+                    // server oke -> ESP sedang reconnect
+                    loadingTextEl.innerText = "ESP melakukan reconnect...";
+                    progressBar.style.width = "35%";
+
+                    // cek heartbeat setiap 3 detik apakah sudah pakai SSID baru
+                    let attempt = 0;
+                    let maxAttempt = 12; // ~ 36 detik
+
+                    const checkInterval = setInterval(async () => {
+                        progressBar.style.width = (35 + attempt * 5) + "%";
+
+                        attempt++;
+
+                        const hb = await fetch("/user/esp/check-latest");
+                        if (hb.ok) {
+                            const d = await hb.json();
+                            if (d.wifi_ssid === ssid) {
+                                clearInterval(checkInterval);
+                                loadingTextEl.innerText = "ESP berhasil terhubung!";
+                                progressBar.style.width = "100%";
+
+                                setTimeout(() => {
+                                    loadingEl.style.display = "none";
+                                    bootstrap.Modal.getInstance(wifiModalEl).hide();
+                                    Swal.fire("Berhasil!", "ESP sudah terkoneksi ke WiFi baru.",
+                                        "success");
+                                }, 600);
+
+                                return;
+                            }
+                        }
+
+                        if (attempt >= maxAttempt) {
+                            clearInterval(checkInterval);
+                            loadingEl.style.display = "none";
+                            Swal.fire("Timeout", "ESP terlalu lama reconnect. Coba cek WiFi-nya.",
+                                "warning");
+                        }
+
+                    }, 3000);
+
                 } catch (err) {
+                    loadingEl.style.display = "none";
                     alert("Error: " + err.message);
                 }
             });
@@ -601,51 +677,52 @@
             // Device
             let currentDeviceId = null;
 
+            // Ambil user id dari Blade
+            const userId = {{ Auth::check() ? Auth::id() : 'null' }};
+
             async function loadAvailableDevices() {
                 try {
-                    const res = await fetch('/user/devices/available'); // BENAR
-                    if (!res.ok) {
-                        throw new Error(`HTTP ${res.status} ${res.statusText}`);
-                    }
-                    const devices = await res.json();
+                    const res = await fetch('/user/devices/available');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+                    const devices = await res.json();
                     const list = document.getElementById('deviceList');
                     list.innerHTML = '';
 
-                    const currentUserDevice = devices.find(d => d.status === 'in_use');
-
+                    // Ambil device user login (in_use)
+                    const currentUserDevice = devices.find(d => d.status === 'in_use' && d.user_id === parseInt(userId));
                     if (currentUserDevice) {
                         currentDeviceId = currentUserDevice.id;
                         document.getElementById('currentDeviceName').textContent =
                             currentUserDevice.name || currentUserDevice.esp_id;
-                    }
-
-                    if (devices.length === 0) {
-                        list.innerHTML =
-                            '<li><a class="dropdown-item text-center" href="#">Tidak ada device aktif</a></li>';
-                        return;
+                    } else {
+                        currentDeviceId = null;
+                        document.getElementById('currentDeviceName').textContent = 'Pilih Device...';
                     }
 
                     devices.forEach(device => {
                         const isCurrent = device.id === currentDeviceId;
-                        const statusBadge = device.status === 'in_use' ?
-                            '<span class="badge bg-success ms-2"> Sedang Dipakai</span>' :
-                            '<span class="badge bg-primary ms-2"> Online</span>';
+                        const statusBadge = device.status === 'in_use' ? 'Sedang Dipakai' :
+                            device.status === 'online' ? 'Online' : 'Offline';
+                        const bgClass = device.status === 'in_use' ? 'bg-success text-white' :
+                            device.status === 'online' ? 'bg-light text-dark' : 'bg-danger text-white';
 
                         const item = document.createElement('li');
                         item.innerHTML = `
-                            <a class="dropdown-item d-flex justify-content-between align-items-center ${isCurrent ? 'active' : ''}" 
-                            href="javascript:void(0)" 
-                            onclick="prepareSwitch(${device.id}, '${(device.name || device.esp_id).replace(/'/g, "\\'")}', '${device.esp_id}')">
-                                <div>
-                                    <div><strong>${device.name || device.esp_id}</strong></div>
-                                    <small class="text-muted">ID: ${device.esp_id}</small>
-                                </div>
-                                ${statusBadge}
-                            </a>
-                        `;
+                <a class="dropdown-item d-flex justify-content-between align-items-center ${isCurrent ? 'active' : ''}" 
+                   href="javascript:void(0)" 
+                   onclick="prepareSwitch(${device.id}, '${(device.name || device.esp_id).replace(/'/g, "\\'")}', '${device.esp_id}')"
+                   style="background-color: ${bgClass.includes('bg-light') ? '#f8f9fa' : ''}; color: ${bgClass.includes('text-white') ? '#fff' : '#000'};">
+                    <div>
+                        <div><strong>${device.name || device.esp_id}</strong></div>
+                        <small class="text-muted">ID: ${device.esp_id}</small>
+                    </div>
+                    <span class="badge ${bgClass} ms-2">${statusBadge}</span>
+                </a>
+            `;
                         list.appendChild(item);
                     });
+
                 } catch (err) {
                     console.error("Gagal load device:", err);
                     document.getElementById('deviceList').innerHTML =
@@ -670,7 +747,7 @@
 
             async function switchDevice(deviceId) {
                 try {
-                    const res = await fetch('/user/devices/switch', { // BENAR
+                    const res = await fetch('/user/devices/switch', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -691,7 +768,15 @@
 
                     if (data.success) {
                         Swal.fire('Sukses!', 'Berhasil pindah device!', 'success').then(() => {
-                            location.reload();
+                            // Redirect sesuai tipe device
+                            const type = data.device_type;
+                            if (type === 'O') {
+                                window.location.href = '/user/ordersheet-view';
+                            } else if (type === 'P') {
+                                window.location.href = '/user/package-view';
+                            } else {
+                                location.reload();
+                            }
                         });
                     } else {
                         Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
@@ -704,7 +789,7 @@
 
             // Load saat halaman dibuka & refresh tiap 15 detik
             loadAvailableDevices();
-            setInterval(loadAvailableDevices, 15000);
+            setInterval(loadAvailableDevices, 10000);
         </script>
     @endpush
 

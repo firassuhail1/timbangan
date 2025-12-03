@@ -6,17 +6,27 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Ordersheet;
 use App\Models\Timbangan_riwayat;
+use App\Models\Update\Device;
 use App\Models\VAllOrdersheetPlusCari;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class OrderSheetController extends Controller
 {
+
+    // private function getCurrentEspId()
+    // {
+    //     return Device::where('user_id', Auth::id())
+    //                 ->where('status', 'in_use')
+    //                 ->value('esp_id'); // langsung ambil string esp_id
+    // }
+
     public function index()
     {
-        $auth = Auth::user();
+        $auth = Auth::id();
 
         // Ambil data ordersheet beserta timbangannya
         $orders = Ordersheet::with([
@@ -31,6 +41,10 @@ class OrderSheetController extends Controller
         $groupedOrders = $orders->groupBy(function ($item) {
             return Carbon::parse($item->created_at)->format('d-m-Y') . '|' . $item->Buyer;
         });
+
+        // $device = Device::all();
+
+        // dd($device);
 
         return view('order.index', compact('auth', 'groupedOrders'));
     }
@@ -82,13 +96,15 @@ class OrderSheetController extends Controller
                 'timbangans:id,id_ordersheet,no_box,berat'
             ])
             ->where('status', 'Success')
-            ->select('id', 'Order_code', 'Buyer', 'PO', 'Style', 'Qty_order', 'Destination', 'created_at');
+            ->select('id', 'Order_code', 'Buyer', 'PO', 'Style', 'Qty_order', 'Destination', 'Less_Ctn', 'Pcs_Less_Ctn', 'Carton_weight_std', 'Pcs_weight_std', 'Inspector', 'created_at');
 
         if ($buyer) {
             $query->where('Buyer', $buyer);
         }
 
         $orders = $query->latest('created_at')->get();
+
+        // dd($orders);
 
         // Group by Buyer|Date seperti di index
         $groupedOrders = $orders->groupBy(function ($item) {

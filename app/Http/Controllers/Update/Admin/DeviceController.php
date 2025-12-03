@@ -49,7 +49,7 @@ class DeviceController extends Controller
             'user_id'     => 'nullable|integer',
             'name'        => 'nullable|string',
             'wifi_ssid'   => 'nullable|string',
-            'wifi_pass'   => 'nullable|string',
+            'wifi_password'   => 'nullable|string',
         ]);
 
         // Ambil atau buat device baru berdasarkan ESP ID
@@ -69,10 +69,6 @@ class DeviceController extends Controller
         $incomingUserId = $request->user_id;
         $currentUserId  = $device->user_id;
 
-        // =====================================================================
-        // 1. Jika Device sedang dipakai user (punya user_id)
-        //    → Heartbeat TIDAK BOLEH membatalkan status "in_use".
-        // =====================================================================
         if ($currentUserId) {
 
             // Jika heartbeat membawa user_id berbeda → tolak
@@ -88,30 +84,18 @@ class DeviceController extends Controller
             $device->status = 'in_use';
         }
 
-        // =====================================================================
-        // 2. Device sedang tidak dipakai user
-        //    → Jika heartbeat membawa user_id, klaim device
-        // =====================================================================
         elseif (!$currentUserId && $incomingUserId) {
             $device->user_id = $incomingUserId;
             $device->status  = 'in_use';
         }
 
-        // =====================================================================
-        // 3. Device tanpa user_id dan tanpa user baru
-        //    → Biarkan dia tetap ONLINE
-        // =====================================================================
         else {
             $device->status = 'online';
         }
 
-
-        // =====================================================================
-        // 4. Update WiFi config jika dikirim dari ESP
-        // =====================================================================
-        if ($request->filled('wifi_ssid') && $request->filled('wifi_pass')) {
+        if ($request->filled('wifi_ssid') && $request->filled('wifi_password')) {
             $device->wifi_ssid     = $request->wifi_ssid;
-            $device->wifi_password = $request->wifi_pass;
+            $device->wifi_password = $request->wifi_password;
         }
 
         $device->save();

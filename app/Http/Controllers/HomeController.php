@@ -21,7 +21,13 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $lastUsedEspId = Cookie::get('last_esp_id');
+        $lastUsedDevice = Device::where('user_id', Auth::id())
+                        ->orderByDesc('last_seen_at')
+                        ->first();
+
+        $lastUsedEspId = $lastUsedDevice?->esp_id;
+
+        // dd($lastUsedEspId);
 
         return view('auth.login', compact('availableDevices', 'lastUsedEspId'));
     }

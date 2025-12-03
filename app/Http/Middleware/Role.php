@@ -24,7 +24,7 @@ class Role
         $allowedRoles = array_map('trim', $allowedRoles);
 
         if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
+            return redirect()->route('login.view')->with('error', 'Silakan login terlebih dahulu.');
         }
 
         // 🔥 Tambahan: sinkronisasi device aktif

@@ -20,34 +20,34 @@ class UpdateController extends Controller
         $this->mqtt = $mqtt;
     }
 
-    public function updateDevice(Device $device)
-    {
-        $latestUpdate = Device_update::where('device_id', $device->id)
-            ->where('status', 'pending')
-            ->latest()
-            ->first();
+    // public function updateDevice(Device $device)
+    // {
+    //     $latestUpdate = Device_update::where('device_id', $device->id)
+    //         ->where('status', 'pending')
+    //         ->latest()
+    //         ->first();
 
-        if (!$latestUpdate) {
-            return back()->with('error', 'Tidak ada firmware baru untuk device ini.');
-        }
+    //     if (!$latestUpdate) {
+    //         return back()->with('error', 'Tidak ada firmware baru untuk device ini.');
+    //     }
 
-        // Mark as pushed
-        $latestUpdate->update([
-            'status' => 'pushed',
-            'pushed_at' => now(),
-        ]);
+    //     // Mark as pushed
+    //     $latestUpdate->update([
+    //         'status' => 'pushed',
+    //         'pushed_at' => now(),
+    //     ]);
 
-        // Perintah update via MQTT
-        $this->mqtt->publish(
-            "device/{$device->esp_id}/ota/update",
-            json_encode([
-                "version" => $latestUpdate->firmware->version,
-                "url"     => Storage::url($latestUpdate->firmware->path),
-            ]),
-            1
-        );
+    //     // Perintah update via MQTT
+    //     $this->mqtt->publish(
+    //         "device/{$device->esp_id}/ota/update",
+    //         json_encode([
+    //             "version" => $latestUpdate->firmware->version,
+    //             "url"     => Storage::url($latestUpdate->firmware->path),
+    //         ]),
+    //         1
+    //     );
 
-        return back()->with('success', 'Update sudah dikirim ke device.');
-    }
+    //     return back()->with('success', 'Update sudah dikirim ke device.');
+    // }
 
 }

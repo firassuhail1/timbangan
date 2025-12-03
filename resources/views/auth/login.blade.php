@@ -583,6 +583,35 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Pastikan ini dipanggil setelah user login dan halaman dashboard terbuka
+            async function initSanctum() {
+                await fetch('/sanctum/csrf-cookie', {
+                    credentials: 'include'
+                });
+
+                function getCookie(name) {
+                    let value = "; " + document.cookie;
+                    let parts = value.split("; " + name + "=");
+                    if (parts.length === 2) return parts.pop().split(";").shift();
+                }
+
+                // Override fetch agar selalu sertakan token
+                const originalFetch = window.fetch;
+                window.fetch = function(url, options = {}) {
+                    options.credentials = 'include';
+                    options.headers = {
+                        ...(options.headers || {}),
+                        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
+                        'Accept': 'application/json'
+                    };
+                    return originalFetch(url, options);
+                };
+            }
+
+            await initSanctum();
+        });
+
         function togglePassword() {
             const input = document.getElementById('password');
             const icon = document.querySelector('.password-toggle i');
@@ -594,6 +623,47 @@
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         }
+
+        // Device List
+        const selectEl = document.getElementById("esp_id");
+        let lastData = [];
+
+        async function fetchDevices() {
+            try {
+                const res = await fetch("{{ route('devices.list') }}");
+                const devices = await res.json();
+
+                if (JSON.stringify(devices) === JSON.stringify(lastData)) {
+                    return;
+                }
+
+                lastData = devices;
+
+                const prevSelected = selectEl.value;
+
+                selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
+
+                devices.forEach(d => {
+                    const option = document.createElement("option");
+                    option.value = d.esp_id;
+                    option.textContent = d.name ?? d.esp_id;
+
+                    if (prevSelected === d.esp_id) {
+                        option.selected = true;
+                    }
+
+                    selectEl.appendChild(option);
+                });
+
+                selectEl.dispatchEvent(new Event("change"));
+
+            } catch (error) {
+                console.warn("Gagal memuat device ESP:", error);
+            }
+        }
+
+        fetchDevices();
+        setInterval(fetchDevices, 5000);
     </script>
 </body>
 

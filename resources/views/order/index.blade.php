@@ -1,7 +1,27 @@
 <x-layout.home title="Timbangan Ordersheet">
 
     <div class="page-heading d-flex justify-content-between align-items-center">
-        <h5 class="welcome-message">Sistem Timbangan Ordersheet</h5>
+        @php
+            $deviceType = null;
+
+            if (Auth::check()) {
+                // Ambil device aktif milik user login saat ini
+                $device = \App\Models\Update\Device::where('user_id', Auth::id())->where('status', 'in_use')->first();
+
+                if ($device) {
+                    // ambil huruf pertama setelah "Timbangan-" → O atau P
+                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                        $deviceType = $matches[1];
+                    }
+                }
+            }
+        @endphp
+
+        @if ($deviceType === 'O')
+            <h5 class="welcome-message">Sistem Timbangan Ordersheet</h5>
+        @elseif ($deviceType === 'P')
+            <h5 class="welcome-message">Sistem Timbangan Package</h5>
+        @endif
 
         <div class="text-end">
             <h6 id="current-day" class="mb-0 fw-bold"></h6>
@@ -15,13 +35,63 @@
         <section class="row">
             <div class="card">
                 <div class="card-body">
-                    <div class="tambah mb-2">
-                        {{-- <a href="{{ url('user/ordersheet-view/create') }}" class="btn btn-info">
-                            <i class="fas fa-plus"></i> Tambah Data
-                        </a> --}}
+                    <div class="action-bar mb-3">
+
+                        <!-- WIFI Setting -->
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#wifi">
+                            <i class="fa-solid fa-wifi me-1"></i>
+                            Wifi
+                        </button>
+
+                        <!-- Device Selector -->
+                        <div class="dropdown">
+                            <button class="btn btn-info dropdown-toggle device-btn" type="button"
+                                data-bs-toggle="dropdown">
+                                <i class="fa-solid fa-microchip"></i>
+                                <span id="currentDeviceName">Memuat Device...</span>
+                            </button>
+
+                            <ul class="dropdown-menu device-dropdown-menu" id="deviceList">
+                                <li>
+                                    <span class="dropdown-item text-center disabled">
+                                        <i class="fa-solid fa-spinner fa-spin"></i>
+                                        Memuat...
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Modal Konfirmasi Pindah Device -->
+                    <div class="modal fade" id="confirmSwitchModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content shadow-lg">
+                                <div class="modal-header text-dark">
+                                    <h5 class="modal-title">
+                                        <i class="fa-solid fa-arrow-right-arrow-left me-2"></i> Konfirmasi Pindah Device
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-dark"
+                                        data-bs-dismiss="modal"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <p>Anda akan berpindah ke device:</p>
+                                    <h5 class="fw-bold" id="targetDeviceName"></h5>
+                                    <small class="text-muted d-block mt-1" id="targetDeviceId"></small>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        <i class="fa-solid fa-xmark"></i> Batal
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="confirmSwitchBtn">
+                                        <i class="fa-solid fa-check"></i> Ya, Pindah Sekarang
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <hr>
-
 
                     {{-- PENCARIAN --}}
                     <div class="row g-3 align-items-end mb-3">
@@ -140,7 +210,8 @@
                                                         @for ($i = 0; $i < 10; $i++)
                                                             <th style="width: 85px;">Ctn. No</th>
                                                         @endfor
-                                                        <th rowspan="2" style="vertical-align: middle; width: 90px;">
+                                                        <th rowspan="2"
+                                                            style="vertical-align: middle; width: 90px;">
                                                             Total</th>
                                                         <th rowspan="2"
                                                             style="vertical-align: middle; width: 100px;">
@@ -200,7 +271,56 @@
         </section>
     </div>
 
-    <div class="modal fade" id="timbangModal" tabindex="-1" aria-labelledby="timbangModalLabel" aria-hidden="true">
+    <div class="modal fade" id="wifi" tabindex="-1" aria-labelledby="tambahLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-lg-down">
+            <div class="modal-content overflow-hidden">
+                <!-- Header -->
+                <div class="modal-header text-dark">
+                    <h5 class="modal-title" id="wifiLabel">
+                        <i class="fa-solid fa-gear me-2"></i> Setting Wifi
+                    </h5>
+                    <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+
+                <form id="wifiForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="ssidInput" class="form-label">SSID</label>
+                            <input type="text" id="ssidInput" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="passInput" class="form-label">Password</label>
+                            <input type="text" id="passInput" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>
+                            Simpan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-circle-xmark me-2"></i> Batal</button>
+                    </div>
+                </form>
+
+                <!-- Tambahkan ini di dalam modal, sebelum </div> modal-content -->
+                <div id="wifiLoading"
+                    class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-90 d-none flex-column justify-content-center align-items-center"
+                    style="z-index: 9999;">
+                    <div class="spinner-border text-primary mb-4" style="width: 4rem; height: 4rem;"></div>
+                    <h5 id="wifiLoadingText" class="text-center">Mengirim konfigurasi...</h5>
+                    <div class="progress w-75 mt-4" style="height: 20px;">
+                        <div id="wifiProgressBar"
+                            class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                            style="width: 0%;">0%</div>
+                    </div>
+                    <small class="text-muted mt-2">Mohon tunggu hingga ESP terhubung kembali...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="timbangModal" tabindex="-1" aria-labelledby="timbangModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
             <!-- Responsive fullscreen di HP -->
             <div class="modal-content">
@@ -229,35 +349,35 @@
                                             <table class="table table-bordered table-sm align-middle mb-0">
                                                 <tbody>
                                                     <tr>
-                                                        <th width="40%" class="bg-light">BUYER</th>
+                                                        <th width="40%">BUYER</th>
                                                         <td><input type="text" id="info_buyer" name="Buyer"
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Order No.</th>
+                                                        <th>Order No.</th>
                                                         <td><input type="text" id="info_order_code"
                                                                 name="Order_code" class="form-control form-control-sm"
                                                                 readonly></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">PO#</th>
+                                                        <th>PO#</th>
                                                         <td><input type="text" id="info_purchaseordernumber"
                                                                 name="PO" class="form-control form-control-sm">
                                                         </td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Style</th>
+                                                        <th>Style</th>
                                                         <td><input type="text" id="info_style" name="Style"
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Qty Order</th>
+                                                        <th>Qty Order</th>
                                                         <td><input type="number" id="info_qty_order"
                                                                 name="Qty_order" class="form-control form-control-sm"
                                                                 placeholder="0"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light"></th>
+                                                        <th></th>
                                                         <td>
                                                             <div class="row g-2">
                                                                 <div class="col-6">
@@ -280,7 +400,7 @@
                                                         </td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light"></th>
+                                                        <th></th>
                                                         <td>
                                                             <div class="row g-2">
                                                                 <div class="col-6">
@@ -303,13 +423,13 @@
                                                         </td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Carton Weight Std.</th>
+                                                        <th>Carton Weight Std.</th>
                                                         <td><input type="text" id="info_carton_weight"
                                                                 name="Carton_weight_std"
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Pcs Weight Std.</th>
+                                                        <th>Pcs Weight Std.</th>
                                                         <td><input type="text" id="info_pcs_weight"
                                                                 name="Pcs_weight_std"
                                                                 class="form-control form-control-sm"></td>
@@ -325,17 +445,17 @@
                                             <table class="table table-bordered table-sm align-middle mb-0">
                                                 <tbody>
                                                     <tr>
-                                                        <th width="40%" class="bg-light">GAC Date</th>
+                                                        <th width="40%">GAC Date</th>
                                                         <td><input type="date" class="form-control form-control-sm"
                                                                 id="info_GAC" name="Gac_date"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Destination</th>
+                                                        <th>Destination</th>
                                                         <td><input type="text" class="form-control form-control-sm"
                                                                 id="info_FinalDestination" name="Destination"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th class="bg-light">Inspector</th>
+                                                        <th>Inspector</th>
                                                         <td><input type="text" class="form-control form-control-sm"
                                                                 id="info_inspector" name="Inspector"></td>
                                                     </tr>
@@ -451,10 +571,10 @@
 
                                     <!-- KOLOM KANAN: DISPLAY BERAT -->
                                     <div class="col-12 col-md-6">
-                                        <div class="card border-0 shadow-sm h-100">
+                                        <div class="card border-0 shadow-sm h-80">
                                             <div class="card-body p-3 text-center">
                                                 <div class="alert alert-success py-2 mb-3 small">
-                                                    <strong>Timbangan Aktif</strong>
+                                                    <strong>Timbangan</strong>
                                                 </div>
 
                                                 <!-- Berat Real-time -->
@@ -469,12 +589,12 @@
                                                         class="text-warning d-block fw-bold">Menunggu data...</small>
                                                 </div>
 
-                                                <!-- Tombol Stabilisasi (Opsional) -->
-                                                <div class="mt-3 d-none d-md-block">
+                                                <div class="mt-2 sticky-bottom pb-2 bg-body">
                                                     <small class="text-muted">Pastikan timbangan stabil sebelum
                                                         simpan</small>
                                                     <hr>
-                                                    <button class="btn btn-sm btn-primary" id="tare">
+                                                    <button type="button" class="btn btn-sm btn-primary"
+                                                        id="tare">
                                                         <i class="fa-solid fa-thumbtack"></i> Stabilkan
                                                     </button>
                                                 </div>
@@ -534,6 +654,13 @@
 
     @push('css')
         <style>
+            .action-bar {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
             .ctn-cell {
                 display: flex;
                 flex-direction: column;
@@ -580,6 +707,12 @@
                     opacity: 1;
                 }
             }
+
+            @media (max-width: 576px) {
+                #timbangModal .modal-body {
+                    padding-bottom: 10px !important;
+                }
+            }
         </style>
     @endpush
 
@@ -590,207 +723,185 @@
         {{-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
         <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
         <script>
-            // Hari
-            function updateDateTime() {
-                const now = new Date();
+            document.addEventListener('DOMContentLoaded', () => {
+                initDateTime();
+                initSearch();
+                initTimbangModal();
+                initBarcodeScanner();
+                initTareButton();
+                initLossWeightCalculation();
+                initSaveButton();
+            });
 
+            function initDateTime() {
                 const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                const dayName = days[now.getDay()];
-                const date = now.toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                const time = now.toLocaleTimeString('id-ID', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
 
-                document.getElementById('current-day').textContent = `${dayName}, ${date}`;
-                document.getElementById('current-time').textContent = time;
+                function updateDateTime() {
+                    const now = new Date();
+                    const dayName = days[now.getDay()];
+                    const date = now.toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    const time = now.toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+
+                    document.getElementById('current-day').textContent = `${dayName}, ${date}`;
+                    document.getElementById('current-time').textContent = time;
+                }
+
+                updateDateTime(); // jalankan sekali saat load
+                setInterval(updateDateTime, 1000); // update tiap detik
             }
 
-            // Jalankan saat halaman load dan per detik
-            document.addEventListener('DOMContentLoaded', () => {
-                updateDateTime();
-                setInterval(updateDateTime, 1000);
-            });
+            function initSearch() {
+                const searchBtn = document.getElementById('searchBtn');
+                const spinner = document.getElementById('loadingSpinner');
+                const tableBody = document.querySelector('#resultTable tbody');
+                const pagination = document.getElementById('pagination');
+
+                searchBtn.addEventListener('click', () => fetchData(1));
+
+                async function fetchData(page = 1) {
+                    const search = document.getElementById('search')?.value.trim() || '';
+                    const start = document.getElementById('start_date')?.value || '';
+                    const end = document.getElementById('end_date')?.value || '';
+
+                    if (!search && !start && !end) {
+                        Swal.fire('Peringatan', 'Isi setidaknya satu kolom!', 'warning');
+                        return;
+                    }
+
+                    spinner.style.display = 'inline-block';
+                    tableBody.innerHTML = `<tr><td colspan="9" class="text-center">Memuat...</td></tr>`;
+                    pagination.innerHTML = '';
+
+                    try {
+                        const params = new URLSearchParams({
+                            page
+                        });
+                        if (search) params.append('search', search);
+                        if (start) params.append('start_date', start);
+                        if (end) params.append('end_date', end);
+
+                        const res = await fetch(`/api/ordersheet?${params}`);
+                        const json = await res.json();
+
+                        spinner.style.display = 'none';
+
+                        if (json.success && json.data.length > 0) {
+                            renderTable(json.data, json.current_page);
+                            renderPagination(json.current_page, json.last_page);
+                        } else {
+                            tableBody.innerHTML =
+                                `<tr><td colspan="9" class="text-warning text-center">Tidak ditemukan</td></tr>`;
+                        }
+                    } catch (err) {
+                        spinner.style.display = 'none';
+                        tableBody.innerHTML =
+                            `<tr><td colspan="9" class="text-danger text-center">Terjadi kesalahan</td></tr>`;
+                        console.error(err);
+                    }
+                }
+
+                function renderTable(data, currentPage) {
+                    let rows = '';
+                    data.forEach((item, i) => {
+                        const no = (i + 1) + (currentPage - 1) * 10;
+                        rows += `
+                        <tr>
+                            <td>${no}</td>
+                            <td>${item.Buyer || '-'}</td>
+                            <td>${item.PurchaseOrderNumber || '-'}</td>
+                            <td>${item.ProductName || '-'}</td>
+                            <td>${item.Qty || 0}</td>
+                            <td>${item.ActualFOB || '-'}</td>
+                            <td>${item.DocumentDate || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-timbang" data-item='${JSON.stringify(item)}'>
+                                    <i class="fa-solid fa-weight-scale"></i> Timbang
+                                </button>
+                            </td>
+                        </tr>`;
+                    });
+                    tableBody.innerHTML = rows;
+                }
+
+                function renderPagination(currentPage, lastPage) {
+                    if (lastPage <= 1) {
+                        pagination.innerHTML = '';
+                        return;
+                    }
+
+                    let html = `<ul class="pagination">`;
+                    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+                     </li>`;
+
+                    for (let i = 1; i <= lastPage; i++) {
+                        html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                         </li>`;
+                    }
+
+                    html += `<li class="page-item ${currentPage === lastPage ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+                     </li></ul>`;
+
+                    pagination.innerHTML = html;
+
+                    pagination.querySelectorAll('a[data-page]').forEach(link => {
+                        link.addEventListener('click', e => {
+                            e.preventDefault();
+                            const page = parseInt(link.dataset.page);
+                            if (page > 0 && page <= lastPage) fetchData(page);
+                        });
+                    });
+                }
+            }
 
             let currentId = null;
             let pollingInterval = null;
             let latestPreview = null;
+            let currentDeviceId = null;
 
-            const searchBtn = document.getElementById('searchBtn');
-            const spinner = document.getElementById('loadingSpinner');
-            const tableBody = document.querySelector('#resultTable tbody');
-            const btnSimpan = document.getElementById('btnSimpanTimbang');
-            const pagination = document.getElementById('pagination');
+            function initTimbangModal() {
+                const modalElement = document.getElementById('timbangModal');
+                const btnSimpan = document.getElementById('btnSimpanTimbang');
 
-            // === CARI DATA ===
-            searchBtn.addEventListener('click', () => fetchData(1));
-
-            async function fetchData(page = 1) {
-                const search = document.getElementById('search').value.trim();
-                const start = document.getElementById('start_date').value;
-                const end = document.getElementById('end_date').value;
-
-                if (!search && !start && !end) {
-                    Swal.fire('Peringatan', 'Isi setidaknya satu kolom!', 'warning');
-                    return;
-                }
-
-                spinner.style.display = 'inline-block';
-                tableBody.innerHTML = `<tr><td colspan="9" class="text-center">Memuat...</td></tr>`;
-                pagination.innerHTML = '';
-
-                try {
-                    const params = new URLSearchParams({
-                        page
-                    });
-                    if (search) params.append('search', search);
-                    if (start) params.append('start_date', start);
-                    if (end) params.append('end_date', end);
-
-                    const res = await fetch(`/api/ordersheet?${params}`);
-                    const json = await res.json();
-
-                    spinner.style.display = 'none';
-
-                    if (json.success && json.data.length > 0) {
-                        renderTable(json.data, json.current_page);
-                        renderPagination(json.current_page, json.last_page);
-                    } else {
-                        tableBody.innerHTML =
-                            `<tr><td colspan="9" class="text-warning text-center">Tidak ditemukan</td></tr>`;
-                    }
-                } catch (err) {
-                    spinner.style.display = 'none';
-                    tableBody.innerHTML = `<tr><td colspan="9" class="text-danger text-center">Terjadi kesalahan</td></tr>`;
-                    console.error(err);
-                }
-            }
-
-            function renderTable(data, currentPage) {
-                let rows = '';
-                data.forEach((item, i) => {
-                    rows += `
-                    <tr>
-                        <td>${(i + 1) + (currentPage - 1) * 10}</td>
-                        <td>${item.Buyer || '-'}</td>
-                        <td>${item.PurchaseOrderNumber || '-'}</td>
-                        <td>${item.ProductName || '-'}</td>
-                        <td>${item.Qty || 0}</td>
-                        <td>${item.ActualFOB || '-'}</td>
-                        <td>${item.DocumentDate || '-'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary btn-timbang" data-item='${JSON.stringify(item)}'>
-                                <i class="fa-solid fa-weight-scale"></i> Timbang
-                            </button>
-                        </td>
-                    </tr>`;
-                });
-                tableBody.innerHTML = rows;
-            }
-
-            function renderPagination(currentPage, lastPage) {
-                if (lastPage <= 1) {
-                    pagination.innerHTML = '';
-                    return;
-                }
-
-                let html = `<ul class="pagination">`;
-                html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
-                    </li>`;
-
-                for (let i = 1; i <= lastPage; i++) {
-                    html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                    </li>`;
-                }
-
-                html += `<li class="page-item ${currentPage === lastPage ? 'disabled' : ''}">
-                    <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
-                </li>`;
-                html += `</ul>`;
-
-                pagination.innerHTML = html;
-
-                pagination.querySelectorAll('a[data-page]').forEach(link => {
-                    link.addEventListener('click', e => {
-                        e.preventDefault();
-                        const page = parseInt(e.target.dataset.page);
-                        if (page > 0 && page <= lastPage) fetchData(page);
-                    });
-                });
-            }
-
-            document.addEventListener('click', async function(e) {
-                if (e.target.closest('.btn-timbang')) {
+                // Klik tombol "Timbang" di tabel
+                document.addEventListener('click', e => {
                     const btn = e.target.closest('.btn-timbang');
+                    if (!btn) return;
+
                     let item;
                     try {
                         item = JSON.parse(btn.dataset.item);
-                    } catch (err) {
+                    } catch {
                         return;
                     }
 
                     currentId = item.id;
-
-                    // === ISI FIELD ===
-                    const fields = {
-                        info_buyer: 'Buyer',
-                        info_order_code: 'Order_code',
-                        info_purchaseordernumber: 'PurchaseOrderNumber',
-                        info_style: 'ProductName',
-                        info_qty_order: 'Qty',
-                        info_pcs: 'Pcs',
-                        info_ctn: 'Ctn',
-                        info_less_ctn: 'Less_ctn',
-                        info_pcs_less_ctn: 'Pcs_less_ctn',
-                        info_carton_weight: 'Carton_weight_std',
-                        info_pcs_weight: 'Pcs_weight_std',
-                        info_GAC: 'GAC',
-                        info_FinalDestination: 'FinalDestination',
-                    };
-
-                    Object.keys(fields).forEach(id => {
-                        const el = document.getElementById(id);
-                        const key = fields[id];
-                        const value = item[key];
-                        if (el) {
-                            el.value = value ?? '';
-                            if (id === 'info_GAC' && value) {
-                                el.value = formatDateForInput(value);
-                            }
-                        }
-                    });
-
-                    const minEl = document.getElementById('rasio_batas_beban_min');
-                    const maxEl = document.getElementById('rasio_batas_beban_max');
-                    const lostEl = document.getElementById('lost_weight');
-                    if (minEl) minEl.value = item.rasio_min ?? '';
-                    if (maxEl) maxEl.value = item.rasio_max ?? '';
-                    if (lostEl) lostEl.value = '';
-
+                    fillModalFields(item);
                     resetPreviewUI();
 
-                    // === Siapkan modal ===
-                    const modalElement = document.getElementById('timbangModal');
                     const modal = new bootstrap.Modal(modalElement);
 
-                    // Hentikan polling saat modal ditutup
+                    // Stop polling saat modal ditutup
                     modalElement.addEventListener('hidden.bs.modal', stopPolling, {
                         once: true
                     });
 
-                    // Jalankan setelah modal benar-benar terbuka
+                    // Jalankan setelah modal terbuka
                     modalElement.addEventListener('shown.bs.modal', async () => {
                         try {
-                            // Set ID aktif di server
-                            await fetch('/api/timbang/set-id', {
+                            const res = await fetch('/api/set-id', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -801,32 +912,90 @@
                                     id: currentId
                                 })
                             });
+
+                            const json = await res.json();
+                            console.log('Set ID response:', json);
+
+                            if (json.success) {
+                                console.log(
+                                    `File current_id/${json.user_id}.txt telah dibuat dengan isi: ${json.current_id}`
+                                );
+                                console.log("Link debug:", json.file);
+                            }
                         } catch (err) {
-                            console.warn('Gagal set-id:', err);
+                            console.warn('Gagal set ID:', err);
                         }
 
-                        // Jalankan langsung polling pertama tanpa delay
                         await loadPreview();
-                        await loadRiwayat();
                         hitungLossWeight();
 
-                        // Baru setelah itu, mulai interval polling
                         startPolling();
                     }, {
                         once: true
                     });
 
                     modal.show();
-                }
-            });
+                });
+            }
 
-            // ==== POLLING SYSTEM ====
+            function fillModalFields(item) {
+                const fields = {
+                    info_buyer: 'Buyer',
+                    info_order_code: 'Order_code',
+                    info_purchaseordernumber: 'PurchaseOrderNumber',
+                    info_style: 'ProductName',
+                    info_qty_order: 'Qty',
+                    info_pcs: 'Pcs',
+                    info_ctn: 'Ctn',
+                    info_less_ctn: 'Less_ctn',
+                    info_pcs_less_ctn: 'Pcs_less_ctn',
+                    info_carton_weight: 'Carton_weight_std',
+                    info_pcs_weight: 'Pcs_weight_std',
+                    info_GAC: 'GAC',
+                    info_FinalDestination: 'FinalDestination',
+                };
+
+                Object.keys(fields).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+
+                    const key = fields[id];
+                    let value = item[key] ?? '';
+
+                    if (id === 'info_GAC' && value) {
+                        value = formatDateForInput(value);
+                    }
+                    el.value = value;
+                });
+
+                // Rasio & lost weight
+                document.getElementById('rasio_batas_beban_min').value = item.rasio_min ?? '';
+                document.getElementById('rasio_batas_beban_max').value = item.rasio_max ?? '';
+                document.getElementById('lost_weight').value = '';
+            }
+
+            function formatDateForInput(dateStr) {
+                if (!dateStr) return '';
+                const date = new Date(dateStr);
+                return isNaN(date) ? '' : date.toISOString().split('T')[0];
+            }
+
+            function resetPreviewUI() {
+                document.getElementById('currentWeight').textContent = '0.00 kg';
+                const status = document.getElementById('previewStatus');
+                status.textContent = 'Menunggu timbangan...';
+                status.className = 'text-warning fw-bold';
+                document.getElementById('lost_weight').value = '';
+                document.getElementById('btnSimpanTimbang').disabled = true;
+                latestPreview = null;
+            }
+
+            // Polling
             function startPolling() {
                 stopPolling();
                 pollingInterval = setInterval(() => {
                     loadPreview();
-                    loadRiwayat();
-                }, 1000); // beri jeda 1,5 detik agar server tidak overload
+                }, 1500);
             }
 
             function stopPolling() {
@@ -836,113 +1005,185 @@
                 }
             }
 
-            // ==== RESET UI ====
-            function resetPreviewUI() {
-                document.getElementById('currentWeight').textContent = '0.00 kg';
-                const status = document.getElementById('previewStatus');
-                status.textContent = 'Menunggu timbangan...';
-                status.className = 'text-warning';
-                status.style.fontWeight = 'bold'; // ← Tambahan untuk teks tebal
-                document.getElementById('lost_weight').value = '';
-                btnSimpan.disabled = true;
-                latestPreview = null;
-            }
+            const THRESHOLD = 0.002; // 2 gram
+            let lastBerat = 0;
 
-            // === FUNGSI BANTU: FORMAT TANGGAL UNTUK <input type="date"> ===
-            function formatDateForInput(dateStr) {
-                if (!dateStr) return '';
-                const date = new Date(dateStr);
-                if (isNaN(date)) {
-                    console.warn('Tanggal tidak valid:', dateStr);
-                    return '';
-                }
-                return date.toISOString().split('T')[0]; // YYYY-MM-DD
-            }
+            let lastStableWeight = null; // berat terakhir yang dianggap stabil
+            let stableStartTime = null; // waktu pertama kali berat sama
+            const STABLE_THRESHOLD = 0.02; // toleransi perubahan (bisa disesuaikan, misal 20 gram)
+            const STABLE_DURATION = 3000; // harus sama selama 3 detik baru dianggap stabil
 
-            // === LOAD PREVIEW TIMBANGAN ===
             async function loadPreview() {
-                if (!currentId) {
-                    console.warn('currentId belum ada, skip polling');
-                    return;
-                }
+                if (!currentId) return;
 
                 try {
-                    const url = `/api/timbang/preview/${currentId}`;
-                    console.log('Polling:', url); // DEBUG
-
-                    const res = await fetch(url, {
+                    const res = await fetch(`/api/preview/${currentId}`, {
                         headers: {
                             'Accept': 'application/json'
                         }
                     });
 
                     if (!res.ok) {
-                        console.error('HTTP Error:', res.status);
+                        document.getElementById('previewStatus').textContent = 'Koneksi gagal';
+                        document.getElementById('previewStatus').className = 'text-danger fw-bold';
                         return;
                     }
 
                     const json = await res.json();
-                    console.log('Response preview:', json); // DEBUG
-
-                    if (!json.success) {
-                        console.warn('Preview gagal:', json);
-                        return;
-                    }
+                    if (!json.success) return;
 
                     const berat = parseFloat(json.berat) || 0;
                     const weightEl = document.getElementById('currentWeight');
-                    const newText = `${berat.toFixed(2)} kg`;
+                    const statusEl = document.getElementById('previewStatus');
 
+                    const newText = berat.toFixed(2);
+
+                    // Animasi hanya saat angka benar-benar berubah
                     if (weightEl.textContent !== newText) {
                         weightEl.textContent = newText;
-                        weightEl.style.transition = 'all 0.3s ease';
-                        weightEl.style.transform = 'scale(1.15)';
-                        weightEl.style.color = '#ff4500';
+
+                        weightEl.style.transition = 'all 0.4s ease';
+                        weightEl.style.transform = 'scale(1.25)';
+                        weightEl.style.color = '#e91e63';
                         setTimeout(() => {
                             weightEl.style.transform = 'scale(1)';
                             weightEl.style.color = '#0d6efd';
-                        }, 300);
+                        }, 400);
+
+                        // Reset status stabil jika berat berubah
+                        lastStableWeight = null;
+                        stableStartTime = null;
                     }
 
-                    const statusEl = document.getElementById('previewStatus');
+                    // === LOGIKA DETEKSI STABIL ===
+                    const sekarang = Date.now();
+
+                    if (lastStableWeight === null) {
+                        // Pertama kali dapat nilai yang cukup besar
+                        if (berat >= 0.5) {
+                            lastStableWeight = berat;
+                            stableStartTime = sekarang;
+                        }
+                    } else {
+                        // Cek apakah berat masih dalam toleransi
+                        if (Math.abs(berat - lastStableWeight) <= STABLE_THRESHOLD) {
+                            // Masih sama dalam batas toleransi
+                            if (sekarang - stableStartTime >= STABLE_DURATION) {
+                                // SUDAH STABIL LAMA!
+                                statusEl.textContent = 'STABIL';
+                                statusEl.className = 'text-success fw-bold fs-4 blink'; // optional: blink
+
+                                // Beep panjang hanya sekali (tidak berulang setiap polling)
+                                if (!statusEl.dataset.beeped) {
+                                    playStableBeep(); // fungsi beep panjang
+                                    statusEl.dataset.beeped = 'true'; // tandai sudah beep
+                                }
+                            } else {
+                                // Belum cukup lama, masih "menunggu stabil"
+                                statusEl.textContent = 'Menunggu stabil...';
+                                statusEl.className = 'text-warning fw-bold';
+                                statusEl.dataset.beeped = ''; // reset beep jika berat bergerak lagi
+                            }
+                        } else {
+                            // Berat berubah di luar toleransi → reset
+                            lastStableWeight = berat;
+                            stableStartTime = sekarang;
+                            statusEl.dataset.beeped = ''; // siap beep lagi nanti
+                        }
+                    }
+
+                    // Status default jika belum cukup berat
                     if (berat < 0.05) {
                         statusEl.textContent = 'Timbangan kosong';
                         statusEl.className = 'text-muted';
-                    } else {
-                        statusEl.textContent = 'Berat diterima dari timbangan!';
-                        statusEl.className = 'text-success fw-bold';
+                        lastStableWeight = null;
+                        stableStartTime = null;
+                        statusEl.dataset.beeped = '';
+                    } else if (berat < 0.5) {
+                        statusEl.textContent = 'Ada beban kecil...';
+                        statusEl.className = 'text-info fw-bold';
+                        lastStableWeight = null;
+                        stableStartTime = null;
+                        statusEl.dataset.beeped = '';
                     }
 
-                    btnSimpanTimbang.disabled = berat < 0.05;
+                    // Aktifkan tombol simpan
+                    document.getElementById('btnSimpanTimbang').disabled = berat < 0.5;
+
                     latestPreview = {
                         berat: berat.toFixed(2)
                     };
                     hitungLossWeight();
 
                 } catch (err) {
-                    console.error('Error loadPreview:', err);
+                    console.error('Polling error:', err);
+                    document.getElementById('previewStatus').textContent = 'Terputus dari server';
+                    document.getElementById('previewStatus').className = 'text-danger fw-bold';
                 }
             }
 
-            // === HITUNG LOSS WEIGHT (OTOMATIS) ===
+            // ============== FUNGSI BEEP PANJANG ==============
+            function playStableBeep() {
+                const ctx = new(window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.value = 800; // tinggi
+                gain.gain.value = 0.3;
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 1.2); // 1.2 detik → terasa "panjang"
+            }
+
+            // BEEP SUKSES (2x beep pendek + ceria, nada naik)
+            function playSuccessBeep() {
+                const ctx = new(window.AudioContext || window.webkitAudioContext)();
+
+                function beep(freq, duration, delay = 0) {
+                    setTimeout(() => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.value = 0.4;
+
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+
+                        osc.start();
+                        osc.stop(ctx.currentTime + duration);
+                    }, delay);
+                }
+
+                // Nada ceria: Do → Mi → Sol (seperti "ding-dong" sukses)
+                beep(523, 0.12, 0); // C5
+                beep(659, 0.12, 120); // E5
+                beep(784, 0.25, 240); // G5 (lebih panjang biar endingnya manis)
+            }
+
             function hitungLossWeight() {
-                const minInput = document.getElementById('rasio_batas_beban_min');
-                const maxInput = document.getElementById('rasio_batas_beban_max');
-                const lostWeightField = document.getElementById('lost_weight');
+                const minEl = document.getElementById('rasio_batas_beban_min');
+                const maxEl = document.getElementById('rasio_batas_beban_max');
+                const lostEl = document.getElementById('lost_weight');
                 const statusEl = document.getElementById('previewStatus');
-                const currentWeightText = document.getElementById('currentWeight').textContent;
-                const current = parseFloat(currentWeightText) || 0;
-                const min = parseFloat(minInput?.value) || 0;
-                const max = parseFloat(maxInput?.value) || 0;
+
+                const current = parseFloat(document.getElementById('currentWeight').textContent) || 0;
+                const min = parseFloat(minEl?.value) || 0;
+                const max = parseFloat(maxEl?.value) || 0;
 
                 if (!min || !max || current === 0) {
-                    lostWeightField.value = '';
+                    lostEl.value = '';
                     return;
                 }
 
-                const lossWeight = (max - current).toFixed(2);
+                const loss = (max - current).toFixed(2);
                 const ratio = ((current - min) / (max - min)).toFixed(3);
-                lostWeightField.value = `${lossWeight} kg (${ratio})`;
+                lostEl.value = `${loss} kg (${ratio})`;
 
                 if (current < min) {
                     statusEl.textContent = 'Berat di bawah batas minimal!';
@@ -956,23 +1197,49 @@
                 }
             }
 
-            // Jalankan hitung otomatis saat input min/max berubah
-            document.addEventListener('DOMContentLoaded', () => {
+            function initLossWeightCalculation() {
                 ['rasio_batas_beban_min', 'rasio_batas_beban_max'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.addEventListener('input', hitungLossWeight);
                 });
-            });
+            }
 
-            document.addEventListener('DOMContentLoaded', function() {
+            function initTareButton() {
+                const tareBtn = document.getElementById('tare');
+                if (!tareBtn) return;
+
+                tareBtn.addEventListener('click', async () => {
+                    const statusEl = document.getElementById('previewStatus');
+                    statusEl.textContent = 'Mengirim perintah tare...';
+                    statusEl.className = 'text-info fw-bold';
+
+                    try {
+                        const res = await fetch('/api/tare', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        const json = await res.json();
+
+                        if (json.success) {
+                            statusEl.textContent = 'Tare berhasil!';
+                            setTimeout(() => statusEl.textContent = 'Menunggu timbangan...', 2000);
+                        } else {
+                            throw new Error(json.message || 'Tare gagal');
+                        }
+                    } catch (err) {
+                        statusEl.textContent = 'Tare gagal!';
+                        statusEl.className = 'text-danger fw-bold';
+                    }
+                });
+            }
+
+            function initBarcodeScanner() {
                 const scanButton = document.getElementById('btnScanBarcode');
                 if (!scanButton) return;
 
-                let scannerInstance = null;
-
-                function isMobile() {
-                    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-                }
+                scanButton.addEventListener('click', startScanner);
 
                 function startScanner() {
                     const modalEl = document.getElementById('scannerModal');
@@ -986,13 +1253,14 @@
                     const torchBtn = document.getElementById('torchToggle');
                     const switchBtn = document.getElementById('switchCamera');
 
+                    let scannerInstance = null;
                     let currentCamera = 'environment';
                     let torchOn = false;
-                    const mobile = isMobile();
+                    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
                     modal.show();
 
-                    const onSuccess = (decodedText) => {
+                    const onSuccess = decodedText => {
                         const text = decodedText.trim();
                         if (!text) return;
 
@@ -1005,25 +1273,19 @@
                         }
 
                         statusEl.innerHTML =
-                            `<span class="text-success fw-bold">✓ Berhasil Scan!</span><br><small class="text-light">${text}</small>`;
+                            `<span class="text-success fw-bold">Berhasil Scan!</span><br><small class="text-light">${text}</small>`;
                         setTimeout(() => {
                             stopScanner();
                             modal.hide();
-                            if (typeof Swal !== 'undefined') {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Scan Berhasil!',
-                                    text: text,
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                });
-                            } else {
-                                alert(`Scan berhasil: ${text}`);
-                            }
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Scan Berhasil!',
+                                text: text,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
                         }, 800);
                     };
-
-                    const onError = () => {};
 
                     const stopScanner = () => {
                         if (scannerInstance) {
@@ -1039,7 +1301,6 @@
                         torchBtn.classList.add('d-none');
 
                         const html5QrCode = new Html5Qrcode("reader");
-
                         const config = {
                             fps: 10,
                             qrbox: {
@@ -1054,46 +1315,40 @@
                                 Html5QrcodeSupportedFormats.EAN_13,
                                 Html5QrcodeSupportedFormats.EAN_8,
                                 Html5QrcodeSupportedFormats.UPC_A
-                            ],
-                            useBarCodeDetectorIfSupported: false
+                            ]
                         };
 
                         html5QrCode.start({
                                 facingMode: currentCamera
-                            }, config, onSuccess, onError)
+                            }, config, onSuccess, () => {})
                             .then(() => {
                                 scannerInstance = html5QrCode;
-                                statusEl.innerHTML =
-                                    '<span class="text-info">🎯 Arahkan kamera ke barcode...</span>';
+                                statusEl.innerHTML = '<span class="text-info">Arahkan kamera ke barcode...</span>';
 
-                                if (mobile) {
+                                if (isMobile) {
                                     torchBtn.classList.remove('d-none');
                                     torchBtn.disabled = false;
                                     setupTorch();
                                 }
 
                                 Html5Qrcode.getCameras().then(cameras => {
-                                    if (cameras && cameras.length > 1) {
-                                        switchBtn.classList.remove('d-none');
-                                    }
-                                }).catch(() => {});
+                                    if (cameras?.length > 1) switchBtn.classList.remove('d-none');
+                                });
 
                                 switchBtn.onclick = () => {
-                                    currentCamera = currentCamera === 'environment' ? 'user' :
-                                        'environment';
+                                    currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
                                     stopScanner();
                                     setTimeout(() => {
                                         html5QrCode.start({
                                                 facingMode: currentCamera
-                                            }, config, onSuccess, onError)
+                                            }, config, onSuccess, () => {})
                                             .then(() => scannerInstance = html5QrCode);
                                     }, 500);
                                 };
                             })
                             .catch(err => {
-                                console.error('Error start scanner:', err);
                                 statusEl.innerHTML =
-                                    `<span class="text-danger">❌ Gagal akses kamera:<br><small>${err.message || err}</small></span>`;
+                                    `<span class="text-danger">Gagal akses kamera:<br><small>${err.message || err}</small></span>`;
                             });
                     });
 
@@ -1107,83 +1362,188 @@
                                     }]
                                 })
                                 .then(() => {
-                                    torchBtn.innerHTML = torchOn ? '💡 Matikan Lampu' : '💡 Nyalakan Lampu';
+                                    torchBtn.innerHTML = torchOn ? 'Matikan Lampu' : 'Nyalakan Lampu';
                                     torchBtn.classList.toggle('btn-danger', torchOn);
                                     torchBtn.classList.toggle('btn-warning', !torchOn);
-                                }).catch(() => {
+                                })
+                                .catch(() => {
                                     torchOn = false;
-                                    torchBtn.innerHTML = '🚫 Lampu Tidak Didukung';
+                                    torchBtn.innerHTML = 'Lampu Tidak Didukung';
                                     torchBtn.className = 'btn btn-secondary btn-sm px-3';
                                     torchBtn.disabled = true;
                                 });
                         };
                     }
 
-                    modalEl.addEventListener('hidden.bs.modal', () => stopScanner(), {
+                    modalEl.addEventListener('hidden.bs.modal', stopScanner, {
                         once: true
                     });
                 }
+            }
 
-                scanButton.addEventListener('click', startScanner);
-            });
+            function initSaveButton() {
+                const btnSimpan = document.getElementById('btnSimpanTimbang');
+                if (!btnSimpan) return;
 
-            btnSimpan.addEventListener('click', async () => {
-                if (!latestPreview || !currentId) return;
+                btnSimpan.addEventListener('click', async () => {
+                    if (!latestPreview || parseFloat(latestPreview.berat) < 0.05) {
+                        Swal.fire('Peringatan', 'Berat terlalu kecil atau belum terdeteksi!', 'warning');
+                        return;
+                    }
 
-                const form = document.getElementById('formOrdersheet');
-                const formData = new FormData(form);
+                    const form = document.getElementById('formOrdersheet');
+                    const formData = new FormData(form);
+                    formData.set('berat', latestPreview.berat);
+                    formData.set('id', currentId);
 
-                formData.set('berat', latestPreview.berat);
-                formData.set('id', currentId);
+                    btnSimpan.disabled = true;
+                    btnSimpan.innerHTML = 'Menyimpan...';
 
-                btnSimpan.disabled = true;
-                btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+                    try {
+                        const res = await fetch('/api/simpan', {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'include'
+                        });
+                        const json = await res.json();
 
+                        if (res.ok && json.success) {
+
+                            playSuccessBeep();
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: json.message,
+                                timer: 1500
+                            });
+                            bootstrap.Modal.getInstance(document.getElementById('timbangModal')).hide();
+                            setTimeout(() => location.reload(), 1200);
+                        } else {
+                            throw new Error(json.message || 'Gagal menyimpan');
+                        }
+                    } catch (err) {
+                        Swal.fire('Error', err.message, 'error');
+                    } finally {
+                        btnSimpan.disabled = false;
+                        btnSimpan.innerHTML = 'Simpan';
+                    }
+                });
+            }
+
+            // Ambil user id dari Blade
+            const userId = {{ Auth::check() ? Auth::id() : 'null' }};
+
+            async function loadAvailableDevices() {
                 try {
-                    const res = await fetch('/api/timbang/simpan', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        },
-                        body: formData
+                    const res = await fetch('/user/devices/available');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                    const devices = await res.json();
+                    const list = document.getElementById('deviceList');
+                    list.innerHTML = '';
+
+                    // Ambil device user login (in_use)
+                    const currentUserDevice = devices.find(d => d.status === 'in_use' && d.user_id === parseInt(userId));
+                    if (currentUserDevice) {
+                        currentDeviceId = currentUserDevice.id;
+                        document.getElementById('currentDeviceName').textContent =
+                            currentUserDevice.name || currentUserDevice.esp_id;
+                    } else {
+                        currentDeviceId = null;
+                        document.getElementById('currentDeviceName').textContent = 'Pilih Device...';
+                    }
+
+                    devices.forEach(device => {
+                        const isCurrent = device.id === currentDeviceId;
+                        const statusBadge = device.status === 'in_use' ? 'Sedang Dipakai' :
+                            device.status === 'online' ? 'Online' : 'Offline';
+                        const bgClass = device.status === 'in_use' ? 'bg-success text-white' :
+                            device.status === 'online' ? 'bg-light text-dark' : 'bg-danger text-white';
+
+                        const item = document.createElement('li');
+                        item.innerHTML = `
+                            <a class="dropdown-item d-flex justify-content-between align-items-center ${isCurrent ? 'active' : ''}" 
+                            href="javascript:void(0)" 
+                            onclick="prepareSwitch(${device.id}, '${(device.name || device.esp_id).replace(/'/g, "\\'")}', '${device.esp_id}')"
+                            style="background-color: ${bgClass.includes('bg-light') ? '#f8f9fa' : ''}; color: ${bgClass.includes('text-white') ? '#fff' : '#000'};">
+                                <div>
+                                    <div><strong>${device.name || device.esp_id}</strong></div>
+                                    <small class="text-muted">ID: ${device.esp_id}</small>
+                                </div>
+                                <span class="badge ${bgClass} ms-2">${statusBadge}</span>
+                            </a>
+                        `;
+                        list.appendChild(item);
                     });
 
-                    const json = await res.json();
+                } catch (err) {
+                    console.error("Gagal load device:", err);
+                    document.getElementById('deviceList').innerHTML =
+                        '<li><a class="dropdown-item text-danger text-center" href="#">Error loading devices</a></li>';
+                }
+            }
 
-                    if (res.ok && json.success) {
-                        // Tampilkan alert sukses
-                        Swal.fire({
-                            title: 'Sukses!',
-                            text: json.message,
-                            icon: 'success',
-                            timer: 1200,
-                            showConfirmButton: false
+            function prepareSwitch(id, name, esp_id) {
+                if (id == currentDeviceId) {
+                    alert("Kamu sudah menggunakan device ini.");
+                    return;
+                }
+
+                document.getElementById('targetDeviceName').textContent = name || esp_id;
+                document.getElementById('targetDeviceId').textContent = esp_id;
+
+                const modal = new bootstrap.Modal(document.getElementById('confirmSwitchModal'));
+                modal.show();
+
+                document.getElementById('confirmSwitchBtn').onclick = () => switchDevice(id);
+            }
+
+            async function switchDevice(deviceId) {
+                try {
+                    const res = await fetch('/user/devices/switch', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            device_id: deviceId
+                        })
+                    });
+
+                    if (!res.ok) {
+                        const text = await res.text();
+                        console.error("Response:", text);
+                        throw new Error("Server error");
+                    }
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        Swal.fire('Sukses!', 'Berhasil pindah device!', 'success').then(() => {
+                            // Redirect sesuai tipe device
+                            const type = data.device_type;
+                            if (type === 'O') {
+                                window.location.href = '/user/ordersheet-view';
+                            } else if (type === 'P') {
+                                window.location.href = '/user/package-view';
+                            } else {
+                                location.reload();
+                            }
                         });
-
-                        // Refresh data riwayat di tabel
-                        await loadRiwayat();
-                        resetPreviewUI();
-
-                        // Tutup modal timbang
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('timbangModal'));
-                        modal.hide();
-
-                        // Tunggu sedikit agar modal tertutup dahulu, lalu refresh halaman
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
-
                     } else {
-                        Swal.fire('Gagal', json.message || 'Terjadi kesalahan', 'error');
+                        Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
                     }
                 } catch (err) {
-                    console.error('Fetch error:', err);
-                    Swal.fire('Error', 'Koneksi gagal. Periksa internet atau URL API.', 'error');
-                } finally {
-                    btnSimpan.disabled = false;
-                    btnSimpan.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan';
+                    console.error(err);
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
                 }
-            });
+            }
+
+            // Load saat halaman dibuka & refresh tiap 10 detik
+            loadAvailableDevices();
+            setInterval(loadAvailableDevices, 10000);
         </script>
     @endpush
 

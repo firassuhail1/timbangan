@@ -26,6 +26,8 @@ return new class extends Migration
 
             // Status yang jelas dan mudah dibaca
             $table->enum('status', ['offline', 'online', 'in_use'])->default('offline');
+            $table->string('api_key')->nullable()->unique(); // token unik untuk tiap ESP
+            $table->timestamp('api_key_generated_at')->nullable();
             
             // Waktu terakhir terlihat (heartbeat)
             $table->timestamp('last_seen_at')->nullable();

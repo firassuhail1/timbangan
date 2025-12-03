@@ -15,16 +15,19 @@ class PackageController extends Controller
 {
     public function index()
     {
+        $auth = Auth::user();
+
         // Ambil semua package beserta berat terakhir
         $packages = OrdersheetPackage::with(['weights' => function ($q) {
             $q->orderBy('waktu_timbang', 'desc')->limit(1); // Ambil berat terakhir
                 }])->orderBy('created_at', 'desc')
                 ->where('id_user', Auth::id())
                 ->paginate(10);
+        
+        // $device = Device::all(); 
+        // dd(vars: $device);
 
-        // dd(vars: $packages);
-
-        return view('package.view', compact('packages'));
+        return view('package.view', compact('packages', 'auth'));
     }
 
     public function apiSearch(Request $request)

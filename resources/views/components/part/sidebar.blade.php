@@ -83,21 +83,51 @@
                         </li>
 
                         <li class="sidebar-title">Main</li>
+                        @php
+                            $deviceType = null;
+
+                            if (Auth::check()) {
+                                // Ambil device aktif milik user login saat ini
+                                $device = \App\Models\Update\Device::where('user_id', Auth::id())
+                                    ->where('status', 'in_use')
+                                    ->first();
+
+                                if ($device) {
+                                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                                        $deviceType = $matches[1];
+                                    }
+                                }
+                            }
+                        @endphp
 
                         {{-- ORDERSHEET --}}
-                        <li class="sidebar-item {{ request()->is('user/ordersheet-view*') ? 'active' : '' }}">
-                            <a href="{{ route('order.view') }}" class="sidebar-link">
-                                <i class="bi bi-card-list"></i>
-                                <span>Data Ordersheet</span>
-                            </a>
-                        </li>
+                        @if ($deviceType === 'O')
+                            <li class="sidebar-item {{ request()->is('user/ordersheet-view*') ? 'active' : '' }}">
+                                <a href="{{ route('order.view') }}" class="sidebar-link">
+                                    <i class="bi bi-card-list"></i>
+                                    <span>Data Ordersheet</span>
+                                </a>
+                            </li>
 
-                        <li class="sidebar-item {{ request()->is('user/package-view*') ? 'active' : '' }}">
-                            <a href="{{ route('package.view') }}" class="sidebar-link">
-                                <i class="fa-solid fa-clipboard-list"></i>
-                                <span>Data Package</span>
-                            </a>
-                        </li>
+                            <li
+                                class="sidebar-item {{ request()->is('user/rekap/timbangan/besar*') ? 'active' : '' }}">
+                                <a href="{{ route('rekap.besar') }}" class="sidebar-link">
+                                    <i class="fa-solid fa-file-signature"></i>
+                                    <span>Rekap Data</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        {{-- PACKAGE --}}
+                        @if ($deviceType === 'P')
+                            <li class="sidebar-item {{ request()->is('user/package-view*') ? 'active' : '' }}">
+                                <a href="{{ route('package.view') }}" class="sidebar-link">
+                                    <i class="fa-solid fa-clipboard-list"></i>
+                                    <span>Data Package</span>
+                                </a>
+                            </li>
+                        @endif
+
                     @endif
                 @endif
 
