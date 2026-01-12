@@ -93,60 +93,11 @@ class PackageController extends Controller
         ]);
     }
 
-    // public function getData(Request $request)
-    // {
-    //     $search = $request->query('search');
-    //     $startDate = $request->query('start_date');
-    //     $endDate = $request->query('end_date');
-    //     $perPage = 10;
-
-    //     $query = OrdersheetPackage::query();
-
-    //     if ($search) {
-    //         $query->where(function ($q) use ($search) {
-    //             $q->where('name', 'LIKE', "%{$search}%")
-    //             ->orWhere('description', 'LIKE', "%{$search}%")
-    //             ->orWhere('leather_type', 'LIKE', "%{$search}%")
-    //             ->orWhere('color', 'LIKE', "%{$search}%")
-    //             ->orWhere('stitching_type', 'LIKE', "%{$search}%")
-    //             ->orWhere('lining_material', 'LIKE', "%{$search}%")
-    //             ->orWhere('size', 'LIKE', "%{$search}%")
-
-    //             // Perbaikan besar di sini
-    //             ->orWhereHas('weights', function ($w) use ($search) {
-    //                     $w->where('no_package', 'LIKE', "%{$search}%")
-    //                     ->orWhere('weight', 'LIKE', "%{$search}%");
-    //             });
-    //         });
-    //     }
-
-    //     if ($startDate && $endDate) {
-    //         $query->whereBetween('created_at', [
-    //             $startDate.' 00:00:00',
-    //             $endDate.' 23:59:59'
-    //         ]);
-    //     } elseif ($startDate) {
-    //         $query->where('created_at', '>=', $startDate.' 00:00:00');
-    //     } elseif ($endDate) {
-    //         $query->where('created_at', '<=', $endDate.' 23:59:59');
-    //     }
-
-    //     $data = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'total' => $data->total(),
-    //         'current_page' => $data->currentPage(),
-    //         'last_page' => $data->lastPage(),
-    //         'data' => $data->items(),
-    //     ]);
-    // }
-
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
-            'berat' => 'required|numeric|min:0',
+            'weight' => 'required|numeric|min:0',
             'no_package' => 'required|string',
             'rasio_batas_beban_min' => 'required|numeric',
             'rasio_batas_beban_max' => 'required|numeric'
@@ -177,7 +128,7 @@ class PackageController extends Controller
                 'id_user' => Auth::id(),
                 'id_device' => $device?->id,
                 'id_package' => $package->id,
-                'weight' => $request->berat,
+                'weight' => $request->weight,
                 'no_package' => $request->no_package,
                 'rasio_batas_beban_min' => $request->rasio_batas_beban_min,
                 'rasio_batas_beban_max' => $request->rasio_batas_beban_max,

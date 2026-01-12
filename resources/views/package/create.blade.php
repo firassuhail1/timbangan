@@ -75,9 +75,20 @@
                                     <div class="h-80 d-flex flex-column gap-3">
 
                                         <div>
-                                            <label class="form-label fw-semibold small text-muted">No. Package</label>
-                                            <input type="text" name="no_package" id="no_package" class="form-control"
-                                                required placeholder="PKG-001">
+                                            <label for="no_package" class="form-label fw-semibold small text-muted">
+                                                No. Package <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control form-control-sm"
+                                                    name="no_package" id="no_package" placeholder="PKG-001" required>
+                                                <button class="btn btn-outline-warning btn-sm" type="button"
+                                                    id="btnScanBarcode">
+                                                    <i class="fa-solid fa-barcode"></i>
+                                                    <span class="d-none d-sm-inline"> Scan</span>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Tekan tombol scan atau ketik
+                                                manual</small>
                                         </div>
 
                                         <div class="row g-3">
@@ -85,8 +96,8 @@
                                                 <label class="form-label fw-semibold small text-muted">Batas Min
                                                     (g)</label>
                                                 <input type="number" step="0.01" name="rasio_batas_beban_min"
-                                                    id="rasio_batas_beban_min" class="form-control text-center" required
-                                                    placeholder="100">
+                                                    id="rasio_batas_beban_min" class="form-control text-center"
+                                                    required placeholder="100">
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label fw-semibold small text-muted">Batas Max
@@ -147,7 +158,7 @@
                 <!-- AKHIR modal-body -->
 
                 <!-- FOOTER -->
-                <div class="modal-footer justify-content-center gap-3 border-top bg-light py-4">
+                <div class="modal-footer justify-content-center gap-3 border-top py-4">
                     <button type="submit" id="btnSimpanTimbang" class="btn btn-success btn-lg px-5 shadow" disabled>
                         <i class="fa-solid fa-floppy-disk"></i> Simpan
                     </button>
@@ -156,6 +167,41 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- Scan barcode --}}
+<div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-md-down modal-lg">
+        <div class="modal-content border-0 shadow-lg overflow-hidden">
+            <div class="modal-header text-dark bg-light">
+                <h6 class="modal-title fw-bold">
+                    <i class="fa-solid fa-camera me-2"></i> Scan Barcode Carton
+                </h6>
+                <button type="button" class="btn-close btn-close-dark" id="forceCloseBtn"></button>
+            </div>
+            <div class="modal-body text-center p-0 bg-dark position-relative">
+                <!-- Video akan mengisi full -->
+                <div id="reader" class="w-100" style="height: 70vh; max-height: 600px;"></div>
+
+                <div class="position-absolute bottom-0 start-0 end-0 p-3 bg-gradient"
+                    style="background: linear-gradient(transparent, #000000ee);">
+                    <p class="text-white mb-2 fw-semibold" id="scanStatus">Memuat kamera...</p>
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-warning btn-sm px-4 d-none" id="torchToggle">
+                            <i class="fa-solid fa-lightbulb me-1"></i> Nyalakan Lampu
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm px-4 d-none" id="switchCamera">
+                            <i class="fa-solid fa-camera-rotate me-1"></i> Ganti Kamera
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm px-4" id="batalScan">
+                            <i class="fa-solid fa-xmark me-1"></i> Batal
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -206,6 +252,7 @@
 @endpush
 
 @push('js')
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const display = document.getElementById("currentWeight");
@@ -219,9 +266,11 @@
             const lostWeightField = document.getElementById('lost_weight');
 
             let lastValidWeight = 0;
-            let lastWeight = null;
+            let lastWeight = null; // ← akan diisi saat polling pertama
             let stableTimer = null;
-            let isTareMode = false; // BARU: tanda bahwa tare baru saja dilakukan
+            let isTareMode = false;
+            let hasPlayedStableBeepForThisItem = false;
+            let isFirstLoad = true; // ← TAMBAHAN: deteksi load pertama
 
             function formatBerat(value) {
                 const num = parseFloat(value);
@@ -229,15 +278,42 @@
                 return Number.isInteger(num) ? num.toString() : num.toFixed(2);
             }
 
-            function setTimbanganKosong() {
-                lastValidWeight = 0;
-                isTareMode = false; // bukan karena tare, tapi benar-benar kosong
-                display.innerText = "0";
-                hiddenInput.value = "0";
-                statusText.innerText = "Timbangan Kosong";
-                statusText.className = "text-warning fw-bold";
-                btnSimpan.disabled = true;
-                hitungLossWeight(0);
+            function playStableBeep() {
+                const ctx = new(window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 800;
+                gain.gain.value = 0.3;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 1.2);
+            }
+
+            function playSuccessBeep() {
+                const ctx = new(window.AudioContext || window.webkitAudioContext)();
+
+                function beep(freq, duration, delay = 0) {
+                    setTimeout(() => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.value = 0.4;
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start();
+                        osc.stop(ctx.currentTime + duration);
+                    }, delay);
+                }
+                beep(523, 0.12, 0);
+                beep(659, 0.12, 120);
+                beep(784, 0.25, 240);
+            }
+
+            function resetStableBeepFlag() {
+                hasPlayedStableBeepForThisItem = false;
             }
 
             function hitungLossWeight(current) {
@@ -246,8 +322,6 @@
 
                 if (!min || !max || current <= 0) {
                     lostWeightField.value = '';
-
-                    // HANYA tampilkan "Timbangan Kosong" jika BUKAN karena tare
                     if (current <= 0 && !isTareMode) {
                         statusText.innerText = "Timbangan Kosong";
                         statusText.className = "text-warning fw-bold";
@@ -257,13 +331,13 @@
 
                 const loss = (max - current).toFixed(2);
                 const ratio = ((current - min) / (max - min) * 100).toFixed(1);
-                lostWeightField.value = `${loss} kg (${ratio}%)`;
+                lostWeightField.value = `${loss} g (${ratio}%)`;
 
                 if (current < min) {
-                    statusText.textContent = "Berat di bawah batas minimal!";
+                    statusText.textContent = "Berat di bawah batas!";
                     statusText.className = "text-danger fw-bold";
                 } else if (current > max) {
-                    statusText.textContent = "Berat melebihi batas maksimal!";
+                    statusText.textContent = "Berat melebihi batas!";
                     statusText.className = "text-danger fw-bold";
                 } else {
                     statusText.textContent = "Berat dalam batas normal";
@@ -271,7 +345,7 @@
                 }
             }
 
-            // POLLING BERAT REAL-TIME
+            // POLLING — DIPERBAIKI SUPAYA TIDAK BUNYI SAAT BUKA MODAL
             async function ambilBeratLiveLoop() {
                 try {
                     const res = await fetch('/api/package/timbangan/live', {
@@ -281,43 +355,60 @@
 
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await res.json();
-
-                    if (!data.success || data.berat === null || data.berat === undefined) {
-                        return;
-                    }
+                    if (!data.success || data.berat === null) return;
 
                     const berat = parseFloat(data.berat);
                     if (isNaN(berat)) return;
 
                     lastValidWeight = berat;
-
                     display.innerText = formatBerat(berat);
                     hiddenInput.value = berat;
                     hitungLossWeight(berat);
 
-                    // Jika berat kembali ke 0 dan BUKAN karena tare → baru tampilkan "Timbangan Kosong"
-                    if (berat === 0 && !isTareMode) {
+                    if (berat > 0) isTareMode = false;
+
+                    // === KOSONG → RESET & JANGAN BUNYI ===
+                    if (berat <= 0.5) {
                         statusText.innerText = "Timbangan Kosong";
                         statusText.className = "text-warning fw-bold";
+                        btnSimpan.disabled = true;
+                        resetStableBeepFlag();
+                        isFirstLoad = false; // sudah lewati fase inisialisasi
+                        lastWeight = berat; // penting: set agar tidak trigger perubahan
+                        return;
                     }
 
-                    // Reset tare mode jika ada barang lagi
-                    if (berat > 0) {
-                        isTareMode = false;
+                    // === PERTAMA KALI DAPAT BERAT NYATA (bukan 0) ===
+                    if (isFirstLoad) {
+                        lastWeight = berat; // anggap ini "normal", bukan "barang baru"
+                        isFirstLoad = false;
+                        btnSimpan.disabled = true;
+                        statusText.innerText = "Menunggu stabil...";
+                        statusText.className = "text-info fw-bold";
+                        return;
                     }
 
-                    // Stabil detection
-                    if (lastWeight !== berat) {
+                    // === ADA BARANG BARU? (dari kosong → ada beban) ===
+                    if (lastWeight <= 0.5 && berat > 0.5) {
+                        resetStableBeepFlag(); // ini barang baru → siap beep saat stabil
+                    }
+
+                    // === DETEKSI PERUBAHAN BERAT ===
+                    if (Math.abs(lastWeight - berat) > 0.01) { // toleransi kecil biar ga noise
                         lastWeight = berat;
                         btnSimpan.disabled = true;
+
                         if (stableTimer) clearTimeout(stableTimer);
 
                         stableTimer = setTimeout(() => {
                             btnSimpan.disabled = false;
-                            // Hanya tampilkan "Stabil" jika bukan tare mode
-                            if (!isTareMode || berat > 0) {
-                                statusText.innerText = "Stabil";
-                                statusText.className = "text-success fw-bold";
+                            statusText.innerText = "Stabil";
+                            statusText.className = "text-success fw-bold fs-3";
+
+                            // HANYA BUNYI JIKA BELUM PERNAH BUNYI UNTUK BARANG INI
+                            if (!hasPlayedStableBeepForThisItem) {
+                                playStableBeep();
+                                hasPlayedStableBeepForThisItem = true;
                             }
                         }, 800);
                     }
@@ -325,26 +416,26 @@
                 } catch (e) {
                     console.error("Polling error:", e);
                     statusText.innerText = "Koneksi bermasalah...";
-                    statusText.className = "text-warning fw-bold";
+                    statusText.className = "text-danger fw-bold";
                 } finally {
                     setTimeout(ambilBeratLiveLoop, 150);
                 }
             }
 
-            // TOMBOL TARE — DIPERBAIKI SESUAI PERMINTAANMU
+            // TOMBOL TARE
             const btnTare = document.getElementById("tare");
             if (btnTare) {
-                btnTare.addEventListener("click", async function() {
-                    statusText.innerText = "Mengirim perintah Tare...";
-                    statusText.className = "text-warning fw-bold";
-
+                btnTare.addEventListener("click", async () => {
+                    statusText.innerText = "Tare dikirim...";
+                    statusText.className = "text-info fw-bold";
                     display.innerText = "0";
                     hiddenInput.value = "0";
-                    lastValidWeight = 0;
-                    isTareMode = true; // TANDA: ini karena tare, bukan kosong beneran
+                    isTareMode = true;
+                    resetStableBeepFlag();
+                    lastWeight = 0;
 
                     try {
-                        const res = await fetch('/api/package/timbangan/tare', {
+                        await fetch('/api/package/timbangan/tare', {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -355,36 +446,184 @@
                                 tare: true
                             })
                         });
-
-                        if (res.ok) {
-                            statusText.innerText = "Tare berhasil!";
-                            statusText.className = "text-success fw-bold";
-                        } else {
-                            throw new Error();
-                        }
+                        statusText.innerText = "Tare berhasil!";
+                        statusText.className = "text-success fw-bold";
                     } catch (err) {
-                        statusText.innerText = "Gagal kirim ke ESP (tapi UI direset)";
+                        statusText.innerText = "Tare gagal (UI direset)";
                         statusText.className = "text-warning fw-bold";
                     }
                 });
             }
 
-            // Update loss saat min/max berubah
-            if (minInput) minInput.addEventListener("input", () => hitungLossWeight(parseFloat(hiddenInput.value) ||
-                0));
-            if (maxInput) maxInput.addEventListener("input", () => hitungLossWeight(parseFloat(hiddenInput.value) ||
-                0));
+            function initBarcodeScanner() {
+                const scanButton = document.getElementById('btnScanBarcode');
+                if (!scanButton) return;
 
-            // SUBMIT FORM (tetap sama)
+                scanButton.addEventListener('click', startScanner);
+
+                function startScanner() {
+                    const modalEl = document.getElementById('scannerModal');
+                    if (!modalEl) return alert('Modal scanner tidak ditemukan!');
+
+                    const modal = new bootstrap.Modal(modalEl, {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+
+                    const statusEl = document.getElementById('scanStatus');
+                    const torchBtn = document.getElementById('torchToggle');
+                    const switchBtn = document.getElementById('switchCamera');
+                    const forceCloseBtn = document.getElementById('forceCloseBtn');
+                    const batalBtn = document.getElementById('batalScan');
+
+                    let scannerInstance = null;
+                    let currentCamera = 'environment';
+                    let torchOn = false;
+
+                    // Fungsi untuk MATIKAN scanner & TUTUP modal dengan paksa
+                    const destroyAndClose = () => {
+                        if (scannerInstance) {
+                            scannerInstance.stop().catch(() => {});
+                            scannerInstance.clear().catch(() => {});
+                            scannerInstance = null;
+                        }
+                        modal.hide();
+                    };
+
+                    // Event ketika modal benar-benar tertutup → bersihkan
+                    modalEl.addEventListener('hidden.bs.modal', () => {
+                        destroyAndClose();
+                    }, {
+                        once: true
+                    });
+
+                    // Tombol X dan Batal → paksa tutup
+                    forceCloseBtn.onclick = destroyAndClose;
+                    batalBtn.onclick = destroyAndClose;
+
+                    modal.show();
+
+                    modalEl.addEventListener('shown.bs.modal', () => {
+                        statusEl.textContent = 'Memuat kamera...';
+
+                        const html5QrCode = new Html5Qrcode("reader");
+                        const config = {
+                            fps: 15,
+                            qrbox: {
+                                width: 280,
+                                height: 280
+                            },
+                            aspectRatio: 1,
+                            disableFlip: false,
+                            formatsToSupport: [
+                                Html5QrcodeSupportedFormats.CODE_128,
+                                Html5QrcodeSupportedFormats.CODE_39,
+                                Html5QrcodeSupportedFormats.EAN_13,
+                                Html5QrcodeSupportedFormats.EAN_8,
+                                Html5QrcodeSupportedFormats.UPC_A,
+                                Html5QrcodeSupportedFormats.UPC_E
+                            ]
+                        };
+
+                        const onSuccess = (decodedText) => {
+                            const text = decodedText.trim();
+                            if (!text) return;
+
+                            const noBoxInput = document.getElementById('no_package');
+                            if (noBoxInput) {
+                                noBoxInput.value = text;
+                                noBoxInput.dispatchEvent(new Event('input', {
+                                    bubbles: true
+                                }));
+                            }
+
+                            statusEl.innerHTML =
+                                `<span class="text-success fw-bold">Berhasil!</span><br><small>${text}</small>`;
+
+                            setTimeout(() => {
+                                destroyAndClose();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Scan Berhasil!',
+                                    text: text,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            }, 800);
+                        };
+
+                        html5QrCode.start({
+                                facingMode: currentCamera
+                            },
+                            config,
+                            onSuccess,
+                            () => {} // error callback (noise)
+                        ).then(() => {
+                            scannerInstance = html5QrCode;
+                            statusEl.innerHTML =
+                                '<span class="text-info">Arahkan ke barcode...</span>';
+
+                            // Torch
+                            if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) {
+                                torchBtn.classList.remove('d-none');
+                                torchBtn.onclick = () => {
+                                    if (!scannerInstance) return;
+                                    torchOn = !torchOn;
+                                    scannerInstance.applyVideoConstraints({
+                                        advanced: [{
+                                            torch: torchOn
+                                        }]
+                                    }).then(() => {
+                                        torchBtn.innerHTML = torchOn ?
+                                            '<i class="fa-solid fa-lightbulb-on me-1"></i> Matikan Lampu' :
+                                            '<i class="fa-solid fa-lightbulb me-1"></i> Nyalakan Lampu';
+                                        torchBtn.classList.toggle('btn-danger',
+                                            torchOn);
+                                        torchBtn.classList.toggle('btn-warning', !
+                                            torchOn);
+                                    }).catch(() => {
+                                        torchBtn.innerHTML = 'Lampu tidak didukung';
+                                        torchBtn.disabled = true;
+                                    });
+                                };
+                            }
+
+                            // Ganti kamera
+                            Html5Qrcode.getCameras().then(cameras => {
+                                if (cameras && cameras.length > 1) {
+                                    switchBtn.classList.remove('d-none');
+                                    switchBtn.onclick = () => {
+                                        currentCamera = currentCamera ===
+                                            'environment' ? 'user' : 'environment';
+                                        scannerInstance.stop().then(() => {
+                                            html5QrCode.start({
+                                                        facingMode: currentCamera
+                                                    }, config, onSuccess,
+                                                    () => {})
+                                                .then(() => scannerInstance =
+                                                    html5QrCode);
+                                        });
+                                    };
+                                }
+                            }).catch(() => {});
+
+                        }).catch(err => {
+                            statusEl.innerHTML =
+                                `<span class="text-danger">Gagal akses kamera:<br><small>${err.message || err}</small></span>`;
+                            forceCloseBtn.disabled = false;
+                            batalBtn.disabled = false;
+                        });
+                    });
+                }
+            }
+
+            // SUBMIT — reset beep untuk barang berikutnya
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 if (btnSimpan.disabled) {
-                    Swal.fire('Belum Stabil', 'Tunggu timbangan stabil terlebih dahulu!', 'warning');
+                    Swal.fire('Belum Stabil', 'Tunggu timbangan stabil!', 'warning');
                     return;
                 }
-
-                const formData = new FormData(form);
-                formData.set('berat', hiddenInput.value);
 
                 btnSimpan.disabled = true;
                 btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Menyimpan...';
@@ -397,20 +636,30 @@
                                 .content,
                             'Accept': 'application/json'
                         },
-                        body: formData
+                        body: new FormData(form)
                     });
 
                     const data = await res.json();
+
                     if (data.success) {
-                        Swal.fire('Sukses!', data.message, 'success').then(() => {
+                        playSuccessBeep();
+                        if (navigator.vibrate) navigator.vibrate([100, 80, 100]);
+                        resetStableBeepFlag();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sukses!',
+                            text: data.message,
+                            timer: 1800,
+                            showConfirmButton: false
+                        }).then(() => {
                             window.location.href = '/user/package-view';
                         });
                     } else {
-                        Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
+                        throw new Error(data.message || 'Gagal');
                     }
                 } catch (err) {
-                    console.error(err);
-                    Swal.fire('Error', 'Tidak dapat menyimpan data!', 'error');
+                    Swal.fire('Error', err.message || 'Gagal menyimpan!', 'error');
                 } finally {
                     btnSimpan.disabled = false;
                     btnSimpan.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Simpan';
@@ -418,7 +667,11 @@
             });
 
             // MULAI
-            setTimbanganKosong();
+            display.innerText = "0";
+            statusText.innerText = "Menunggu data...";
+            statusText.className = "text-muted";
+
+            initBarcodeScanner();
             ambilBeratLiveLoop();
         });
     </script>

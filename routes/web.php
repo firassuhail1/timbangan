@@ -62,6 +62,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     // tambah data ordersheet
     Route::get('/ordersheet-view/create', [OrderSheetController::class, 'create'])->name('ordersheet.create');
     Route::post('/ordersheet/store', [OrderSheetController::class, 'store'])->name('ordersheet.store');
+    Route::get('/order/report-data', [OrderSheetController::class, 'reportData']);
 
     // cetak timbangan
     Route::get('/order/print', [OrderSheetController::class, 'print'])->name('order.print');
@@ -84,6 +85,13 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     // WIFI
     Route::get('/wifi/config', [WifiController::class, 'getWifiConfig']);
     Route::post('/wifi/update', [WifiController::class, 'updateWifi']);
-    Route::get('/wifi/check-latest', [WifiController::class, 'checkLatest']); // untuk frontend
+    Route::get('/wifi/check-latest', [WifiController::class, 'checkLatest']);
+
+    Route::prefix('/order')->group(function () {
+        Route::post('/set-id', [WeightController::class, 'setCurrentId']);
+        Route::get('/preview/{id}', [WeightController::class, 'getPreview']);
+        Route::post('/tare', [WeightController::class, 'tare']);
+        Route::post('/simpan', [WeightController::class, 'simpan']);
+    });
 });
 

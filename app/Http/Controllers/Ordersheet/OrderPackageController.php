@@ -50,9 +50,13 @@ class OrderPackageController extends Controller
             return response()->json(['success' => false, 'message' => 'ESP tidak ditemukan'], 400);
         }
 
-        // Isi perintah
-        Cache::put("timbangan_command_tare_{$esp_id}", true, now()->addSeconds(15)); // naikkan jadi 30 detik
-        Cache::put("timbangan_live_{$esp_id}", 0, now()->addSeconds(10));
+        $key = "timbangan_command_tare_{$esp_id}";
+
+        // Buat perintah tare, berlaku 10 detik
+        Cache::put($key, true, now()->addSeconds(10));
+
+        // Opsional: set nilai beban ke UI jadi 0 biar kelihatan instan
+        Cache::put("timbangan_live_{$esp_id}", 0, now()->addSeconds(5));
 
         return response()->json([
             'success' => true,

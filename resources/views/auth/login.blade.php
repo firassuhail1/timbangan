@@ -544,15 +544,20 @@
                     <div class="form-group">
                         <label for="esp_id">Pilih Timbangan (ESP)</label>
                         <div class="input-with-icon">
-                            <select name="esp_id" id="esp_id" class="input-field" required>
+                            <select name="esp_id" id="esp_id" class="input-field">
                                 <option value="">Pilih timbangan...</option>
+                                @php
+                                    $selectedEsp = $autoSelectedEspId ?? null;
+                                @endphp
+
                                 @foreach ($availableDevices as $device)
                                     <option value="{{ $device->esp_id }}"
-                                        {{ ($lastUsedEspId ?? old('esp_id')) == $device->esp_id ? 'selected' : '' }}>
+                                        {{ $selectedEsp === $device->esp_id ? 'selected' : '' }}>
                                         {{ $device->name ?? $device->esp_id }}
                                     </option>
                                 @endforeach
                             </select>
+
                             <i class="fa-solid fa-scale-balanced form-icon"></i>
                             <!-- Panah dropdown custom -->
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -561,6 +566,7 @@
                             <small class="text-danger">{{ $message }}</small>
                         @enderror
                     </div>
+                    <input type="hidden" name="esp_id_final" id="esp_id_final">
 
                     <div class="form-extras">
                         <div class="remember-me">
@@ -624,46 +630,42 @@
             }
         }
 
-        // Device List
-        const selectEl = document.getElementById("esp_id");
-        let lastData = [];
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectEl = document.getElementById('esp_id');
+            const formEl = selectEl.closest('form');
+            const usernameInput = document.getElementById('username')
 
-        async function fetchDevices() {
-            try {
-                const res = await fetch("{{ route('devices.list') }}");
+            let isSubmitting = false;
+            let lastDataHash = null;
+
+            formEl.addEventListener('submit', () => {
+                isSubmitting = true;
+            });
+
+
+            async function fetchDevices() {
+                const username = usernameInput.value.trim();
+                if (!username) return;
+
+                const res = await fetch(`/devices/list?username=${encodeURIComponent(username)}`);
+                if (!res.ok) return;
+
                 const devices = await res.json();
 
-                if (JSON.stringify(devices) === JSON.stringify(lastData)) {
-                    return;
-                }
-
-                lastData = devices;
-
-                const prevSelected = selectEl.value;
-
                 selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
-
                 devices.forEach(d => {
-                    const option = document.createElement("option");
-                    option.value = d.esp_id;
-                    option.textContent = d.name ?? d.esp_id;
-
-                    if (prevSelected === d.esp_id) {
-                        option.selected = true;
-                    }
-
-                    selectEl.appendChild(option);
+                    const opt = document.createElement('option');
+                    opt.value = d.esp_id;
+                    opt.textContent = d.name ?? d.esp_id;
+                    selectEl.appendChild(opt);
                 });
-
-                selectEl.dispatchEvent(new Event("change"));
-
-            } catch (error) {
-                console.warn("Gagal memuat device ESP:", error);
             }
-        }
 
-        fetchDevices();
-        setInterval(fetchDevices, 5000);
+            usernameInput.addEventListener('blur', fetchDevices);
+
+            fetchDevices();
+            setInterval(fetchDevices, 5000);
+        });
     </script>
 </body>
 

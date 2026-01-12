@@ -19,6 +19,6 @@ class OrdersheetPackage extends Model
 
     public function weights()
     {
-        return $this->hasMany(OrdersheetPackageWeight::class, 'id_package');
+        return $this->hasMany(OrdersheetPackageweight::class, 'id_package');
     }
 }

@@ -39,6 +39,21 @@ class WifiController extends Controller
         ]);
     }
 
+    public function checkNewWifi(Request $request)
+    {
+        // $request->esp_id dan $request->api_key sudah divalidasi oleh middleware
+
+        $device = Device::where('esp_id', $request->esp_id)
+                        ->where('api_key', $request->api_key)
+                        ->firstOrFail();
+
+        return response()->json([
+            'ssid'          => $device->wifi_ssid ?? '',
+            'password'      => $device->wifi_password ?? '',
+            'updated_at'    => $device->wifi_updated_at?->toIso8601String(), // optional, untuk debug
+        ]);
+    }
+
     // POST: Update WiFi → hanya device in_use
     public function updateWifi(Request $request)
     {

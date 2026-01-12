@@ -48,17 +48,29 @@ class DeviceLoginController extends Controller
         ]);
     }
 
-    public function listDevices()
+    public function listDevices(Request $request)
     {
-        $devices = Device::where(function ($query) {
-                $query->where('status', 'online')
-                    ->orWhere(function ($q) {
-                        $q->where('status', 'in_use')
-                            ->where('user_id', Auth::id() ?? 0);
-                    });
+        $username = $request->query('username');
+
+        if (!$username) {
+            return response()->json([]);
+        }
+
+        $user = User::where('username', $username)->first();
+        if (!$user) {
+            return response()->json([]);
+        }
+
+        $devices = Device::where(function ($q) use ($user) {
+                $q->whereNull('user_id')
+                ->where('status', 'online');
+            })
+            ->orWhere(function ($q) use ($user) {
+                $q->where('status', 'in_use')
+                ->where('user_id', $user->id);
             })
             ->orderBy('name')
-            ->get(['esp_id', 'name']); // ambil field yang penting aja, security reason
+            ->get(['esp_id', 'name']);
 
         return response()->json($devices);
     }

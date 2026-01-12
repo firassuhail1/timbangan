@@ -46,12 +46,6 @@
                             Tambah Data
                         </button>
 
-                        <!-- WIFI Setting -->
-                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#wifi">
-                            <i class="fa-solid fa-wifi me-1"></i>
-                            Wifi
-                        </button>
-
                         <!-- Device Selector -->
                         <div class="dropdown">
                             <button class="btn btn-info dropdown-toggle device-btn" type="button"
@@ -709,17 +703,17 @@
 
                         const item = document.createElement('li');
                         item.innerHTML = `
-                <a class="dropdown-item d-flex justify-content-between align-items-center ${isCurrent ? 'active' : ''}" 
-                   href="javascript:void(0)" 
-                   onclick="prepareSwitch(${device.id}, '${(device.name || device.esp_id).replace(/'/g, "\\'")}', '${device.esp_id}')"
-                   style="background-color: ${bgClass.includes('bg-light') ? '#f8f9fa' : ''}; color: ${bgClass.includes('text-white') ? '#fff' : '#000'};">
-                    <div>
-                        <div><strong>${device.name || device.esp_id}</strong></div>
-                        <small class="text-muted">ID: ${device.esp_id}</small>
-                    </div>
-                    <span class="badge ${bgClass} ms-2">${statusBadge}</span>
-                </a>
-            `;
+                            <a class="dropdown-item d-flex justify-content-between align-items-center ${isCurrent ? 'active' : ''}" 
+                            href="javascript:void(0)" 
+                            onclick="prepareSwitch(${device.id}, '${(device.name || device.esp_id).replace(/'/g, "\\'")}', '${device.esp_id}')"
+                            style="background-color: ${bgClass.includes('bg-light') ? '#f8f9fa' : ''}; color: ${bgClass.includes('text-white') ? '#fff' : '#000'};">
+                                <div>
+                                    <div><strong>${device.name || device.esp_id}</strong></div>
+                                    <small class="text-muted">ID: ${device.esp_id}</small>
+                                </div>
+                                <span class="badge ${bgClass} ms-2">${statusBadge}</span>
+                            </a>
+                        `;
                         list.appendChild(item);
                     });
 

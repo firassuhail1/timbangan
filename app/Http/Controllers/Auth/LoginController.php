@@ -20,191 +20,162 @@ class LoginController extends Controller
    
     public function index()
     {
-        $availableDevices = Device::where(function ($query) {
-                $query->where('status', 'online')
-                    ->orWhere(function ($q) {
-                        $q->where('status', 'in_use')
-                            ->where('user_id', Auth::id() ?? 0); // device milik user tetap muncul
-                    });
+        $autoSelectedEspId = null;
+        $lastUsername = Cookie::get('username');
+
+        if ($lastUsername) {
+            $user = User::where('username', $lastUsername)->first();
+
+            if ($user) {
+                $device = Device::where('user_id', $user->id)
+                    ->where('status', 'in_use')
+                    ->first();
+
+                if ($device) {
+                    $autoSelectedEspId = $device->esp_id;
+                }
+            }
+        }
+
+        $availableDevices = Device::where(function ($q) use ($autoSelectedEspId) {
+                $q->whereNull('user_id')
+                ->where('status', 'online');
+            })
+            ->orWhere(function ($q) use ($autoSelectedEspId) {
+                if ($autoSelectedEspId) {
+                    $q->where('esp_id', $autoSelectedEspId)
+                    ->where('status', 'in_use');
+                }
             })
             ->orderBy('name')
             ->get();
 
-        // Ambil cookie yang benar
-        $lastUsedEspId = Cookie::get('last_esp_id');
-
-        // $token = PersonalAccessToken::all();
-
-        // dd($token);
-
-        return view('auth.login', compact('availableDevices', 'lastUsedEspId'));
+        return view('auth.login', compact(
+            'availableDevices',
+            'autoSelectedEspId'
+        ));
     }
 
     public function store(Request $request)
     {
+        // =========================
+        // 1. VALIDASI
+        // =========================
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
-            'esp_id'   => 'required|string|exists:devices,esp_id',
+            'esp_id'   => 'nullable|string|exists:devices,esp_id',
         ]);
 
-        // Auth check
-        if (!Auth::attempt($request->only('username', 'password'), $request->has('remember'))) {
-            return back()->withErrors(['password' => 'Username atau password salah!'])->withInput();
+        // =========================
+        // 2. AUTH USER
+        // =========================
+        if (!Auth::attempt(
+            $request->only('username', 'password'),
+            $request->boolean('remember')
+        )) {
+            return back()->withErrors([
+                'password' => 'Username atau password salah!'
+            ])->withInput();
         }
 
-        // Ambil device ESP yang dipilih, pastikan tidak sedang dipakai
-        $device = Device::where('esp_id', $request->esp_id)
-                        ->where('status', '!=', 'in_use')
-                        ->first();
+        $user = Auth::user();
+
+        // =========================
+        // 3. AMBIL DEVICE
+        // PRIORITAS:
+        // - device milik user
+        // - device dari dropdown (jika bebas)
+        // =========================
+        $device = Device::where('user_id', $user->id)
+            ->where('status', 'in_use')
+            ->first();
+
+        if (!$device && $request->filled('esp_id')) {
+            $device = Device::where('esp_id', $request->esp_id)
+                ->where(function ($q) use ($user) {
+                    $q->whereNull('user_id')
+                    ->orWhere('user_id', $user->id);
+                })
+                ->first();
+        }
 
         if (!$device) {
             Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return back()->withErrors(['esp_id' => 'Device sedang digunakan atau tidak tersedia.'])->withInput();
+            return back()->withErrors([
+                'esp_id' => 'Silakan pilih timbangan.'
+            ])->withInput();
         }
 
-        // Lock device untuk user login
+        // =========================
+        // 4. TIMEOUT RESET
+        // =========================
+        if (
+            $device->status === 'in_use' &&
+            $device->last_seen_at &&
+            $device->last_seen_at->lt(now()->subMinutes(5))
+        ) {
+            $device->update([
+                'user_id' => null,
+                'status'  => 'online',
+            ]);
+        }
+
+        // =========================
+        // 5. VALIDASI KEPEMILIKAN
+        // =========================
+        if (
+            $device->status === 'in_use' &&
+            $device->user_id !== null &&
+            $device->user_id !== $user->id
+        ) {
+            Auth::logout();
+            return back()->withErrors([
+                'esp_id' => 'Timbangan ini sedang digunakan user lain.'
+            ]);
+        }
+
+        // =========================
+        // 6. KUNCI DEVICE
+        // =========================
         $device->update([
-            'user_id'        => Auth::id(),
+            'user_id'        => $user->id,
             'status'         => 'in_use',
             'last_online_at' => now(),
+            'last_seen_at'   => now(),
         ]);
 
-        // Token per device
-        $tokenName = "device_token_{$device->esp_id}";
-        $token = $request->user()->tokens()->where('name', $tokenName)->first();
-        if (!$token) {
-            $token = $request->user()->createToken($tokenName, ['device:use']);
-        }
-
-        // Generate API key jika belum ada
-        if (!$device->api_key) {
-            $device->api_key = bin2hex(random_bytes(32));
-            $device->api_key_generated_at = now();
-            $device->save();
-        }
-
-        // Simpan session minimal untuk UI, tapi bukan untuk logika menu
+        // =========================
+        // 7. SESSION
+        // =========================
         session([
             'selected_device' => $device->id,
             'selected_esp_id' => $device->esp_id,
             'device_api_key'  => $device->api_key,
         ]);
 
-        // Remember cookie
-        if ($request->has('remember')) {
-            Cookie::queue('username', $request->username, 60 * 24 * 30);
-            Cookie::queue('last_esp_id', $device->esp_id, 60 * 24 * 30);
-        } else {
-            Cookie::queue(Cookie::forget('username'));
-            Cookie::queue(Cookie::forget('last_esp_id'));
-        }
-
         $request->session()->regenerate();
 
-        // Ambil tipe ESP dari esp_id untuk redirect
-        $deviceType = null;
-        if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
-            $deviceType = $matches[1];
-        }
-
-        // Redirect berdasarkan role dan tipe ESP
-        if (Auth::user()->role === 'admin') {
+        // =========================
+        // 8. REDIRECT
+        // =========================
+        if ($user->role === 'admin') {
             return redirect()->route('admin.view');
         }
 
-        if (Auth::user()->role === 'user') {
-            if ($deviceType === 'O') {
-                return redirect()->route('order.view');
-            } elseif ($deviceType === 'P') {
-                return redirect()->route('package.view');
+        if ($user->role === 'user') {
+            if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $m)) {
+                return $m[1] === 'O'
+                    ? redirect()->route('order.view')
+                    : redirect()->route('package.view');
             }
         }
 
-        return redirect()->route('login')->with('error', 'Role atau ESP tidak dikenali');
+        Auth::logout();
+        return redirect()->route('login')
+            ->with('error', 'Role atau device tidak dikenali.');
     }
-
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'username' => 'required|string',
-    //         'password' => 'required|string',
-    //         'esp_id'   => 'required|string|exists:devices,esp_id',
-    //     ]);
-
-    //     // Langsung gunakan Auth::attempt (ini yang benar)
-    //     if (!Auth::attempt($request->only('username', 'password'), $request->has('remember'))) {
-    //         return back()->withErrors(['password' => 'Username atau password salah!'])->withInput();
-    //     }
-
-    //     // Setelah berhasil login, baru cek device
-    //     $device = Device::where('esp_id', $request->esp_id)
-    //                     ->where('status', '!=', 'in_use')
-    //                     ->first();
-
-    //     if (!$device) {
-    //         Auth::logout();
-    //         $request->session()->invalidate();
-    //         $request->session()->regenerateToken();
-    //         return back()->withErrors(['esp_id' => 'Device sedang digunakan atau tidak tersedia.'])->withInput();
-    //     }
-
-    //     // Lock device dengan user yang sudah login
-    //     $device->update([
-    //         'user_id'        => Auth::id(),
-    //         'status'         => 'in_use',
-    //         'last_online_at' => now(),
-    //     ]);
-
-    //     // Token per device
-    //     $tokenName = "device_token_{$device->esp_id}";
-    //     $token = $request->user()->tokens()->where('name', $tokenName)->first();
-    //     if (!$token) {
-    //         $token = $request->user()->createToken($tokenName, ['device:use']);
-    //     }
-
-    //     // Generate API key jika belum ada
-    //     if (!$device->api_key) {
-    //         $device->api_key = bin2hex(random_bytes(32));
-    //         $device->api_key_generated_at = now();
-    //         $device->save();
-    //     }
-
-    //     // Setelah generate api_key
-    //     session()->put('device_api_key', $device->api_key);   // INI YANG PENTING!
-    //     session()->put('current_esp_id', $device->esp_id);
-
-    //     // Simpan ke session
-    //     session([
-    //         'device_token'     => $token->plainTextToken,
-    //         'selected_device'  => $device->id,
-    //         'selected_esp_id'  => $device->esp_id,
-    //         'device_api_key'   => $device->api_key,   // WAJIB ADA
-    //         'current_esp_id'   => $device->esp_id,
-    //     ]);
-
-    //     // Remember cookie
-    //     if ($request->has('remember')) {
-    //         Cookie::queue('username', $request->username, 60 * 24 * 30);
-    //         Cookie::queue('last_esp_id', $device->esp_id, 60 * 24 * 30);
-    //     } else {
-    //         Cookie::queue(Cookie::forget('username'));
-    //         Cookie::queue(Cookie::forget('last_esp_id'));
-    //     }
-
-    //     $request->session()->regenerate();
-
-    //     // Sekarang Auth::user() pasti ada dan benar
-    //     return match (Auth::user()->role) {
-    //         'admin' => redirect()->route('admin.view'),
-    //         'user'  => redirect()->route('order.view'),
-    //         default => redirect()->route('login')->with('error', 'Role tidak dikenali'),
-    //     };
-    // }
-
-    
+   
     public function logout(Request $request)
     {
         // Lepaskan device jika ada
@@ -231,5 +202,4 @@ class LoginController extends Controller
 
         return redirect()->route('login');
     }
-
 }
