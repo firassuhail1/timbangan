@@ -666,6 +666,30 @@
             fetchDevices();
             setInterval(fetchDevices, 5000);
         });
+
+        // function renderTable(data, currentPage) {
+        //     let rows = '';
+        //     data.forEach((item, i) => {
+        //         const no = (i + 1) + (currentPage - 1) * 10;
+        //         rows += `
+    //                 <tr>
+    //                     <td>${no}</td>
+    //                     <td>${item.Buyer || '-'}</td>
+    //                     <td>${item.PurchaseOrderNumber || '-'}</td>
+    //                     <td>${item.ProductName || '-'}</td>
+    //                     <td>${item.Qty || 0}</td>
+    //                     <td>${item.ActualFOB || '-'}</td>
+    //                     <td>${item.DocumentDate || '-'}</td>
+    //                     <td>
+    //                         <button class="btn btn-sm btn-outline-primary btn-timbang" 
+    //                                 data-item="${encodeURIComponent(JSON.stringify(item))}">
+    //                             <i class="fa-solid fa-weight-scale"></i> Timbang
+    //                         </button>
+    //                     </td>
+    //                 </tr>`;
+        //     });
+        //     tableBody.innerHTML = rows;
+        // }
     </script>
 </body>
 

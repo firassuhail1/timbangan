@@ -65,7 +65,8 @@
 
                     <!-- Tabel Hasil -->
                     <div class="table-responsive">
-                        <table class="table table-striped table-bordered align-middle text-center" id="resultTable"s>
+                        <table class="table table-striped table-bordered align-middle text-center" id="resultTable"
+                            style="white-space: nowrap">
                             <thead class="table-secondary">
                                 <tr>
                                     <th>No</th>
@@ -96,7 +97,7 @@
                                                 {{ $t->no_box }}<br>
                                             @endforeach
                                         </td>
-                                        <td>
+                                        <td class="text-primary fw-bold">
                                             @foreach ($item->timbangans as $t)
                                                 {{ $t->berat }} kg<br>
                                             @endforeach
@@ -125,10 +126,10 @@
                             </tbody>
                         </table>
 
-                        {{-- Pagination --}}
-                        <div class="mt-3">
-                            {{ $rekapbesar->links() }}
-                        </div>
+                    </div>
+                    {{-- Pagination --}}
+                    <div class="mt-3">
+                        {{ $rekapbesar->links('pagination::bootstrap-5') }}
                     </div>
 
                     <nav id="pagination" class="d-flex justify-content-center mt-3"></nav>

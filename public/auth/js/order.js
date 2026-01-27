@@ -34,9 +34,8 @@ function initDateTime() {
             second: '2-digit'
         })
 
-        document.getElementById(
-            'current-day'
-        ).textContent = `${dayName}, ${date}`
+        document.getElementById('current-day').textContent =
+            `${dayName}, ${date}`
         document.getElementById('current-time').textContent = time
     }
 
@@ -44,11 +43,29 @@ function initDateTime() {
     setInterval(updateDateTime, 1000) // update tiap detik
 }
 
-let lastSearchParams = {
-    search: '',
-    start_date: '',
-    end_date: '',
-    page: 1
+const SEARCH_STATE_KEY = 'ordersheet_search_state'
+const WEIGHED_IDS_KEY = 'ordersheet_weighed_ids'
+const PAGE_SIZE = 10
+let allFilteredData = []
+
+function saveSearchState(state) {
+    sessionStorage.setItem(SEARCH_STATE_KEY, JSON.stringify(state))
+}
+
+function getSearchState() {
+    return JSON.parse(sessionStorage.getItem(SEARCH_STATE_KEY) || 'null')
+}
+
+function addWeighedId(id) {
+    const ids = JSON.parse(sessionStorage.getItem(WEIGHED_IDS_KEY) || '[]')
+    if (!ids.includes(id)) {
+        ids.push(id)
+        sessionStorage.setItem(WEIGHED_IDS_KEY, JSON.stringify(ids))
+    }
+}
+
+function getWeighedIds() {
+    return JSON.parse(sessionStorage.getItem(WEIGHED_IDS_KEY) || '[]')
 }
 
 function initSearch() {
@@ -56,6 +73,7 @@ function initSearch() {
     const spinner = document.getElementById('loadingSpinner')
     const tableBody = document.querySelector('#resultTable tbody')
     const pagination = document.getElementById('pagination')
+    const resetBtn = document.getElementById('resetSearchBtn')
 
     searchBtn.addEventListener('click', () => fetchData(1))
 
@@ -64,56 +82,62 @@ function initSearch() {
         const start = document.getElementById('start_date')?.value || ''
         const end = document.getElementById('end_date')?.value || ''
 
-        lastSearchParams = {
-            search,
-            start_date: start,
-            end_date: end,
-            page
-        }
-
-        // if (!search && !start && !end) {
-        //     Swal.fire('Peringatan', 'Isi setidaknya satu kolom!', 'warning');
-        //     return;
-        // }
+        saveSearchState({ search, start, end, page })
 
         spinner.style.display = 'inline-block'
         tableBody.innerHTML = `<tr><td colspan="9" class="text-center">Memuat...</td></tr>`
-        pagination.innerHTML = ''
 
         try {
-            const params = new URLSearchParams({
-                page
-            })
-            if (search) params.append('search', search)
-            if (start) params.append('start_date', start)
-            if (end) params.append('end_date', end)
+            let pageNum = 1
+            let lastPage = 1
+            const weighedIds = getWeighedIds()
+            const result = []
 
-            const res = await fetch(`/api/ordersheet?${params}`)
-            const json = await res.json()
+            do {
+                const params = new URLSearchParams({ page: pageNum })
+                if (search) params.append('search', search)
+                if (start) params.append('start_date', start)
+                if (end) params.append('end_date', end)
 
+                const res = await fetch(`/api/ordersheet?${params}`)
+                const json = await res.json()
+
+                if (!json.success) break
+
+                lastPage = json.last_page
+                result.push(
+                    ...json.data.filter((item) => !weighedIds.includes(item.id))
+                )
+
+                pageNum++
+            } while (pageNum <= lastPage)
+
+            allFilteredData = result
             spinner.style.display = 'none'
 
-            if (json.success && json.data.length > 0) {
-                renderTable(json.data, json.current_page)
-                renderPagination(json.current_page, json.last_page)
-            } else {
-                tableBody.innerHTML = `<tr><td colspan="9" class="text-warning text-center">Tidak ditemukan</td></tr>`
-            }
+            renderPage(page)
         } catch (err) {
             spinner.style.display = 'none'
-            tableBody.innerHTML = `<tr><td colspan="9" class="text-danger text-center">Terjadi kesalahan</td></tr>`
             console.error(err)
         }
     }
-}
 
-function renderTable(data, currentPage) {
-    const tableBody = document.querySelector('#resultTable tbody')
-    let rows = ''
+    function renderTable(data, currentPage) {
+        const weighedIds = getWeighedIds()
 
-    data.forEach((item, i) => {
-        const no = i + 1 + (currentPage - 1) * 10
-        rows += `
+        const filtered = data.filter((item) => !weighedIds.includes(item.id))
+
+        if (filtered.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="9" class="text-success text-center">
+                Semua data pada hasil ini sudah ditimbang ✔
+             </td></tr>`
+            return
+        }
+
+        let rows = ''
+        filtered.forEach((item, i) => {
+            const no = i + 1 + (currentPage - 1) * 10
+            rows += `
             <tr>
                 <td>${no}</td>
                 <td>${item.Buyer || '-'}</td>
@@ -129,49 +153,163 @@ function renderTable(data, currentPage) {
                     </button>
                 </td>
             </tr>`
-    })
+        })
 
-    tableBody.innerHTML = rows
+        tableBody.innerHTML = rows
+    }
+
+    function renderPagination(currentPage, lastPage) {
+        if (lastPage <= 1) {
+            pagination.innerHTML = ''
+            return
+        }
+
+        let html = `<ul class="pagination">`
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${
+                            currentPage - 1
+                        }">Previous</a>
+                     </li>`
+
+        for (let i = 1; i <= lastPage; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                         </li>`
+        }
+
+        html += `<li class="page-item ${
+            currentPage === lastPage ? 'disabled' : ''
+        }">
+                        <a class="page-link" href="#" data-page="${
+                            currentPage + 1
+                        }">Next</a>
+                     </li></ul>`
+
+        pagination.innerHTML = html
+
+        pagination.querySelectorAll('a[data-page]').forEach((link) => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault()
+                const page = parseInt(link.dataset.page)
+                if (page > 0 && page <= lastPage) {
+                    const state = getSearchState()
+                    saveSearchState({ ...state, page })
+                    renderPage(page)
+                }
+            })
+        })
+    }
+
+    const lastState = getSearchState()
+    if (lastState) {
+        document.getElementById('search').value = lastState.search || ''
+        document.getElementById('start_date').value = lastState.start || ''
+        document.getElementById('end_date').value = lastState.end || ''
+        fetchData(lastState.page || 1)
+    }
+
+    function renderPage(page) {
+        const totalData = allFilteredData.length
+        const totalPage = Math.ceil(totalData / PAGE_SIZE)
+
+        if (page > totalPage && totalPage > 0) page = totalPage
+
+        const start = (page - 1) * PAGE_SIZE
+        const end = start + PAGE_SIZE
+
+        const pageData = allFilteredData.slice(start, end)
+
+        renderTable(pageData, page)
+        renderPagination(page, totalPage)
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            // kosongkan input
+            document.getElementById('search').value = ''
+            document.getElementById('start_date').value = ''
+            document.getElementById('end_date').value = ''
+
+            // hapus state pencarian
+            sessionStorage.removeItem(SEARCH_STATE_KEY)
+
+            // kosongkan data
+            allFilteredData = []
+
+            // reset tabel
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-muted text-center py-4">
+                        Silakan cari data untuk memulai timbangan.
+                    </td>
+                </tr>
+            `
+
+            // hapus pagination
+            pagination.innerHTML = ''
+        })
+    }
 }
 
-function renderPagination(currentPage, lastPage) {
-    const pagination = document.getElementById('pagination')
-    if (lastPage <= 1) {
-        pagination.innerHTML = ''
+function initManualMode() {
+    const toggle = document.getElementById('manualMode')
+    const input = document.getElementById('manualWeight')
+
+    toggle.addEventListener('change', () => {
+        isManualMode = toggle.checked
+
+        if (isManualMode) {
+            stopPolling() // MATIKAN ESP
+            input.disabled = false
+            document.getElementById('previewStatus').textContent =
+                'Mode Manual Aktif'
+            document.getElementById('previewStatus').className =
+                'text-info fw-bold'
+        } else {
+            input.disabled = true
+            input.value = ''
+            resetPreviewUI()
+            startPolling() // BALIK KE ESP
+        }
+    })
+
+    input.addEventListener('input', () => {
+        if (!isManualMode) return
+
+        const berat = parseFloat(input.value) || 0
+        applyManualWeight(berat)
+    })
+}
+
+function applyManualWeight(berat) {
+    const weightEl = document.getElementById('currentWeight')
+    const statusEl = document.getElementById('previewStatus')
+
+    weightEl.textContent = berat.toFixed(2)
+
+    if (berat < 0.05) {
+        statusEl.textContent = 'Timbangan kosong'
+        statusEl.className = 'text-muted'
+        document.getElementById('btnSimpanTimbang').disabled = true
         return
     }
 
-    let html = `<ul class="pagination">`
-
-    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${
-                currentPage - 1
-            }">Previous</a>
-        </li>`
-
-    for (let i = 1; i <= lastPage; i++) {
-        html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                <a class="page-link" href="#" data-page="${i}">${i}</a>
-            </li>`
+    if (berat < 0.5) {
+        statusEl.textContent = 'Ada beban kecil...'
+        statusEl.className = 'text-warning fw-bold'
+        document.getElementById('btnSimpanTimbang').disabled = true
+        return
     }
 
-    html += `<li class="page-item ${
-        currentPage === lastPage ? 'disabled' : ''
-    }">
-            <a class="page-link" href="#" data-page="${
-                currentPage + 1
-            }">Next</a>
-        </li></ul>`
+    statusEl.textContent = 'STABIL (Manual)'
+    statusEl.className = 'text-success fw-bold'
 
-    pagination.innerHTML = html
+    latestPreview = {
+        berat: berat.toFixed(2)
+    }
 
-    pagination.querySelectorAll('a[data-page]').forEach((link) => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault()
-            const page = parseInt(link.dataset.page)
-            if (page > 0 && page <= lastPage) fetchData(page)
-        })
-    })
+    document.getElementById('btnSimpanTimbang').disabled = false
+    hitungLossWeight()
 }
 
 let currentId = null
@@ -305,67 +443,6 @@ function resetPreviewUI() {
     latestPreview = null
 }
 
-function initManualMode() {
-    const toggle = document.getElementById('manualMode')
-    const input = document.getElementById('manualWeight')
-
-    toggle.addEventListener('change', () => {
-        isManualMode = toggle.checked
-
-        if (isManualMode) {
-            stopPolling() // MATIKAN ESP
-            input.disabled = false
-            document.getElementById('previewStatus').textContent =
-                'Mode Manual Aktif'
-            document.getElementById('previewStatus').className =
-                'text-info fw-bold'
-        } else {
-            input.disabled = true
-            input.value = ''
-            resetPreviewUI()
-            startPolling() // BALIK KE ESP
-        }
-    })
-
-    input.addEventListener('input', () => {
-        if (!isManualMode) return
-
-        const berat = parseFloat(input.value) || 0
-        applyManualWeight(berat)
-    })
-}
-
-function applyManualWeight(berat) {
-    const weightEl = document.getElementById('currentWeight')
-    const statusEl = document.getElementById('previewStatus')
-
-    weightEl.textContent = berat.toFixed(2)
-
-    if (berat < 0.05) {
-        statusEl.textContent = 'Timbangan kosong'
-        statusEl.className = 'text-muted'
-        document.getElementById('btnSimpanTimbang').disabled = true
-        return
-    }
-
-    if (berat < 0.5) {
-        statusEl.textContent = 'Ada beban kecil...'
-        statusEl.className = 'text-warning fw-bold'
-        document.getElementById('btnSimpanTimbang').disabled = true
-        return
-    }
-
-    statusEl.textContent = 'STABIL (Manual)'
-    statusEl.className = 'text-success fw-bold'
-
-    latestPreview = {
-        berat: berat.toFixed(2)
-    }
-
-    document.getElementById('btnSimpanTimbang').disabled = false
-    hitungLossWeight()
-}
-
 // Polling
 function startPolling() {
     stopPolling()
@@ -381,13 +458,13 @@ function stopPolling() {
     }
 }
 
-const THRESHOLD = 0.002 // 2 gram
+const THRESHOLD = 0.002
 let lastBerat = 0
 
-let lastStableWeight = null // berat terakhir yang dianggap stabil
-let stableStartTime = null // waktu pertama kali berat sama
-const STABLE_THRESHOLD = 0.02 // toleransi perubahan (bisa disesuaikan, misal 20 gram)
-const STABLE_DURATION = 3000 // harus sama selama 3 detik baru dianggap stabil
+let lastStableWeight = null
+let stableStartTime = null
+const STABLE_THRESHOLD = 0.02
+const STABLE_DURATION = 3000
 
 async function loadPreview() {
     if (!currentId) return
@@ -834,11 +911,8 @@ function initSaveButton() {
                 bootstrap.Modal.getInstance(
                     document.getElementById('timbangModal')
                 ).hide()
-                // setTimeout(() => location.reload(), 1200);
-                setTimeout(() => {
-                    reloadLastSearch()
-                    loadReport()
-                }, 600)
+                addWeighedId(currentId)
+                setTimeout(() => location.reload(), 1200)
             } else {
                 throw new Error(json.message || 'Gagal menyimpan')
             }
@@ -849,37 +923,6 @@ function initSaveButton() {
             btnSimpan.innerHTML = 'Simpan'
         }
     })
-}
-
-async function reloadLastSearch() {
-    if (
-        !lastSearchParams.search &&
-        !lastSearchParams.start_date &&
-        !lastSearchParams.end_date
-    ) {
-        return
-    }
-
-    const params = new URLSearchParams(lastSearchParams)
-    const tableBody = document.querySelector('#resultTable tbody')
-    const spinner = document.getElementById('loadingSpinner')
-
-    spinner.style.display = 'inline-block'
-
-    try {
-        const res = await fetch(`/api/ordersheet?${params}`)
-        const json = await res.json()
-
-        spinner.style.display = 'none'
-
-        if (json.success && json.data.length > 0) {
-            renderTable(json.data, json.current_page)
-            renderPagination(json.current_page, json.last_page)
-        }
-    } catch (e) {
-        spinner.style.display = 'none'
-        console.error(e)
-    }
 }
 
 // Ambil user id dari Blade
@@ -916,36 +959,40 @@ async function loadAvailableDevices() {
                 device.status === 'in_use'
                     ? 'Sedang Dipakai'
                     : device.status === 'online'
-                    ? 'Online'
-                    : 'Offline'
+                      ? 'Online'
+                      : 'Offline'
             const bgClass =
                 device.status === 'in_use'
                     ? 'bg-success text-white'
                     : device.status === 'online'
-                    ? 'bg-light text-dark'
-                    : 'bg-danger text-white'
+                      ? 'bg-light text-dark'
+                      : 'bg-danger text-white'
 
             const item = document.createElement('li')
             item.innerHTML = `
-                <a class="dropdown-item d-flex justify-content-between align-items-center ${
-                    isCurrent ? 'active' : ''
-                }" 
-                href="javascript:void(0)" 
-                onclick="prepareSwitch(${device.id}, '${(
-                device.name || device.esp_id
-            ).replace(/'/g, "\\'")}', '${device.esp_id}')"
-                style="background-color: ${
-                    bgClass.includes('bg-light') ? '#f8f9fa' : ''
-                }; color: ${bgClass.includes('text-white') ? '#fff' : '#000'};">
-                    <div>
-                        <div><strong>${
-                            device.name || device.esp_id
-                        }</strong></div>
-                        <small class="text-muted">ID: ${device.esp_id}</small>
-                    </div>
-                    <span class="badge ${bgClass} ms-2">${statusBadge}</span>
-                </a>
-            `
+                            <a class="dropdown-item d-flex justify-content-between align-items-center ${
+                                isCurrent ? 'active' : ''
+                            }"
+                            href="javascript:void(0)"
+                            onclick="prepareSwitch(${device.id}, '${(
+                                device.name || device.esp_id
+                            ).replace(/'/g, "\\'")}', '${device.esp_id}')"
+                            style="background-color: ${
+                                bgClass.includes('bg-light') ? '#f8f9fa' : ''
+                            }; color: ${
+                                bgClass.includes('text-white') ? '#fff' : '#000'
+                            };">
+                                <div>
+                                    <div><strong>${
+                                        device.name || device.esp_id
+                                    }</strong></div>
+                                    <small class="text-muted">ID: ${
+                                        device.esp_id
+                                    }</small>
+                                </div>
+                                <span class="badge ${bgClass} ms-2">${statusBadge}</span>
+                            </a>
+                        `
             list.appendChild(item)
         })
     } catch (err) {
@@ -1021,18 +1068,3 @@ async function switchDevice(deviceId) {
 // Load saat halaman dibuka & refresh tiap 10 detik
 loadAvailableDevices()
 setInterval(loadAvailableDevices, 10000)
-
-async function loadReport() {
-    try {
-        const res = await fetch('/user/order/report-data')
-        const json = await res.json()
-        if (!json.success) return
-
-        const container = document.getElementById('reportContainer')
-        container.innerHTML = renderReportHTML(json.data)
-    } catch (e) {
-        console.error('Gagal load report:', e)
-    }
-}
-setInterval(loadReport, 5000) // 5 detik
-loadReport() // pertama kali

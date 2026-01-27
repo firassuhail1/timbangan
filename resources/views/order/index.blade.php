@@ -60,6 +60,10 @@
                                 </li>
                             </ul>
                         </div>
+
+                        <button type="button" id="resetSearchBtn" class="btn btn-outline-primary">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                        </button>
                     </div>
 
                     <!-- Modal Konfirmasi Pindah Device -->

@@ -74,5 +74,5 @@ class DeviceLoginController extends Controller
 
         return response()->json($devices);
     }
-
 }
+        

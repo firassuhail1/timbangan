@@ -320,31 +320,45 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($orders as $item)
+                            @php
+                                $boxes = [];
+                                $weights = [];
+
+                                foreach ($orders as $order) {
+                                    foreach ($order->timbangans as $t) {
+                                        $boxes[] = $t->no_box;
+                                        $weights[] = $t->berat;
+                                    }
+                                }
+
+                                // Pecah per 10 kolom
+                                $boxChunks = array_chunk($boxes, 10);
+                                $weightChunks = array_chunk($weights, 10);
+                            @endphp
+                            @foreach ($boxChunks as $i => $chunk)
                                 @php
-                                    $timbangans = $item->timbangans->take(10);
-                                    $noBoxes = $timbangans->pluck('no_box')->pad(10, '-')->toArray();
-                                    $weights = $timbangans
-                                        ->pluck('berat')
-                                        ->map(fn($w) => is_numeric($w) ? number_format($w, 2) : '-')
-                                        ->pad(10, '-')
-                                        ->toArray();
-                                    $total = array_sum(
-                                        array_filter($timbangans->pluck('berat')->toArray(), 'is_numeric'),
-                                    );
+                                    $boxRow = array_pad($chunk, 10, '-');
+                                    $weightRow = array_pad($weightChunks[$i] ?? [], 10, '-');
+                                    $totalWeight = array_sum(array_filter($weightRow, 'is_numeric'));
                                 @endphp
 
                                 <tr>
                                     <td rowspan="2">{{ $date }}</td>
-                                    @foreach ($noBoxes as $no)
-                                        <td>{{ $no }}</td>
+
+                                    @foreach ($boxRow as $box)
+                                        <td>{{ $box }}</td>
                                     @endforeach
-                                    <td rowspan="2">{{ number_format($total, 2) }}</td>
+
+                                    <td rowspan="2" class="fw-bold text-primary">
+                                        {{ number_format($totalWeight, 2) }}
+                                    </td>
                                     <td rowspan="2"></td>
                                 </tr>
-                                <tr class="weight-row">
-                                    @foreach ($weights as $w)
-                                        <td>{{ $w }}</td>
+
+                                <tr>
+                                    @foreach ($weightRow as $w)
+                                        <td class="fw-bold text-primary">{{ $w }}
+                                        </td>
                                     @endforeach
                                 </tr>
                             @endforeach

@@ -62,7 +62,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     // tambah data ordersheet
     Route::get('/ordersheet-view/create', [OrderSheetController::class, 'create'])->name('ordersheet.create');
     Route::post('/ordersheet/store', [OrderSheetController::class, 'store'])->name('ordersheet.store');
-    Route::get('/order/report-data', [OrderSheetController::class, 'reportData']);
+    Route::get('/order/report', [OrderSheetController::class, 'reportData']);
 
     // cetak timbangan
     Route::get('/order/print', [OrderSheetController::class, 'print'])->name('order.print');

@@ -85,4 +85,144 @@ class TimbanganBesarController extends Controller
 
         return response()->json($rekapbesar);
     }
+
+    // public function getData(Request $request)
+    // {
+    //     $search    = $request->query('search');
+    //     $startDate = $request->query('start_date');
+    //     $endDate   = $request->query('end_date');
+    //     $perPage   = 10;
+    //     $page      = $request->query('page', 1);
+
+    //     $queryParams = array_filter([
+    //         'search'     => $search,
+    //         'start_date' => $startDate,
+    //         'end_date'   => $endDate,
+    //     ]);
+
+    //     try {
+    //         /** @var \Illuminate\Http\Client\Response $response */
+            
+    //        $response = Http::timeout(60)
+    //             ->get('http://192.168.0.20/sewing/qa/ordersheet/get_ordersheet_data_json', $queryParams);
+
+    //         // Simpan response body untuk debug
+    //         $body = $response->body();
+
+    //         if (!$response->successful()) {
+    //             Log::error('Sewing API gagal', [
+    //                 'status' => $response->status(),
+    //                 'body'   => substr($body, 0, 1000), // batasi agar log tidak terlalu besar
+    //                 'params' => $queryParams
+    //             ]);
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Server sewing mengembalikan error (status ' . $response->status() . ')'
+    //             ], 502);
+    //         }
+
+    //         $json = $response->json();
+
+    //         if (json_last_error() !== JSON_ERROR_NONE) {
+    //             Log::error('Response bukan JSON valid', [
+    //                 'body' => substr($body, 0, 1000),
+    //                 'params' => $queryParams
+    //             ]);
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Response dari server sewing bukan JSON valid'
+    //             ], 502);
+    //         }
+
+    //         // Ambil data dengan aman
+    //         $rawData = data_get($json, 'data', $json);
+    //         if (!is_array($rawData)) {
+    //             Log::error('Struktur data tidak ditemukan', [
+    //                 'body' => substr($body, 0, 500),
+    //                 'params' => $queryParams
+    //             ]);
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Struktur data dari server sewing tidak sesuai (tidak ada array data)'
+    //             ], 502);
+    //         }
+
+    //         $items = collect($rawData);
+
+    //         /**
+    //          * Normalisasi field dari API
+    //          */
+    //         $items = $items->map(function ($item) {
+
+    //             return [
+    //                 'id' => $item['id'] ?? $item['ID'] ?? null,
+
+    //                 'Buyer' => $item['Buyer'] ?? $item['buyer'] ?? null,
+
+    //                 'PurchaseOrderNumber' =>
+    //                     $item['PurchaseOrderNumber']
+    //                     ?? $item['po_number']
+    //                     ?? $item['PO']
+    //                     ?? null,
+
+    //                 'ProductName' =>
+    //                     $item['ProductName']
+    //                     ?? $item['product_name']
+    //                     ?? null,
+
+    //                 'Qty' =>
+    //                     $item['Qty']
+    //                     ?? $item['qty']
+    //                     ?? 0,
+
+    //                 'ActualFOB' =>
+    //                     $item['ActualFOB']
+    //                     ?? $item['actual_fob']
+    //                     ?? null,
+
+    //                 'DocumentDate' =>
+    //                     $item['DocumentDate']
+    //                     ?? $item['document_date']
+    //                     ?? $item['date']
+    //                     ?? null,
+    //             ];
+    //         });
+
+    //         /**
+    //          * Sort berdasarkan tanggal (terbaru dulu)
+    //          */
+    //         $items = $items
+    //             ->sortByDesc('DocumentDate')
+    //             ->values();
+
+    //         // Pagination
+    //         $total    = $items->count();
+    //         $results  = $items->slice(($page - 1) * $perPage, $perPage)->values();
+
+    //         $paginator = new LengthAwarePaginator($results, $total, $perPage, $page, [
+    //             'path' => $request->url()
+    //         ]);
+
+    //         return response()->json([
+    //             'success'      => true,
+    //             'total'        => $paginator->total(),
+    //             'current_page' => $paginator->currentPage(),
+    //             'last_page'    => $paginator->lastPage(),
+    //             'data'         => $paginator->items(),
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error di OrderSheetController', [
+    //             'message' => $e->getMessage(),
+    //             'file'    => $e->getFile() . ':' . $e->getLine(),
+    //             'trace'   => $e->getTraceAsString(),
+    //             'params'  => $queryParams
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Terjadi kesalahan server (lihat log untuk detail)'
+    //         ], 500);
+    //     }
+    // }
 }
