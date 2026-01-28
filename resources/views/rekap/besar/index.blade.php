@@ -225,19 +225,19 @@
                             '-';
 
                         rows += `
-            <tr>
-                <td>${no}</td>
-                <td>${day}/${month}/${year}</td>
-                <td>${hours}:${minutes}</td>
-                <td>${item.Order_code || '-'}</td>
-                <td>${item.Buyer || '-'}</td>
-                <td>${item.PO || '-'}</td>
-                <td>${semuaBox}</td>
-                <td>${semuaBerat}</td>
-                <td>${item.Qty_order || 0}</td>
-                <td>${item.OPT_QC_TIMBANGAN || '-'}</td>
-                <td>${getStatusBadge(item.status)}</td>
-            </tr>`;
+                        <tr>
+                            <td>${no}</td>
+                            <td>${day}/${month}/${year}</td>
+                            <td>${hours}:${minutes}</td>
+                            <td>${item.Order_code || '-'}</td>
+                            <td>${item.Buyer || '-'}</td>
+                            <td>${item.PO || '-'}</td>
+                            <td>${semuaBox}</td>
+                            <td>${semuaBerat}</td>
+                            <td>${item.Qty_order || 0}</td>
+                            <td>${item.OPT_QC_TIMBANGAN || '-'}</td>
+                            <td>${getStatusBadge(item.status)}</td>
+                        </tr>`;
                     });
                     tableBody.innerHTML = rows;
                 }
