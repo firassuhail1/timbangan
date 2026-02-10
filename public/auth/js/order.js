@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initSaveButton()
 })
 
+function getNextItem() {
+    return allFilteredData.find((item) => !getWeighedIds().includes(item.id))
+}
+
 function initDateTime() {
     const days = [
         'Minggu',
@@ -67,6 +71,8 @@ function addWeighedId(id) {
 function getWeighedIds() {
     return JSON.parse(sessionStorage.getItem(WEIGHED_IDS_KEY) || '[]')
 }
+
+let renderPage = null
 
 function initSearch() {
     const searchBtn = document.getElementById('searchBtn')
@@ -208,7 +214,7 @@ function initSearch() {
         fetchData(lastState.page || 1)
     }
 
-    function renderPage(page) {
+    renderPage = function (page) {
         const totalData = allFilteredData.length
         const totalPage = Math.ceil(totalData / PAGE_SIZE)
 
@@ -316,12 +322,47 @@ let currentId = null
 let pollingInterval = null
 let latestPreview = null
 let currentDeviceId = null
+let isManualMode = false
+
+function openModalForItem(item) {
+    const modalElement = document.getElementById('timbangModal')
+
+    currentId = item.id
+
+    fillModalFields(item)
+    resetPreviewUI()
+
+    const modal = new bootstrap.Modal(modalElement)
+
+    modalElement.onhidden = stopPolling
+
+    modalElement.addEventListener(
+        'shown.bs.modal',
+        async () => {
+            try {
+                await fetch('/user/order/set-id', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector(
+                            'meta[name="csrf-token"]'
+                        ).content
+                    },
+                    body: JSON.stringify({ id: currentId })
+                })
+            } catch {}
+
+            await loadPreview()
+            hitungLossWeight()
+            startPolling()
+        },
+        { once: true }
+    )
+
+    modal.show()
+}
 
 function initTimbangModal() {
-    const modalElement = document.getElementById('timbangModal')
-    const btnSimpan = document.getElementById('btnSimpanTimbang')
-
-    // Klik tombol "Timbang" di tabel
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-timbang')
         if (!btn) return
@@ -333,59 +374,7 @@ function initTimbangModal() {
             return
         }
 
-        currentId = item.id
-        fillModalFields(item)
-        resetPreviewUI()
-
-        const modal = new bootstrap.Modal(modalElement)
-
-        // Stop polling saat modal ditutup
-        modalElement.addEventListener('hidden.bs.modal', stopPolling, {
-            once: true
-        })
-
-        // Jalankan setelah modal terbuka
-        modalElement.addEventListener(
-            'shown.bs.modal',
-            async () => {
-                try {
-                    const res = await fetch('/user/order/set-id', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector(
-                                'meta[name="csrf-token"]'
-                            ).content
-                        },
-                        body: JSON.stringify({
-                            id: currentId
-                        })
-                    })
-
-                    const json = await res.json()
-                    console.log('Set ID response:', json)
-
-                    if (json.success) {
-                        console.log(
-                            `File current_id/${json.user_id}.txt telah dibuat dengan isi: ${json.current_id}`
-                        )
-                        console.log('Link debug:', json.file)
-                    }
-                } catch (err) {
-                    console.warn('Gagal set ID:', err)
-                }
-
-                await loadPreview()
-                hitungLossWeight()
-
-                startPolling()
-            },
-            {
-                once: true
-            }
-        )
-
-        modal.show()
+        openModalForItem(item)
     })
 }
 
@@ -906,13 +895,41 @@ function initSaveButton() {
                     icon: 'success',
                     title: 'Berhasil!',
                     text: json.message,
-                    timer: 1500
+                    timer: 1200,
+                    showConfirmButton: false
                 })
-                bootstrap.Modal.getInstance(
-                    document.getElementById('timbangModal')
-                ).hide()
+
+                // Simpan ID yang sudah ditimbang
                 addWeighedId(currentId)
-                setTimeout(() => location.reload(), 1200)
+
+                // Tutup modal
+                const modalEl = document.getElementById('timbangModal')
+                bootstrap.Modal.getInstance(modalEl).hide()
+
+                // Hapus dari data lokal
+                allFilteredData = allFilteredData.filter(
+                    (item) => item.id !== currentId
+                )
+
+                // Render ulang halaman sekarang
+                const state = getSearchState()
+                const currentPage = state?.page || 1
+                renderPage(currentPage)
+
+                // Auto next
+                setTimeout(() => {
+                    const next = getNextItem()
+
+                    if (next) {
+                        openModalForItem(next)
+                    } else {
+                        Swal.fire(
+                            'Selesai 🎉',
+                            'Semua data sudah ditimbang',
+                            'success'
+                        )
+                    }
+                }, 700)
             } else {
                 throw new Error(json.message || 'Gagal menyimpan')
             }

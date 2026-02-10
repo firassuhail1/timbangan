@@ -1172,3 +1172,77 @@ function initSearch() {
     //     }
     // }
 }
+
+// function initTimbangModal() {
+//     const modalElement = document.getElementById('timbangModal')
+//     const btnSimpan = document.getElementById('btnSimpanTimbang')
+
+//     // Klik tombol "Timbang" di tabel
+//     document.addEventListener('click', (e) => {
+//         const btn = e.target.closest('.btn-timbang')
+//         if (!btn) return
+
+//         let item
+//         try {
+//             item = JSON.parse(btn.dataset.item)
+//         } catch {
+//             return
+//         }
+
+//         openModalForItem(item)
+
+//         // currentId = item.id
+//         // fillModalFields(item)
+//         // resetPreviewUI()
+
+//         const modal = new bootstrap.Modal(modalElement)
+
+//         // Stop polling saat modal ditutup
+//         modalElement.addEventListener('hidden.bs.modal', stopPolling, {
+//             once: true
+//         })
+
+//         // Jalankan setelah modal terbuka
+//         modalElement.addEventListener(
+//             'shown.bs.modal',
+//             async () => {
+//                 try {
+//                     const res = await fetch('/user/order/set-id', {
+//                         method: 'POST',
+//                         headers: {
+//                             'Content-Type': 'application/json',
+//                             'X-CSRF-TOKEN': document.querySelector(
+//                                 'meta[name="csrf-token"]'
+//                             ).content
+//                         },
+//                         body: JSON.stringify({
+//                             id: currentId
+//                         })
+//                     })
+
+//                     const json = await res.json()
+//                     console.log('Set ID response:', json)
+
+//                     if (json.success) {
+//                         console.log(
+//                             `File current_id/${json.user_id}.txt telah dibuat dengan isi: ${json.current_id}`
+//                         )
+//                         console.log('Link debug:', json.file)
+//                     }
+//                 } catch (err) {
+//                     console.warn('Gagal set ID:', err)
+//                 }
+
+//                 await loadPreview()
+//                 hitungLossWeight()
+
+//                 startPolling()
+//             },
+//             {
+//                 once: true
+//             }
+//         )
+
+//         modal.show()
+//     })
+// }
