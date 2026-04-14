@@ -633,63 +633,66 @@
         document.addEventListener('DOMContentLoaded', () => {
             const selectEl = document.getElementById('esp_id');
             const formEl = selectEl.closest('form');
-            const usernameInput = document.getElementById('username')
+            const usernameInput = document.getElementById('username');
 
             let isSubmitting = false;
-            let lastDataHash = null;
 
             formEl.addEventListener('submit', () => {
                 isSubmitting = true;
             });
 
-
             async function fetchDevices() {
                 const username = usernameInput.value.trim();
-                if (!username) return;
+                if (!username) {
+                    // Kosongkan dropdown jika username kosong
+                    selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
+                    return;
+                }
 
-                const res = await fetch(`/devices/list?username=${encodeURIComponent(username)}`);
-                if (!res.ok) return;
+                try {
+                    const res = await fetch(`/devices/list?username=${encodeURIComponent(username)}`);
+                    if (!res.ok) {
+                        console.warn('Gagal fetch devices:', res.status);
+                        return;
+                    }
 
-                const devices = await res.json();
+                    const devices = await res.json();
 
-                selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
-                devices.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d.esp_id;
-                    opt.textContent = d.name ?? d.esp_id;
-                    selectEl.appendChild(opt);
-                });
+                    // Simpan nilai yang sebelumnya dipilih (penting untuk redirect back)
+                    const currentSelected = selectEl.value || '{{ old('esp_id') }}' || '';
+
+                    selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
+
+                    devices.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d.esp_id;
+                        opt.textContent = d.name ?? d.esp_id;
+                        // Pertahankan selected jika cocok dengan old input
+                        if (d.esp_id === currentSelected) {
+                            opt.selected = true;
+                        }
+                        selectEl.appendChild(opt);
+                    });
+
+                    // Jika tidak ada yang cocok dengan old value, tapi ada old value → beri peringatan
+                    if (currentSelected && !selectEl.querySelector(`option[value="${currentSelected}"]`)) {
+                        console.warn('Device terpilih sebelumnya tidak ada di list terbaru');
+                    }
+                } catch (err) {
+                    console.error('Error fetch devices:', err);
+                }
             }
 
+            // 1. Jalankan sekali saat halaman load (penting untuk redirect back / old input)
+            fetchDevices();
+            setInterval(fetchDevices, 10000);
+
+            // 2. Jalankan lagi saat username blur (user ganti username)
             usernameInput.addEventListener('blur', fetchDevices);
 
-            fetchDevices();
-            setInterval(fetchDevices, 5000);
+            // 3. Optional: polling jika ingin real-time (tapi jangan terlalu sering)
+            // setInterval(fetchDevices, 10000);  // misal setiap 10 detik, atau hapus jika tidak perlu
         });
-
-        // function renderTable(data, currentPage) {
-        //     let rows = '';
-        //     data.forEach((item, i) => {
-        //         const no = (i + 1) + (currentPage - 1) * 10;
-        //         rows += `
-    //                 <tr>
-    //                     <td>${no}</td>
-    //                     <td>${item.Buyer || '-'}</td>
-    //                     <td>${item.PurchaseOrderNumber || '-'}</td>
-    //                     <td>${item.ProductName || '-'}</td>
-    //                     <td>${item.Qty || 0}</td>
-    //                     <td>${item.ActualFOB || '-'}</td>
-    //                     <td>${item.DocumentDate || '-'}</td>
-    //                     <td>
-    //                         <button class="btn btn-sm btn-outline-primary btn-timbang" 
-    //                                 data-item="${encodeURIComponent(JSON.stringify(item))}">
-    //                             <i class="fa-solid fa-weight-scale"></i> Timbang
-    //                         </button>
-    //                     </td>
-    //                 </tr>`;
-        //     });
-        //     tableBody.innerHTML = rows;
-        // }
     </script>
 </body>
 

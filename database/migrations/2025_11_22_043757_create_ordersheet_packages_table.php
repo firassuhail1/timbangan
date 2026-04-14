@@ -23,8 +23,6 @@ return new class extends Migration
             $table->json('hardware_details')->nullable();
             $table->string('stitching_type')->nullable();
             $table->string('lining_material')->nullable();
-            // $table->integer('price')->default(0);
-            // $table->integer('stock')->default(0);
             $table->timestamps();
         });
     }

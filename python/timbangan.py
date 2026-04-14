@@ -17,7 +17,7 @@ def log_status(message, level="INFO"):
     print(f"[{timestamp}] [{level}] {message}")
 
 # BLUETOOTH_NAME = 'Timbangan_ESP'  # Ganti jika nama berbeda
-PORT_COM = 'COM4' 
+PORT_COM = 'COM3' 
 BAUD_RATE = 115200
 TIMEOUT = 2
 URL_PREVIEW = 'http://127.0.0.1:8000/api/timbang/preview'

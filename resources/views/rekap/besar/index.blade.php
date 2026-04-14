@@ -144,8 +144,34 @@
         <script src="{{ asset('assets/js/sweetalert2/sweetalert2.all.min.js') }}"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
+                initDateTime()
                 initSearch();
             });
+
+            function initDateTime() {
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+                function updateDateTime() {
+                    const now = new Date();
+                    const dayName = days[now.getDay()];
+                    const date = now.toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    const time = now.toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+
+                    document.getElementById('current-day').textContent = `${dayName}, ${date}`;
+                    document.getElementById('current-time').textContent = time;
+                }
+
+                updateDateTime(); // jalankan sekali saat load
+                setInterval(updateDateTime, 1000); // update tiap detik
+            }
 
             function initSearch() {
                 const searchBtn = document.getElementById('searchBtn');

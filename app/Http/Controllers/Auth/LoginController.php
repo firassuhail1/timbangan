@@ -7,9 +7,10 @@ use App\Models\Update\Device;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+// use Illuminate\Support\Facades\DB;
 
 class LoginController extends Controller
 {
@@ -17,7 +18,7 @@ class LoginController extends Controller
     {
         return view('auth.password.lupa-password');
     }
-   
+
     public function index()
     {
         $autoSelectedEspId = null;
@@ -37,14 +38,14 @@ class LoginController extends Controller
             }
         }
 
-        $availableDevices = Device::where(function ($q) use ($autoSelectedEspId) {
-                $q->whereNull('user_id')
+        $availableDevices = Device::where(function ($q) {
+            $q->whereNull('user_id')
                 ->where('status', 'online');
-            })
+        })
             ->orWhere(function ($q) use ($autoSelectedEspId) {
                 if ($autoSelectedEspId) {
                     $q->where('esp_id', $autoSelectedEspId)
-                    ->where('status', 'in_use');
+                        ->where('status', 'in_use');
                 }
             })
             ->orderBy('name')
@@ -64,8 +65,10 @@ class LoginController extends Controller
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
-            'esp_id'   => 'nullable|string|exists:devices,esp_id',
+            'esp_id' => 'nullable|string|exists:devices,esp_id',
         ]);
+
+        Log::info('melewati validasi');
 
         // =========================
         // 2. AUTH USER
@@ -75,40 +78,50 @@ class LoginController extends Controller
             $request->boolean('remember')
         )) {
             return back()->withErrors([
-                'password' => 'Username atau password salah!'
+                'password' => 'Username atau password salah!',
             ])->withInput();
         }
 
+        Log::info('melewati auth user');
+
         $user = Auth::user();
+        Log::info('user : ' . $user);
 
         // =========================
-        // 3. AMBIL DEVICE
-        // PRIORITAS:
-        // - device milik user
-        // - device dari dropdown (jika bebas)
+        // 3. KHUSUS ADMIN (TANPA DEVICE)
+        // =========================
+        if ($user->role === 'admin') {
+            $request->session()->regenerate();
+
+            return redirect()->route('admin.view');
+        }
+
+        // =========================
+        // 4. AMBIL DEVICE (KHUSUS USER)
         // =========================
         $device = Device::where('user_id', $user->id)
             ->where('status', 'in_use')
             ->first();
 
-        if (!$device && $request->filled('esp_id')) {
+        if (! $device && $request->filled('esp_id')) {
             $device = Device::where('esp_id', $request->esp_id)
                 ->where(function ($q) use ($user) {
                     $q->whereNull('user_id')
-                    ->orWhere('user_id', $user->id);
+                        ->orWhere('user_id', $user->id);
                 })
                 ->first();
         }
 
-        if (!$device) {
+        if (! $device) {
             Auth::logout();
+
             return back()->withErrors([
-                'esp_id' => 'Silakan pilih timbangan.'
+                'esp_id' => 'Silakan pilih timbangan.',
             ])->withInput();
         }
 
         // =========================
-        // 4. TIMEOUT RESET
+        // 5. TIMEOUT RESET
         // =========================
         if (
             $device->status === 'in_use' &&
@@ -117,12 +130,12 @@ class LoginController extends Controller
         ) {
             $device->update([
                 'user_id' => null,
-                'status'  => 'online',
+                'status' => 'online',
             ]);
         }
 
         // =========================
-        // 5. VALIDASI KEPEMILIKAN
+        // 6. VALIDASI KEPEMILIKAN
         // =========================
         if (
             $device->status === 'in_use' &&
@@ -130,39 +143,38 @@ class LoginController extends Controller
             $device->user_id !== $user->id
         ) {
             Auth::logout();
+
             return back()->withErrors([
-                'esp_id' => 'Timbangan ini sedang digunakan user lain.'
+                'esp_id' => 'Timbangan ini sedang digunakan user lain.',
             ]);
         }
 
         // =========================
-        // 6. KUNCI DEVICE
+        // 7. KUNCI DEVICE
         // =========================
         $device->update([
-            'user_id'        => $user->id,
-            'status'         => 'in_use',
+            'user_id' => $user->id,
+            'status' => 'in_use',
+            'api_key' => bin2hex(random_bytes(32)), // 64 char hex, cukup aman
+            'api_key_generated_at' => now(),
             'last_online_at' => now(),
-            'last_seen_at'   => now(),
+            'last_seen_at' => now(),
         ]);
 
         // =========================
-        // 7. SESSION
+        // 8. SESSION
         // =========================
         session([
             'selected_device' => $device->id,
             'selected_esp_id' => $device->esp_id,
-            'device_api_key'  => $device->api_key,
+            'device_api_key' => $device->api_key,
         ]);
 
         $request->session()->regenerate();
 
         // =========================
-        // 8. REDIRECT
+        // 9. REDIRECT USER
         // =========================
-        if ($user->role === 'admin') {
-            return redirect()->route('admin.view');
-        }
-
         if ($user->role === 'user') {
             if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $m)) {
                 return $m[1] === 'O'
@@ -172,10 +184,11 @@ class LoginController extends Controller
         }
 
         Auth::logout();
+
         return redirect()->route('login')
             ->with('error', 'Role atau device tidak dikenali.');
     }
-   
+
     public function logout(Request $request)
     {
         // Lepaskan device jika ada

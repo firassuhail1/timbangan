@@ -16,9 +16,9 @@ class Role
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-        public function handle(Request $request, Closure $next, string $roles): Response
+    public function handle(Request $request, Closure $next, string $roles): Response
     {
-        Log::debug('Roles received in middleware: ', [$roles]);
+        // Log::debug('Roles received in middleware: ', [$roles]);
 
         $allowedRoles = is_array($roles) ? $roles : explode(',', $roles);
         $allowedRoles = array_map('trim', $allowedRoles);
@@ -53,5 +53,4 @@ class Role
 
         return redirect('/')->with('error', 'Akses dilarang. Anda tidak memiliki izin untuk mengakses halaman ini.');
     }
-
 }

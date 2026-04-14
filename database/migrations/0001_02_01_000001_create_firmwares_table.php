@@ -11,15 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('firmwares', function (Blueprint $table) {
+        Schema::create('firmwares', function (Blueprint $table) {
             $table->id();
-            $table->string('version');                    
-            $table->string('device_type');                
-            $table->string('file_name');                  
-            $table->string('file_path');                
-            $table->string('download_url');              
+
+            $table->string('version');
+            $table->string('device_type');
+
+            $table->string('file_name');
+            $table->string('file_path');
+
+            $table->string('checksum', 64)->nullable(); // sha256 = 64 karakter
+            $table->string('download_url')->nullable();
+
             $table->text('notes')->nullable();
-            $table->timestamp('released_at')->useCurrent();
+
+            $table->enum('status', ['draft', 'uploaded', 'published', 'expired'])
+                ->default('uploaded');
+
+            $table->timestamp('released_at')->nullable();
+
             $table->timestamps();
 
             $table->unique(['version', 'device_type']);

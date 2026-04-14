@@ -1,22 +1,23 @@
 <?php
 
 use App\Http\Controllers\Api\DeviceLoginController;
-use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\OrderSheetController;
 use App\Http\Controllers\Api\WeightController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Ordersheet\PackageController;
 use App\Http\Controllers\Ordersheet\Rekap\TimbanganBesarController;
-use App\Http\Controllers\Update\Admin\DeviceController;
 use App\Http\Controllers\Update\Admin\FirmwareController;
+use App\Http\Controllers\Update\User\NotifikasiController;
 use App\Http\Controllers\Update\User\SettingController;
 use App\Http\Controllers\Update\User\SwitchController;
+use App\Http\Controllers\Update\User\UpdateController;
 use App\Http\Controllers\Update\User\WifiController;
-use App\Models\Update\Device;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\Rekap\Ordersheet\OrderController;
+use App\Http\Controllers\Admin\Rekap\Package\PackController;
+use App\Http\Controllers\Update\User\OtaUpdateController;
 use Illuminate\Support\Facades\Route;
-use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', [HomeController::class, 'index']);
 
@@ -32,32 +33,49 @@ Route::get('lupa-password', [LoginController::class, 'lupa'])->name('lupa.passwo
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Profiles
-Route::prefix('setting')->group(function(){
+Route::prefix('setting')->group(function () {
     Route::get('/profile', [SettingController::class, 'setting'])->name('setting.profile');
     Route::put('/profile/update/{id}', [SettingController::class, 'update'])->name('profile.update');
 });
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function(){
-    Route::get('/dashboard',[DashboardController::class, 'index'])->name('admin.view');
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('admin.view');
 
-    // master
-    Route::get('/view-data', [DeviceController::class, 'index'])->name('admin.view-data');
+    Route::get('/ordersheet-index', [OrderSheetController::class, 'index'])->name('admin.view.index');
 
-    Route::get('/ordersheet-index',[OrderSheetController::class, 'index'])->name('admin.view.index');
-    
+    // Rekap
+    Route::prefix('/rekap')->group(function () {
+        // Ordersheet
+        Route::get('/order', [OrderController::class, 'index'])->name('admin.rekap.order');
+        Route::get('/order-data', [OrderController::class, 'getRekapData'])->name('admin.rekap.order.data');
+        Route::get('/order/export', [OrderController::class, 'export'])->name('admin.rekap.order.export');
+
+        // Package
+        Route::get('/package', [PackController::class, 'index'])->name('admin.rekap.package');
+    });
+
+    // View
+    Route::get('/view-firmware', [FirmwareController::class, 'index'])->name('admin.view-firmware');
+
     // Update ESP
     Route::post('/firmware/upload', [FirmwareController::class, 'upload'])
         ->name('admin.firmware.upload');
 
-    Route::post('/firmware/{firmware}/post', [FirmwareController::class, 'postToUsers'])
-        ->name('admin.firmware.post');
+    Route::post('/firmware/post/{id}', [FirmwareController::class, 'postToUsers'])->name('admin.firmware.post');
+
+    // Download
+    Route::get('firmware/download/{id}', [FirmwareController::class, 'download'])->name('admin.firmware.download');
+
+    // Delete
+    Route::delete('/firmware/delete/{id}', [FirmwareController::class, 'delete'])
+        ->name('admin.firmware.delete');
 });
 
-Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
-    Route::get('/home',[DashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
+    Route::get('/home', [DashboardController::class, 'index'])->name('dashboard');
 
     // ORDERSHEET
-    Route::get('/ordersheet-view',[OrderSheetController::class, 'index'])->name('order.view');
+    Route::get('/ordersheet-view', [OrderSheetController::class, 'index'])->name('order.view');
 
     // tambah data ordersheet
     Route::get('/ordersheet-view/create', [OrderSheetController::class, 'create'])->name('ordersheet.create');
@@ -76,7 +94,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
     Route::get('/ordersheet-package', [PackageController::class, 'getData'])->name('package.ordersheet');
     Route::get('/package/search', [PackageController::class, 'apiSearch']);
 
-    Route::get('/package-view',[PackageController::class, 'index'])->name('package.view');
+    Route::get('/package-view', [PackageController::class, 'index'])->name('package.view');
 
     Route::get('/devices/available', [SwitchController::class, 'available'])->name('login.devices.available');
 
@@ -93,5 +111,20 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function(){
         Route::post('/tare', [WeightController::class, 'tare']);
         Route::post('/simpan', [WeightController::class, 'simpan']);
     });
-});
 
+    // Firmware
+    Route::get('/firmware', [UpdateController::class, 'userFirmware'])->name('firmware.user');
+
+    // Polling realtime
+    Route::get('/device/{device}/check-firmware-update', [UpdateController::class, 'checkFirmwareUpdate'])
+        ->name('device.check-firmware-update');
+
+    // Route::post('/firmware/ota-update', [UpdateController::class, 'performOtaUpdate'])->name('firmware.ota');
+
+    // Notifikasi firmware baru
+    Route::get('/check-firmware-notification', [NotifikasiController::class, 'checkNotification'])
+        ->name('firmware.check-notification');
+
+    // User OTA trigger
+    Route::post('/firmware/ota', [OtaUpdateController::class, 'ota'])->name('firmware.ota');
+});

@@ -17,21 +17,36 @@
                                     <div class="form-group">
                                         <label for="">Version</label>
                                         <input type="text" class="form-control mt-2 mb-2" name="version"
-                                            id="version" placeholder="Version"`>
+                                            id="version" placeholder="Version">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="">Device Type</label>
-                                        <input type="text" class="form-control mt-2 mb-2" name="device_type"
-                                            id="device_type" placeholder="Device Type"`>
+                                        <select name="device_type" id="device_type" class="form-select mt-2 mb-2">
+                                            <option value="">-- Device Type --</option>
+                                            <option value="O">Timbangan Ordersheet</option>
+                                            <option value="P">Timbangan Package</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="">Version</label>
-                                        <input type="file" class="form-control mt-2 mb-2" name="file_path"
-                                            id="file_path">
+                                        <label for="">File Version</label>
+                                        <input type="file" class="form-control mt-2 mb-2" name="file"
+                                            id="file">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="">Status File</label>
+                                        <select name="status" id="status" class="form-select mt-2 mb-2">
+                                            <option value="">-- Status --</option>
+                                            <option value="draft">Draft</option>
+                                            <option value="uploaded">Uploaded</option>
+                                            <option value="published">Published</option>
+                                            <option value="expired">Expired</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-12">

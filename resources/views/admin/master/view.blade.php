@@ -2,7 +2,7 @@
 
     <div class="page-heading d-flex justify-content-between align-items-center">
         <div class="judul">
-            <h5 class="welcome-message">Unggah File Firmware</h5>
+            <h5 class="welcome-message">Firmware</h5>
             <h6 class="fw-bold">ESP 32</h6>
         </div>
         <div class="text-end">
@@ -24,69 +24,114 @@
                         </button>
                     </div>
                     <hr>
-                    <form action="{{ route('admin.view-data') }}" method="GET" class="row gy-2 gx-3 align-items-end">
-                        <div class="d-flex justify-content-between">
-                            <div class="col-6 col-md-2">
-                                <label for="entries" class="form-label fw-semibold small mb-1">Tampil</label>
-                                <select name="entries" id="entries" class="form-select form-select-sm">
-                                    <option value="10" {{ $entries == 10 ? 'selected' : '' }}>10</option>
-                                    <option value="25" {{ $entries == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ $entries == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ $entries == 100 ? 'selected' : '' }}>100</option>
-                                </select>
-                            </div>
+                    <form action="{{ route('admin.view-firmware') }}" method="GET" class="row g-3 align-items-end">
 
-                            <div class="col-12 col-md-4 position-relative">
-                                <label for="search" class="form-label fw-semibold small mb-1">Cari</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" name="search" id="search" class="form-control"
-                                        placeholder="Search......" value="{{ $search }}">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
+                        {{-- Entries --}}
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label for="entries" class="form-label fw-semibold small mb-1">Tampil</label>
+                            <select name="entries" id="entries" class="form-select form-select-sm">
+                                <option value="10" {{ $entries == 10 ? 'selected' : '' }}>10</option>
+                                <option value="25" {{ $entries == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ $entries == 50 ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ $entries == 100 ? 'selected' : '' }}>100</option>
+                            </select>
+                        </div>
+
+                        {{-- Search --}}
+                        <div class="col-12 col-sm-6 col-md-4">
+                            <label for="search" class="form-label fw-semibold small mb-1">Cari</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="search" id="search" class="form-control"
+                                    placeholder="Cari firmware..." value="{{ $search }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
                             </div>
                         </div>
+
                     </form>
+
+                    <div class="mt-2">
+                        @if ($errors->any())
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong>Validasi Gagal!</strong>
+                                <ul class="mb-0 mt-2">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+                    </div>
+
                     <div class="table-responsive mt-3">
-                        <table class="table table-sm table-bordered text-center">
+                        <table class="table table-sm table-bordered text-center" style="white-space: nowrap">
                             <thead class="table-primary">
                                 <tr>
                                     <th>No</th>
-                                    <th>Device ID</th>
-                                    <th>Name</th>
-                                    <th>Firmware Version</th>
+                                    <th>Version</th>
                                     <th>Device Type</th>
-                                    <th>IP Address</th>
-                                    <th>Last Online</th>
+                                    <th>File Name</th>
+                                    <th>File Path</th>
+                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @if ($devices->isEmpty())
+                                @if ($firmware->isEmpty())
                                     <tr>
                                         <td class="text-center" colspan="8">Belum ada file</td>
                                     </tr>
                                 @else
                                     <tr>
-                                        @foreach ($devices as $item)
+                                        @foreach ($firmware as $item)
                                             <td>{{ $loop->iteration }}</td>
-                                            <td>{{ $item->device_id }}</td>
-                                            <td>{{ $item->name }}</td>
-                                            <td>{{ $item->firmware_version }}</td>
-                                            <td>{{ $item->device_type }}</td>
-                                            <td>{{ $item->ip_address }}</td>
-                                            <td>{{ $item->last_online_at }}</td>
+                                            <td>{{ $item->version }}</td>
                                             <td>
-                                                @if ($item->status == 'upload')
-                                                    <button type="button" data-bs-toggle="modal"
-                                                        data-bs-target="#posting{{ $item->id }}"
-                                                        class="btn btn-outline-info btn-sm" data-bs-title="Post">
-                                                        <i class="fa-solid fa-file-arrow-up"></i>
-                                                    </button>
-                                                @elseif ($item->status == 'success')
-                                                    <span class="badge bg-success">Success</span>
+                                                @if ($item->device_type == 'P')
+                                                    <span class="badge bg-primary">Timbangan Package</span>
+                                                @elseif($item->device_type == 'O')
+                                                    <span class="badge bg-secondary">Timbangan Ordersheet</span>
                                                 @endif
+                                            </td>
+                                            <td>{{ $item->file_name }}</td>
+                                            <td>
+                                                {{-- download --}}
+                                                <a href="{{ route('admin.firmware.download', $item->id) }}"
+                                                    class="btn btn-sm btn-outline-success">
+                                                    <i class="fa-solid fa-download"></i> Download
+                                                </a>
+                                            </td>
+                                            <td>
+                                                @php
+                                                    $badgeClass = match ($item->status) {
+                                                        'draft' => 'secondary',
+                                                        'uploaded' => 'primary',
+                                                        'published' => 'success',
+                                                        'expired' => 'danger',
+                                                        default => 'dark',
+                                                    };
+                                                @endphp
+
+                                                <span class="badge bg-{{ $badgeClass }}">
+                                                    {{ ucfirst($item->status) }}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <button type="button" data-bs-toggle="modal"
+                                                    data-bs-target="#posting{{ $item->id }}"
+                                                    class="btn btn-outline-info btn-sm" data-bs-title="Post">
+                                                    <i class="fa-solid fa-file-arrow-up"></i> Edit
+                                                </button>
+
+                                                <button type="button" data-bs-toggle="modal"
+                                                    data-bs-target="#hapus{{ $item->id }}"
+                                                    class="btn btn-outline-danger btn-sm btn-hapus-firmware"
+                                                    data-status="{{ $item->status }}" data-bs-title="Hapus">
+                                                    <i class="fa-solid fa-trash"></i> Hapus
+                                                </button>
                                             </td>
                                         @endforeach
                                     <tr>
@@ -95,7 +140,7 @@
                         </table>
                     </div>
                     <div class="d-flex mt-2 justify-content-end">
-                        {{ $devices->withQueryString()->links() }}
+                        {{ $firmware->withQueryString()->links() }}
                     </div>
                 </div>
             </div>
@@ -103,59 +148,8 @@
     </div>
 
     @include('admin.master.device.create')
-
-    @foreach ($devices as $dev)
-        <div class="modal fade" id="posting{{ $dev->id }}" tabindex="-1" aria-labelledby="timbangModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
-                <!-- Responsive fullscreen di HP -->
-                <div class="modal-content">
-                    <div class="modal-header text-dark">
-                        <h5 class="modal-title" id="timbangModalLabel">Post File ke User</h5>
-                        <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <form action="{{ route('admin.firmware.post', $dev->id) }}" method="POST">
-                        @csrf
-                        <div class="modal-body p-md-4">
-                            <div class="table-responsive">
-                                <table class="table table-responsive table-sm align-middle mb-0">
-                                    <tbody>
-                                        <tr>
-                                            <th width="30%">Name</th>
-                                            <td>{{ $latestFirmware->file_name ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Firmware Version</th>
-                                            <td>{{ $latestFirmware->version ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Notes</th>
-                                            <td>{{ $latestFirmware->notes ?? '-' }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="verifikasi">
-                            <h5 class="text-center">Apakah Anda Yakin Ingin Mengirim File Firmware Ini ke User?</h5>
-                        </div>
-
-                        <!-- FOOTER -->
-                        <div class="modal-footer justify-content-center gap-2 flex-wrap">
-                            <button type="submit" class="btn btn-success px-4">
-                                <i class="fa-solid fa-circle-check"></i> Ya
-                            </button>
-                            <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
-                                <i class="fa-solid fa-circle-xmark"></i> Tidak
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endforeach
+    @include('admin.master.device.edit')
+    @include('admin.master.device.delete')
 
     @push('css')
     @endpush
@@ -163,6 +157,7 @@
     @push('js')
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
             function updateDateTime() {
                 const now = new Date();
@@ -188,6 +183,44 @@
             document.addEventListener('DOMContentLoaded', () => {
                 updateDateTime();
                 setInterval(updateDateTime, 1000);
+            });
+
+            document.addEventListener('DOMContentLoaded', function() {
+
+                // tangkap semua tombol hapus
+                document.querySelectorAll('.btn-hapus-firmware').forEach(button => {
+
+                    button.addEventListener('click', function(e) {
+
+                        const status = this.getAttribute('data-status');
+
+                        // Jika sudah published → blokir & tampilkan alert
+                        if (status === 'published') {
+
+                            e.preventDefault(); // penting: cegah modal terbuka
+                            e.stopPropagation();
+
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Tidak dapat dihapus',
+                                html: `Firmware versi <b>${this.getAttribute('data-version') || 'ini'}</b><br>
+                                   sudah berstatus <b>published</b>.<br><br>
+                                   <small>Ganti status published terlebih dahulu jika ingin menghapus.</small>`,
+                                confirmButtonColor: '#dc3545',
+                                confirmButtonText: 'Mengerti',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false
+                            });
+
+                            return false;
+                        }
+
+                        // Jika bukan published → boleh lanjut buka modal konfirmasi biasa
+                        // tidak perlu lakukan apa-apa lagi di sini
+
+                    });
+                });
+
             });
         </script>
     @endpush

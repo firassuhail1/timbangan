@@ -28,23 +28,28 @@ class Device extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function ordersheets(){
+    public function ordersheets()
+    {
         return $this->hasMany(Ordersheet::class);
     }
 
-    public function timbanganRiwayats(){
+    public function timbanganRiwayats()
+    {
         return $this->hasMany(Timbangan_riwayat::class);
     }
 
-    public function ordersheetPackages(){
+    public function ordersheetPackages()
+    {
         return $this->hasMany(OrdersheetPackage::class);
     }
 
-    public function ordersheetPackageWeights(){
+    public function ordersheetPackageWeights()
+    {
         return $this->hasMany(OrdersheetPackageweight::class);
     }
 
-    // public function firmware(){
-    //     return $this->hasMany(Firmwares::class);
-    // }
+    public function pendingFirmware()
+    {
+        return $this->belongsTo(Firmwares::class, 'pending_firmware_id');
+    }
 }

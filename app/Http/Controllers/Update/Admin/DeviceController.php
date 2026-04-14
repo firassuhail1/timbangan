@@ -16,7 +16,7 @@ class DeviceController extends Controller
         $search = $request->input('search');
         $entries = $request->input('entries', 10);
 
-        $query = Device::with( 'user', 'firmware', 'update')
+        $query = Device::with('user', 'firmware', 'update')
             ->where('user_id', Auth::id());
 
         if ($search) {
@@ -82,14 +82,10 @@ class DeviceController extends Controller
 
             // Tetapkan status
             $device->status = 'in_use';
-        }
-
-        elseif (!$currentUserId && $incomingUserId) {
+        } elseif (!$currentUserId && $incomingUserId) {
             $device->user_id = $incomingUserId;
             $device->status  = 'in_use';
-        }
-
-        else {
+        } else {
             $device->status = 'online';
         }
 
@@ -137,5 +133,4 @@ class DeviceController extends Controller
             ]);
         }
     }
-
 }

@@ -750,7 +750,17 @@
         {{-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
         <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+        <script>
+            window.APP = {
+                userId: {{ Auth::id() }},
+                isAuth: {{ Auth::check() ? 'true' : 'false' }},
+                espId: "{{ optional(\App\Models\Update\Device::where('user_id', Auth::id())->where('status', 'in_use')->first())->esp_id }}"
+            }
+        </script>
+
         <script src="{{ asset('auth/js/order.js') }}"></script>
+        @vite(['resources/js/app.js'])
     @endpush
 
 </x-layout.home>

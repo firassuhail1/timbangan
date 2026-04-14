@@ -8,12 +8,19 @@ class Firmwares extends Model
 {
     protected $guarded = [];
 
+    protected $casts = [
+        'released_at' => 'datetime',
+        'created_at'  => 'datetime',
+        'updated_at'  => 'datetime',
+    ];
+
+    public function devices()
+    {
+        return $this->hasMany(Device::class, 'pending_firmware_id');
+    }
+
     public function updates()
     {
         return $this->hasMany(Device_update::class);
     }
-
-    // public function device(){
-    //     return $this->belongsTo(Device::class);
-    // }
 }

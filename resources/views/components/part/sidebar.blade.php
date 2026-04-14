@@ -55,21 +55,32 @@
                         </li>
 
                         <li class="sidebar-title">Master</li>
-                        <li class="sidebar-item {{ request()->is('admin/view-data*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.view-data') }}" class="sidebar-link">
+                        <li class="sidebar-item {{ request()->is('admin/view-firmware*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.view-firmware') }}" class="sidebar-link">
                                 <i class="fa-solid fa-upload"></i>
                                 <span>File Firmware ESP</span>
                             </a>
                         </li>
 
-                        <li class="sidebar-title">Main</li>
+                        <li class="sidebar-title">Report</li>
+                        @php
+                            $reportActive =
+                                request()->is('admin/rekap/order*') || request()->is('admin/rekap/package*');
+                        @endphp
 
-                        {{-- ORDERSHEET (aktif untuk semua turunan: index, show, edit, dll) --}}
-                        <li class="sidebar-item {{ request()->is('admin/ordersheet-index*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.view.index') }}" class="sidebar-link">
-                                <i class="bi bi-card-list"></i>
-                                <span>Data Ordersheet</span>
+                        <li class="sidebar-item has-sub {{ $reportActive ? 'active' : '' }}">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-stack"></i>
+                                <span>Report</span>
                             </a>
+                            <ul class="submenu {{ $reportActive ? 'active' : '' }}">
+                                <li class="submenu-item {{ request()->is('admin/rekap/order*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.rekap.order') }}">Ordersheet</a>
+                                </li>
+                                {{-- <li class="submenu-item {{ request()->is('admin/rekap/package*') ? 'active' : '' }}">
+                                    <a href="{{ route('admin.rekap.package') }}">Package</a>
+                                </li> --}}
+                            </ul>
                         </li>
 
                         {{-- ================= USER MENU ================= --}}
@@ -128,32 +139,18 @@
                             </li>
                         @endif
 
+                        <li class="sidebar-title">Firmware</li>
+
+                        {{-- ORDERSHEET (aktif untuk semua turunan: index, show, edit, dll) --}}
+                        <li class="sidebar-item {{ request()->is('user/firmware*') ? 'active' : '' }}">
+                            <a href="{{ route('firmware.user') }}" class="sidebar-link">
+                                <i class="fa-solid fa-screwdriver-wrench"></i>
+                                <span>Update Firmware</span>
+                            </a>
+                        </li>
+
                     @endif
                 @endif
-
-                {{-- <li class="sidebar-item  has-sub">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-stack"></i>
-                        <span>Menu</span>
-                    </a>
-                    <ul class="submenu ">
-                        <li class="submenu-item ">
-                            <a href="{{ url('/lahan') }}">Informasi Lahan</a>
-                        </li>
-                        <li class="submenu-item ">
-                            <a href="{{ url('/bibit') }}">Supplier Bibit</a>
-                        </li>
-                        <li class="submenu-item ">
-                            <a href="{{ url('/pupuk') }}">Supplier Pupuk</a>
-                        </li>
-                        <li class="submenu-item ">
-                            <a href="{{ url('/tenaga') }}">Jasa Tenaga</a>
-                        </li>
-                        <li class="submenu-item ">
-                            <a href="{{ url('/satuan') }}">Satuan</a>
-                        </li>
-                    </ul>
-                </li> --}}
             </ul>
         </div>
     </div>

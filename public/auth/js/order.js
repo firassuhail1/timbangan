@@ -85,8 +85,8 @@ function initSearch() {
 
     async function fetchData(page = 1) {
         const search = document.getElementById('search')?.value.trim() || ''
-        const start = document.getElementById('start_date')?.value || ''
-        const end = document.getElementById('end_date')?.value || ''
+        const start  = document.getElementById('start_date')?.value || ''
+        const end    = document.getElementById('end_date')?.value || ''
 
         saveSearchState({ search, start, end, page })
 
@@ -94,55 +94,44 @@ function initSearch() {
         tableBody.innerHTML = `<tr><td colspan="9" class="text-center">Memuat...</td></tr>`
 
         try {
-            let pageNum = 1
-            let lastPage = 1
-            const weighedIds = getWeighedIds()
-            const result = []
+            const params = new URLSearchParams({ per_page: 9999 }) // ← minta semua
+            if (search) params.append('search', search)
+            if (start)  params.append('start_date', start)
+            if (end)    params.append('end_date', end)
 
-            do {
-                const params = new URLSearchParams({ page: pageNum })
-                if (search) params.append('search', search)
-                if (start) params.append('start_date', start)
-                if (end) params.append('end_date', end)
+            const res  = await fetch(`/api/ordersheet?${params}`)
+            const json = await res.json()
 
-                const res = await fetch(`/api/ordersheet?${params}`)
-                const json = await res.json()
-
-                if (!json.success) break
-
-                lastPage = json.last_page
-                result.push(
-                    ...json.data.filter((item) => !weighedIds.includes(item.id))
-                )
-
-                pageNum++
-            } while (pageNum <= lastPage)
-
-            allFilteredData = result
             spinner.style.display = 'none'
+
+            if (!json.success) {
+                tableBody.innerHTML = `<tr><td colspan="9" class="text-danger text-center">Gagal memuat data</td></tr>`
+                return
+            }
+
+            const weighedIds   = getWeighedIds()
+            allFilteredData    = json.data.filter(item => !weighedIds.includes(item.id))
 
             renderPage(page)
         } catch (err) {
             spinner.style.display = 'none'
-            console.error(err)
+            tableBody.innerHTML = `<tr><td colspan="9" class="text-danger text-center">Error: ${err.message}</td></tr>`
         }
     }
 
     function renderTable(data, currentPage) {
-        const weighedIds = getWeighedIds()
-
-        const filtered = data.filter((item) => !weighedIds.includes(item.id))
-
-        if (filtered.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="9" class="text-success text-center">
-                Semua data pada hasil ini sudah ditimbang ✔
-             </td></tr>`
+        // ✅ Tidak perlu filter lagi — data sudah bersih dari renderPage
+        if (data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="9" class="text-success text-center py-4">
+                Semua data sudah ditimbang ✔
+            </td></tr>`
+            pagination.innerHTML = ''
             return
         }
 
         let rows = ''
-        filtered.forEach((item, i) => {
-            const no = i + 1 + (currentPage - 1) * 10
+        data.forEach((item, i) => {
+            const no = i + 1 + (currentPage - 1) * PAGE_SIZE  // ← pakai PAGE_SIZE bukan hardcode 10
             rows += `
             <tr>
                 <td>${no}</td>
@@ -170,37 +159,92 @@ function initSearch() {
             return
         }
 
-        let html = `<ul class="pagination">`
-        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${
-                            currentPage - 1
-                        }">Previous</a>
-                     </li>`
+        // Hitung range halaman yang ditampilkan
+        function getPageRange(current, last) {
+            const delta = 2 // jumlah halaman di kiri/kanan halaman aktif
+            const range = []
+            const rangeWithDots = []
 
-        for (let i = 1; i <= lastPage; i++) {
-            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-                            <a class="page-link" href="#" data-page="${i}">${i}</a>
-                         </li>`
+            for (let i = Math.max(2, current - delta); i <= Math.min(last - 1, current + delta); i++) {
+                range.push(i)
+            }
+
+            // Selalu tampilkan halaman 1
+            rangeWithDots.push(1)
+
+            // Tambah "..." sebelum range jika ada gap
+            if (range[0] > 2) {
+                rangeWithDots.push('...')
+            }
+
+            rangeWithDots.push(...range)
+
+            // Tambah "..." setelah range jika ada gap
+            if (range[range.length - 1] < last - 1) {
+                rangeWithDots.push('...')
+            }
+
+            // Selalu tampilkan halaman terakhir
+            if (last > 1) {
+                rangeWithDots.push(last)
+            }
+
+            return rangeWithDots
         }
 
-        html += `<li class="page-item ${
-            currentPage === lastPage ? 'disabled' : ''
-        }">
-                        <a class="page-link" href="#" data-page="${
-                            currentPage + 1
-                        }">Next</a>
-                     </li></ul>`
+        const pages = getPageRange(currentPage, lastPage)
+
+        let html = `<ul class="pagination pagination-sm flex-wrap justify-content-center mb-0">`
+
+        // Tombol Previous
+        html += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>`
+
+        // Nomor halaman
+        pages.forEach(p => {
+            if (p === '...') {
+                html += `<li class="page-item disabled"><span class="page-link">…</span></li>`
+            } else {
+                html += `
+                    <li class="page-item ${p === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${p}">${p}</a>
+                    </li>`
+            }
+        })
+
+        // Tombol Next
+        html += `
+            <li class="page-item ${currentPage === lastPage ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>`
+
+        html += `</ul>`
+
+        // Tambah info "Halaman X dari Y"
+        html += `
+            <div class="text-muted text-center mt-1" style="font-size: 0.8rem;">
+                Halaman ${currentPage} dari ${lastPage}
+            </div>`
 
         pagination.innerHTML = html
 
-        pagination.querySelectorAll('a[data-page]').forEach((link) => {
-            link.addEventListener('click', (e) => {
+        // Event listener
+        pagination.querySelectorAll('a[data-page]').forEach(link => {
+            link.addEventListener('click', e => {
                 e.preventDefault()
                 const page = parseInt(link.dataset.page)
                 if (page > 0 && page <= lastPage) {
                     const state = getSearchState()
                     saveSearchState({ ...state, page })
                     renderPage(page)
+                    // Scroll ke atas tabel
+                    document.getElementById('resultTable').scrollIntoView({ behavior: 'smooth', block: 'start' })
                 }
             })
         })
@@ -212,18 +256,32 @@ function initSearch() {
         document.getElementById('start_date').value = lastState.start || ''
         document.getElementById('end_date').value = lastState.end || ''
         fetchData(lastState.page || 1)
+    }  else {
+        // Auto-load saat pertama buka tanpa state
+        fetchData(1)  // ← tambah ini
     }
 
     renderPage = function (page) {
-        const totalData = allFilteredData.length
-        const totalPage = Math.ceil(totalData / PAGE_SIZE)
+        const weighedIds = getWeighedIds()
 
-        if (page > totalPage && totalPage > 0) page = totalPage
+        // ✅ Filter DULU dari allFilteredData (sebelum slice)
+        const visibleData = allFilteredData.filter(
+            (item) => !weighedIds.includes(item.id)
+        )
+
+        console.log('Total allFilteredData:', allFilteredData.length)
+        console.log('Total visibleData (setelah filter weighed):', visibleData.length)
+        console.log('PAGE_SIZE:', PAGE_SIZE)
+        console.log('Total page:', Math.ceil(visibleData.length / PAGE_SIZE))
+
+        const totalData = visibleData.length
+        const totalPage = Math.ceil(totalData / PAGE_SIZE) || 1
+
+        // Koreksi page jika melebihi batas
+        if (page > totalPage) page = totalPage
 
         const start = (page - 1) * PAGE_SIZE
-        const end = start + PAGE_SIZE
-
-        const pageData = allFilteredData.slice(start, end)
+        const pageData = visibleData.slice(start, start + PAGE_SIZE)
 
         renderTable(pageData, page)
         renderPagination(page, totalPage)
@@ -354,7 +412,12 @@ function openModalForItem(item) {
 
             await loadPreview()
             hitungLossWeight()
-            startPolling()
+            // startPolling()
+            // Ambil esp_id dari device aktif
+            const espId = window.APP?.espId  // ← perlu ditambah di blade
+            if (espId) {
+                startListening(espId)
+            }
         },
         { once: true }
     )
@@ -433,18 +496,97 @@ function resetPreviewUI() {
 }
 
 // Polling
-function startPolling() {
-    stopPolling()
-    pollingInterval = setInterval(() => {
-        loadPreview()
-    }, 1500)
-}
+// function startPolling() {
+//     stopPolling()
+//     pollingInterval = setInterval(() => {
+//         loadPreview()
+//     }, 1500)
+// }
 
 function stopPolling() {
     if (pollingInterval) {
         clearInterval(pollingInterval)
         pollingInterval = null
     }
+}
+
+function startListening(espId) {
+    stopPolling()
+    stopListening() // stop listener lama dulu
+
+    window._currentEspId = espId
+
+    window.Echo.channel(`timbangan.${espId}`)
+        .listen('.berat.updated', (data) => {
+            updateBeratUI(data.berat)
+        })
+}
+
+function stopListening() {
+    if (window._currentEspId) {
+        window.Echo.leaveChannel(`timbangan.${window._currentEspId}`)
+        window._currentEspId = null
+    }
+}
+
+function updateBeratUI(berat) {
+    const weightEl = document.getElementById('currentWeight')
+    const statusEl = document.getElementById('previewStatus')
+
+    const newText = parseFloat(berat).toFixed(2)
+
+    if (weightEl.textContent !== newText) {
+        weightEl.textContent = newText
+
+        weightEl.style.transition = 'all 0.4s ease'
+        weightEl.style.transform = 'scale(1.25)'
+        weightEl.style.color = '#e91e63'
+        setTimeout(() => {
+            weightEl.style.transform = 'scale(1)'
+            weightEl.style.color = '#0d6efd'
+        }, 400)
+
+        lastStableWeight = null
+        stableStartTime = null
+    }
+
+    // Deteksi stabil
+    const sekarang = Date.now()
+    if (berat >= 0.5) {
+        if (lastStableWeight === null) {
+            lastStableWeight = berat
+            stableStartTime = sekarang
+        } else if (Math.abs(berat - lastStableWeight) <= STABLE_THRESHOLD) {
+            if (sekarang - stableStartTime >= STABLE_DURATION) {
+                statusEl.textContent = 'STABIL'
+                statusEl.className = 'text-success fw-bold fs-4'
+                if (!statusEl.dataset.beeped) {
+                    playStableBeep()
+                    statusEl.dataset.beeped = 'true'
+                }
+            } else {
+                statusEl.textContent = 'Menunggu stabil...'
+                statusEl.className = 'text-warning fw-bold'
+            }
+        } else {
+            lastStableWeight = berat
+            stableStartTime = sekarang
+            statusEl.dataset.beeped = ''
+        }
+    } else if (berat < 0.05) {
+        statusEl.textContent = 'Timbangan kosong'
+        statusEl.className = 'text-muted'
+        lastStableWeight = null
+        stableStartTime = null
+        statusEl.dataset.beeped = ''
+    } else {
+        statusEl.textContent = 'Ada beban kecil...'
+        statusEl.className = 'text-info fw-bold'
+    }
+
+    document.getElementById('btnSimpanTimbang').disabled = berat < 0.5
+    latestPreview = { berat: parseFloat(berat).toFixed(2) }
+    hitungLossWeight()
 }
 
 const THRESHOLD = 0.002

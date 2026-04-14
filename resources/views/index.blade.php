@@ -21,37 +21,71 @@
         <section class="row">
 
             {{-- ===== STATISTIK CARD ===== --}}
-            <div class="col-12 col-md-12 mb-4">
-                <div class="row">
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="card shadow-sm text-center p-3">
-                            <h6 class="text-muted">Total Ordersheet</h6>
-                            <h3 class="fw-bold">{{ $totalOrdersheet }}</h3>
-                        </div>
-                    </div>
+            <div class="row g-4 mb-4">
 
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="card shadow-sm text-center p-3">
-                            <h6 class="text-muted">Total Box Ditimbang</h6>
-                            <h3 class="fw-bold">{{ $totalTimbangan }}</h3>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="card shadow-sm text-center p-3">
-                            <h6 class="text-muted">Box Sukses</h6>
-                            <h3 class="fw-bold text-success">{{ $totalSuccess }}</h3>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="card shadow-sm text-center p-3">
-                            <h6 class="text-muted">Box Rejected</h6>
-                            <h3 class="fw-bold text-danger">{{ $totalRejected }}</h3>
+                {{-- Total Ordersheet --}}
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100 stat-card">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="icon-wrapper bg-primary-subtle text-primary me-3">
+                                <i class="fa-solid fa-box"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-1 small">Total Ordersheet</p>
+                                <h4 class="fw-bold mb-0">{{ number_format($totalOrdersheet) }}</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {{-- Total Timbangan --}}
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100 stat-card">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="icon-wrapper bg-info-subtle text-info me-3">
+                                <i class="fa-solid fa-dolly"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-1 small">Total Box Ditimbang</p>
+                                <h4 class="fw-bold mb-0">{{ number_format($totalTimbangan) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Success --}}
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100 stat-card">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="icon-wrapper bg-success-subtle text-success me-3">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-1 small">Box Sukses</p>
+                                <h4 class="fw-bold mb-0 text-success">{{ number_format($totalSuccess) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Rejected --}}
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100 stat-card">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="icon-wrapper bg-danger-subtle text-danger me-3">
+                                <i class="fa-solid fa-box-open"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-1 small">Box Rejected</p>
+                                <h4 class="fw-bold mb-0 text-danger">{{ number_format($totalRejected) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
+            <hr>
 
             {{-- ===== GRAFIK ===== --}}
             <div class="col-12 col-lg-9">
@@ -64,6 +98,8 @@
                     </div>
                 </div>
             </div>
+
+            <hr>
 
             {{-- ===== TABEL RINGKAS ===== --}}
             <div class="col-12">
@@ -105,6 +141,23 @@
         <style>
             .card h3 {
                 font-size: 1.8rem;
+            }
+
+            .stat-card {
+                transition: all 0.25s ease;
+                border-radius: 12px;
+            }
+
+            .stat-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            }
+
+            .icon-wrapper {
+                width: 80px;
+                height: 80px;
+                border-radius: 20px;
+                font-size: 32px;
             }
         </style>
     @endpush
@@ -165,6 +218,22 @@
                         }
                     }
                 }
+            });
+
+            document.querySelectorAll('.stat-card h4').forEach(el => {
+                let target = parseInt(el.innerText.replace(/,/g, ''));
+                let count = 0;
+                let step = Math.ceil(target / 50);
+
+                let interval = setInterval(() => {
+                    count += step;
+                    if (count >= target) {
+                        el.innerText = target.toLocaleString();
+                        clearInterval(interval);
+                    } else {
+                        el.innerText = count.toLocaleString();
+                    }
+                }, 20);
             });
         </script>
     @endpush

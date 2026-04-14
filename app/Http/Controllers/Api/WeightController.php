@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TareCommand;
 use App\Http\Controllers\Controller;
 use App\Models\Ordersheet;
 use App\Models\Timbangan_riwayat;
@@ -84,8 +85,8 @@ class WeightController extends Controller
         }
 
         $device = Device::where('user_id', Auth::id())
-                        ->where('status', 'in_use')
-                        ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json(['success' => false, 'message' => 'Device tidak aktif'], 403);
@@ -114,8 +115,8 @@ class WeightController extends Controller
     public function cekIdAktif(Request $request)
     {
         $device = Device::where('api_key', $request->header('X-API-KEY'))
-                        ->where('status', 'in_use')
-                        ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json(['current_id' => null]);
@@ -151,8 +152,8 @@ class WeightController extends Controller
     public function terimaBerat(Request $request)
     {
         $device = Device::where('api_key', $request->header('X-API-KEY'))
-                        ->where('status', 'in_use')
-                        ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -222,12 +223,12 @@ class WeightController extends Controller
     //     return response('OK', 200);
     // }
 
-    
+
     public function getPreview($id)
     {
         $device = Device::where('user_id', Auth::id())
-                        ->where('status', 'in_use')
-                        ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json(['success' => false], 403);
@@ -263,12 +264,12 @@ class WeightController extends Controller
     //     ]);
     // }
 
-    
+
     public function cekPerintah(Request $request)
     {
         $device = Device::where('api_key', $request->header('X-API-KEY'))
-                        ->where('status', 'in_use')
-                        ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json(['tare' => false]);
@@ -280,7 +281,7 @@ class WeightController extends Controller
         ]);
     }
 
-    
+
     // public function cekPerintah(Request $request)
     // {
     //     $apiKey = $request->header('X-API-KEY');
@@ -337,22 +338,39 @@ class WeightController extends Controller
     //     ]);
     // }
 
+    // public function tare(Request $request)
+    // {
+    //     $device = Device::where('user_id', Auth::id())
+    //                     ->where('status', 'in_use')
+    //                     ->first();
+
+    //     if (!$device) {
+    //         return response()->json(['success' => false], 403);
+    //     }
+
+    //     Cache::put("tare_now_{$device->esp_id}", true, now()->addSeconds(10));
+
+    //     return response()->json(['success' => true]);
+    // }
+
     public function tare(Request $request)
     {
         $device = Device::where('user_id', Auth::id())
-                        ->where('status', 'in_use')
-                        ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json(['success' => false], 403);
         }
 
-        Cache::put("tare_now_{$device->esp_id}", true, now()->addSeconds(10));
+        Log::info('device : ' . $device);
+        // Broadcast perintah tare ke ESP32 via Reverb
+        broadcast(new TareCommand($device->esp_id));
 
         return response()->json(['success' => true]);
     }
 
-    
+
     public function simpan(Request $request)
     {
         $request->validate([
@@ -365,8 +383,8 @@ class WeightController extends Controller
         ]);
 
         $device = Device::where('user_id', Auth::id())
-                    ->where('status', 'in_use')
-                    ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         if (!$device) {
             return response()->json([
@@ -460,8 +478,8 @@ class WeightController extends Controller
                     'FinalDestination'    => $request->Destination ?? $existingV?->FinalDestination,
                     'status'              => 'Success',
                     'cari'                => ($request->Buyer ?? $existingV?->Buyer)
-                                            . ' ' . $request->Order_code . ' '
-                                            . ($request->PO ?? $existingV?->PurchaseOrderNumber),
+                        . ' ' . $request->Order_code . ' '
+                        . ($request->PO ?? $existingV?->PurchaseOrderNumber),
                 ]
             );
 
@@ -473,7 +491,6 @@ class WeightController extends Controller
                     ? "Data berhasil disimpan dengan berat: {$berat} kg!"
                     : "Data berhasil disimpan (tanpa berat timbangan)",
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error simpan ordersheet: ' . $e->getMessage());
