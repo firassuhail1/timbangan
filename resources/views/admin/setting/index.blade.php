@@ -316,7 +316,7 @@
                     const data = await res.json();
 
                     if (data.success) {
-                        Swal.fire('Sukses!', 'Berhasil pindah device!', 'success').then(() => {
+                        Swal.fire('Sukses!', 'Berhasil pindah devicer!', 'success').then(() => {
                             location.reload();
                         });
                     } else {

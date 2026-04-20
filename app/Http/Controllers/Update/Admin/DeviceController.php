@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Update\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Update\Device;
 use App\Models\Update\Device_update;
+use App\Models\Update\Device;
 use App\Models\Update\Firmwares;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class DeviceController extends Controller
 {
@@ -43,8 +44,14 @@ class DeviceController extends Controller
 
     public function heartbeat(Request $request)
     {
+        Log::info('data yg masuk : ' . json_encode($request->all()));
+        $request->merge([
+            'device_type' => $request->device_type ?: 'timbangan'
+        ]);
+
         $request->validate([
             'esp_id'      => 'required|string',
+            'mac_esp'     => 'required|string',
             'device_type' => 'required|string',
             'user_id'     => 'nullable|integer',
             'name'        => 'nullable|string',
@@ -52,12 +59,14 @@ class DeviceController extends Controller
             'wifi_password'   => 'nullable|string',
         ]);
 
+        Log::info('selesai');
         // Ambil atau buat device baru berdasarkan ESP ID
         $device = Device::firstOrNew(
             ['esp_id' => $request->esp_id],
             [
                 'device_type' => $request->device_type,
-                'name'        => $request->name
+                'name'        => $request->name,
+                'mac_esp'        => $request->mac_esp
             ]
         );
 

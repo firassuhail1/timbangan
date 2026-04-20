@@ -555,6 +555,7 @@
                                         {{ $selectedEsp === $device->esp_id ? 'selected' : '' }}>
                                         {{ $device->name ?? $device->esp_id }}
                                     </option>
+                                    <input type="hidden" value="{{ $device->mac_esp }}" name="mac_esp">
                                 @endforeach
                             </select>
 

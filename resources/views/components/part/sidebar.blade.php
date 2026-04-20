@@ -104,7 +104,7 @@
                                     ->first();
 
                                 if ($device) {
-                                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                                    if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $matches)) {
                                         $deviceType = $matches[1];
                                     }
                                 }

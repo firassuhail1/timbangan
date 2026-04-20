@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class WeightController extends Controller
 {
@@ -373,18 +374,50 @@ class WeightController extends Controller
 
     public function simpan(Request $request)
     {
-        $request->validate([
-            'Order_code' => 'required|string',
-            'Buyer'      => 'required|string',
-            'berat'      => 'required|numeric|min:0',
-            'no_box'     => 'required',
+        Log::info('--- Memulai Validasi Data Timbang ---');
+        Log::info('Data yang diterima: ', $request->all());
+
+        // 1. Definisikan Validator secara manual
+        // Pesan kustom dalam Bahasa Indonesia yang simpel
+        $messages = [
+            'Order_code.required' => 'Kode Order belum diisi, tolong cek lagi ya.',
+            'Buyer.required'      => 'Nama Pembeli jangan dikosongkan.',
+            'berat.required'      => 'Timbangan belum stabil atau berat belum masuk.',
+            'berat.numeric'       => 'Data berat harus berupa angka.',
+            'no_box.required'     => 'Nomor Box harus diisi, jangan sampai tertukar.',
+            'rasio_batas_beban_min.required' => 'Batas beban minimum belum ditentukan.',
+            'rasio_batas_beban_max.required' => 'Batas beban maksimum belum ditentukan.',
+        ];
+
+        $validator = Validator::make($request->all(), [
+            'Order_code'            => 'required|string',
+            'Buyer'                 => 'required|string',
+            'berat'                 => 'required|numeric|min:0.01',
+            'no_box'                => 'required',
             'rasio_batas_beban_min' => 'required|numeric',
             'rasio_batas_beban_max' => 'required|numeric'
-        ]);
+        ], $messages); // Masukkan variabel $messages di sini
+
+        if ($validator->fails()) {
+            // Ambil pesan pertama saja agar user tidak pusing baca banyak error
+            $errors = $validator->errors()->all();
+            $pesanSingkat = $errors[0];
+
+            Log::warning('User salah input: ' . $pesanSingkat);
+
+            return response()->json([
+                'success' => false,
+                'message' => $pesanSingkat, // Kirim satu pesan yang paling jelas
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        Log::info('Validasi Berhasil. Melanjutkan ke proses simpan...');
 
         $device = Device::where('user_id', Auth::id())
             ->where('status', 'in_use')
             ->first();
+        Log::info('ketiga');
 
         if (!$device) {
             return response()->json([
@@ -393,15 +426,18 @@ class WeightController extends Controller
             ], 400);
         }
 
+        Log::info('keempat');
         DB::beginTransaction();
         try {
 
             $existingOrdersheet = Ordersheet::where('Order_code', $request->Order_code)->first();
             $existingV = VAllOrdersheetPlusCari::where('Order_code', $request->Order_code)->first();
 
+            Log::info('kelima');
             $device = Device::where('user_id', Auth::id())
                 ->where('status', 'in_use')
                 ->first();
+            Log::info('keenam');
 
             // Buat Ordersheet baru setiap timbang
             $ordersheet = Ordersheet::create([

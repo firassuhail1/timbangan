@@ -985,7 +985,7 @@ async function switchDevice(deviceId) {
         const data = await res.json()
 
         if (data.success) {
-            Swal.fire('Sukses!', 'Berhasil pindah device!', 'success').then(
+            Swal.fire('Sukses!', 'Berhasil pindah devicev!', 'success').then(
                 () => {
                     // Redirect sesuai tipe device
                     const type = data.device_type

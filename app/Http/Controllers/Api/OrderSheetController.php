@@ -126,45 +126,45 @@ class OrderSheetController extends Controller
         ]);
     }
 
-    // public function getData(Request $request)
-    // {
-    //     $search = $request->query('search');
-    //     $startDate = $request->query('start_date');
-    //     $endDate = $request->query('end_date');
-    //     $perPage = 10;
+    public function getData(Request $request)
+    {
+        $search = $request->query('search');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $perPage = 10;
 
-    //     $query = VAllOrdersheetPlusCari::query();
+        $query = VAllOrdersheetPlusCari::query();
 
-    //     if ($search) {
-    //         $query->where(function ($q) use ($search) {
-    //             $q->where('ID', 'LIKE', "%{$search}%")
-    //                 ->orWhere('Order_code', 'LIKE', "%{$search}%")
-    //                 ->orWhere('Buyer', 'LIKE', "%{$search}%")
-    //                 ->orWhere('PurchaseOrderNumber', 'LIKE', "%{$search}%")
-    //                 ->orWhere('ProductName', 'LIKE', "%{$search}%")
-    //                 ->orWhere('Qty', 'LIKE', "%{$search}%");
-    //         });
-    //     }
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('ID', 'LIKE', "%{$search}%")
+                    ->orWhere('Order_code', 'LIKE', "%{$search}%")
+                    ->orWhere('Buyer', 'LIKE', "%{$search}%")
+                    ->orWhere('PurchaseOrderNumber', 'LIKE', "%{$search}%")
+                    ->orWhere('ProductName', 'LIKE', "%{$search}%")
+                    ->orWhere('Qty', 'LIKE', "%{$search}%");
+            });
+        }
 
-    //     if ($startDate && $endDate) {
-    //         $query->whereBetween('DocumentDate', [$startDate, $endDate]);
-    //     } elseif ($startDate) {
-    //         $query->where('DocumentDate', '>=', $startDate);
-    //     } elseif ($endDate) {
-    //         $query->where('DocumentDate', '<=', $endDate);
-    //     }
+        if ($startDate && $endDate) {
+            $query->whereBetween('DocumentDate', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $query->where('DocumentDate', '>=', $startDate);
+        } elseif ($endDate) {
+            $query->where('DocumentDate', '<=', $endDate);
+        }
 
-    //     $data = $query->orderBy('DocumentDate', 'desc')->paginate($perPage);
+        $data = $query->orderBy('DocumentDate', 'desc')->paginate($perPage);
 
-    //     Log::info('data : ' . $data);
-    //     return response()->json([
-    //         'success' => true,
-    //         'total' => $data->total(),
-    //         'current_page' => $data->currentPage(),
-    //         'last_page' => $data->lastPage(),
-    //         'data' => $data->items(),
-    //     ]);
-    // }
+        Log::info('data : ' . $data);
+        return response()->json([
+            'success' => true,
+            'total' => $data->total(),
+            'current_page' => $data->currentPage(),
+            'last_page' => $data->lastPage(),
+            'data' => $data->items(),
+        ]);
+    }
 
     // API Kanindo
     // public function getData(Request $request)
@@ -316,119 +316,119 @@ class OrderSheetController extends Controller
     //     }
     // }
 
-    public function getData(Request $request)
-    {
-        $search    = $request->query('search');
-        $startDate = $request->query('start_date');
-        $endDate   = $request->query('end_date');
-        // $perPage   = 10;
-        $perPage = min((int) $request->query('per_page', 10), 9999);
-        $page      = (int) $request->query('page', 1);
+    // public function getData(Request $request)
+    // {
+    //     $search    = $request->query('search');
+    //     $startDate = $request->query('start_date');
+    //     $endDate   = $request->query('end_date');
+    //     // $perPage   = 10;
+    //     $perPage = min((int) $request->query('per_page', 10), 9999);
+    //     $page      = (int) $request->query('page', 1);
 
-        $queryParams = array_filter([
-            'search'     => $search,
-            'start_date' => $startDate,
-            'end_date'   => $endDate,
-        ]);
+    //     $queryParams = array_filter([
+    //         'search'     => $search,
+    //         'start_date' => $startDate,
+    //         'end_date'   => $endDate,
+    //     ]);
 
-        // ✅ FIX 1: Cache key unik per kombinasi parameter
-        $cacheKey = 'ordersheet_' . md5(serialize($queryParams));
+    //     // ✅ FIX 1: Cache key unik per kombinasi parameter
+    //     $cacheKey = 'ordersheet_' . md5(serialize($queryParams));
 
-        try {
-            // ✅ FIX 2: Cache data mentah selama 5 menit
-            // Semua request dengan parameter sama hanya fetch 1x ke server sewing
-            $items = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($queryParams) {
+    //     try {
+    //         // ✅ FIX 2: Cache data mentah selama 5 menit
+    //         // Semua request dengan parameter sama hanya fetch 1x ke server sewing
+    //         $items = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($queryParams) {
 
-                Log::info('Fetching dari server sewing', $queryParams);
+    //             Log::info('Fetching dari server sewing', $queryParams);
 
-                $response = Http::timeout(60)
-                    ->get('http://192.168.0.20/sewing/qa/ordersheet/get_ordersheet_data_json', $queryParams);
+    //             $response = Http::timeout(60)
+    //                 ->get('http://192.168.0.20/sewing/qa/ordersheet/get_ordersheet_data_json', $queryParams);
 
-                if (!$response->successful()) {
-                    Log::error('Sewing API gagal', [
-                        'status' => $response->status(),
-                        // ✅ FIX 3: Jangan log body 2.4MB! Cukup 500 char pertama
-                        'body'   => substr($response->body(), 0, 500),
-                        'params' => $queryParams
-                    ]);
-                    throw new \RuntimeException('Server sewing error: ' . $response->status());
-                }
+    //             if (!$response->successful()) {
+    //                 Log::error('Sewing API gagal', [
+    //                     'status' => $response->status(),
+    //                     // ✅ FIX 3: Jangan log body 2.4MB! Cukup 500 char pertama
+    //                     'body'   => substr($response->body(), 0, 500),
+    //                     'params' => $queryParams
+    //                 ]);
+    //                 throw new \RuntimeException('Server sewing error: ' . $response->status());
+    //             }
 
-                $json = $response->json();
+    //             $json = $response->json();
 
-                $rawData = null;
-                if (isset($json['data']) && is_array($json['data'])) {
-                    $rawData = $json['data'];
-                } elseif (is_array($json) && array_is_list($json)) {
-                    $rawData = $json;
-                }
+    //             $rawData = null;
+    //             if (isset($json['data']) && is_array($json['data'])) {
+    //                 $rawData = $json['data'];
+    //             } elseif (is_array($json) && array_is_list($json)) {
+    //                 $rawData = $json;
+    //             }
 
-                if (!is_array($rawData)) {
-                    throw new \RuntimeException('Struktur data dari server sewing tidak sesuai');
-                }
+    //             if (!is_array($rawData)) {
+    //                 throw new \RuntimeException('Struktur data dari server sewing tidak sesuai');
+    //             }
 
-                // ✅ FIX 4: Map + deduplikasi + sort — dilakukan SEKALI, lalu di-cache
-                return collect($rawData)
-                    ->map(fn($item) => [
-                        'id'                  => data_get($item, 'id') ?? data_get($item, 'ID'),
-                        'Buyer'               => data_get($item, 'Buyer') ?? data_get($item, 'buyer'),
-                        'PurchaseOrderNumber' => data_get($item, 'PurchaseOrderNumber') ?? data_get($item, 'po_number') ?? data_get($item, 'PO'),
-                        'ProductName'         => data_get($item, 'ProductName') ?? data_get($item, 'product_name'),
-                        'Qty'                 => data_get($item, 'Qty') ?? data_get($item, 'qty') ?? 0,
-                        'ActualFOB'           => data_get($item, 'ActualFOB') ?? data_get($item, 'actual_fob'),
-                        'DocumentDate'        => data_get($item, 'DocumentDate') ?? data_get($item, 'document_date') ?? data_get($item, 'date'),
-                    ])
-                    ->unique('id')
-                    ->sortByDesc(fn($item) => strtotime($item['DocumentDate'] ?? '1970-01-01'))
-                    ->values()
-                    ->all(); // ✅ simpan sebagai array biasa di cache, bukan Collection
-            });
+    //             // ✅ FIX 4: Map + deduplikasi + sort — dilakukan SEKALI, lalu di-cache
+    //             return collect($rawData)
+    //                 ->map(fn($item) => [
+    //                     'id'                  => data_get($item, 'id') ?? data_get($item, 'ID'),
+    //                     'Buyer'               => data_get($item, 'Buyer') ?? data_get($item, 'buyer'),
+    //                     'PurchaseOrderNumber' => data_get($item, 'PurchaseOrderNumber') ?? data_get($item, 'po_number') ?? data_get($item, 'PO'),
+    //                     'ProductName'         => data_get($item, 'ProductName') ?? data_get($item, 'product_name'),
+    //                     'Qty'                 => data_get($item, 'Qty') ?? data_get($item, 'qty') ?? 0,
+    //                     'ActualFOB'           => data_get($item, 'ActualFOB') ?? data_get($item, 'actual_fob'),
+    //                     'DocumentDate'        => data_get($item, 'DocumentDate') ?? data_get($item, 'document_date') ?? data_get($item, 'date'),
+    //                 ])
+    //                 ->unique('id')
+    //                 ->sortByDesc(fn($item) => strtotime($item['DocumentDate'] ?? '1970-01-01'))
+    //                 ->values()
+    //                 ->all(); // ✅ simpan sebagai array biasa di cache, bukan Collection
+    //         });
 
-            $items = collect($items);
+    //         $items = collect($items);
 
-            // Filter tanggal (dilakukan setelah cache, data sudah ringan)
-            if ($startDate && $endDate) {
-                $start = strtotime($startDate . ' 00:00:00');
-                $end   = strtotime($endDate . ' 23:59:59');
+    //         // Filter tanggal (dilakukan setelah cache, data sudah ringan)
+    //         if ($startDate && $endDate) {
+    //             $start = strtotime($startDate . ' 00:00:00');
+    //             $end   = strtotime($endDate . ' 23:59:59');
 
-                if ($start === false || $end === false) {
-                    return response()->json(['success' => false, 'message' => 'Format tanggal tidak valid'], 422);
-                }
+    //             if ($start === false || $end === false) {
+    //                 return response()->json(['success' => false, 'message' => 'Format tanggal tidak valid'], 422);
+    //             }
 
-                if ($start > $end) [$start, $end] = [$end, $start];
+    //             if ($start > $end) [$start, $end] = [$end, $start];
 
-                $items = $items->filter(function ($item) use ($start, $end) {
-                    $time = strtotime($item['DocumentDate'] ?? '');
-                    return $time && $time >= $start && $time <= $end;
-                })->values();
-            }
+    //             $items = $items->filter(function ($item) use ($start, $end) {
+    //                 $time = strtotime($item['DocumentDate'] ?? '');
+    //                 return $time && $time >= $start && $time <= $end;
+    //             })->values();
+    //         }
 
-            // Pagination
-            $total    = $items->count();
-            $results  = $items->slice(($page - 1) * $perPage, $perPage)->values();
+    //         // Pagination
+    //         $total    = $items->count();
+    //         $results  = $items->slice(($page - 1) * $perPage, $perPage)->values();
 
-            $paginator = new LengthAwarePaginator($results, $total, $perPage, $page, [
-                'path' => $request->url()
-            ]);
+    //         $paginator = new LengthAwarePaginator($results, $total, $perPage, $page, [
+    //             'path' => $request->url()
+    //         ]);
 
-            return response()->json([
-                'success'      => true,
-                'total'        => $paginator->total(),
-                'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
-                'data'         => $paginator->items(),
-            ]);
-        } catch (\RuntimeException $e) {
-            // Error yang kita throw sendiri (API gagal, struktur salah)
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
-        } catch (\Exception $e) {
-            Log::error('Error di OrderSheetController', [
-                'message' => $e->getMessage(),
-                'file'    => $e->getFile() . ':' . $e->getLine(),
-            ]);
-            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan server'], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success'      => true,
+    //             'total'        => $paginator->total(),
+    //             'current_page' => $paginator->currentPage(),
+    //             'last_page'    => $paginator->lastPage(),
+    //             'data'         => $paginator->items(),
+    //         ]);
+    //     } catch (\RuntimeException $e) {
+    //         // Error yang kita throw sendiri (API gagal, struktur salah)
+    //         return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error di OrderSheetController', [
+    //             'message' => $e->getMessage(),
+    //             'file'    => $e->getFile() . ':' . $e->getLine(),
+    //         ]);
+    //         return response()->json(['success' => false, 'message' => 'Terjadi kesalahan server'], 500);
+    //     }
+    // }
 
     // Data keseluruhan
     public function print($buyer = null)

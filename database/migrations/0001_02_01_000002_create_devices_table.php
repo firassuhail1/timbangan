@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('pending_firmware_id')->nullable()->constrained('firmwares')->onDelete('set null');
             $table->timestamp('ota_started_at')->nullable();
             $table->string('esp_id')->unique();
+            $table->string('mac_esp')->unique();
             $table->string('name')->nullable();
             $table->string('device_type');
             $table->string('ip_address')->nullable();

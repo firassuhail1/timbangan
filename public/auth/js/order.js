@@ -530,63 +530,30 @@ function stopListening() {
 }
 
 function updateBeratUI(berat) {
-    const weightEl = document.getElementById('currentWeight')
-    const statusEl = document.getElementById('previewStatus')
+    display.innerText = formatBerat(berat);
+    hiddenInput.value = berat;
+    hitungLossWeight(berat);
 
-    const newText = parseFloat(berat).toFixed(2)
-
-    if (weightEl.textContent !== newText) {
-        weightEl.textContent = newText
-
-        weightEl.style.transition = 'all 0.4s ease'
-        weightEl.style.transform = 'scale(1.25)'
-        weightEl.style.color = '#e91e63'
-        setTimeout(() => {
-            weightEl.style.transform = 'scale(1)'
-            weightEl.style.color = '#0d6efd'
-        }, 400)
-
-        lastStableWeight = null
-        stableStartTime = null
+    if (berat <= 0.5) {
+        statusText.textContent = 'Timbangan Kosong';
+        statusText.className   = 'badge bg-warning text-dark fw-bold px-3 py-2';
+        btnSimpan.disabled     = true;
+        hasPlayedStableBeepForThisItem = false;
+        lastStableWeight = null;
+        return;
     }
 
-    // Deteksi stabil
-    const sekarang = Date.now()
-    if (berat >= 0.5) {
-        if (lastStableWeight === null) {
-            lastStableWeight = berat
-            stableStartTime = sekarang
-        } else if (Math.abs(berat - lastStableWeight) <= STABLE_THRESHOLD) {
-            if (sekarang - stableStartTime >= STABLE_DURATION) {
-                statusEl.textContent = 'STABIL'
-                statusEl.className = 'text-success fw-bold fs-4'
-                if (!statusEl.dataset.beeped) {
-                    playStableBeep()
-                    statusEl.dataset.beeped = 'true'
-                }
-            } else {
-                statusEl.textContent = 'Menunggu stabil...'
-                statusEl.className = 'text-warning fw-bold'
-            }
-        } else {
-            lastStableWeight = berat
-            stableStartTime = sekarang
-            statusEl.dataset.beeped = ''
-        }
-    } else if (berat < 0.05) {
-        statusEl.textContent = 'Timbangan kosong'
-        statusEl.className = 'text-muted'
-        lastStableWeight = null
-        stableStartTime = null
-        statusEl.dataset.beeped = ''
-    } else {
-        statusEl.textContent = 'Ada beban kecil...'
-        statusEl.className = 'text-info fw-bold'
+    // Data masuk = langsung stabil
+    statusText.textContent = 'Stabil';
+    statusText.className   = 'badge bg-success fw-bold px-3 py-2';
+    btnSimpan.disabled     = false;
+
+    if (!hasPlayedStableBeepForThisItem) {
+        playStableBeep();
+        hasPlayedStableBeepForThisItem = true;
     }
 
-    document.getElementById('btnSimpanTimbang').disabled = berat < 0.5
-    latestPreview = { berat: parseFloat(berat).toFixed(2) }
-    hitungLossWeight()
+    lastStableWeight = berat;
 }
 
 const THRESHOLD = 0.002
@@ -1026,11 +993,18 @@ function initSaveButton() {
             const res = await fetch('/user/order/simpan', {
                 method: 'POST',
                 body: formData,
+                headers: {
+                    'Accept': 'application/json', // WAJIB: Agar Laravel kirim JSON, bukan HTML
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 credentials: 'include'
             })
-            const json = await res.json()
 
-            if (res.ok && json.success) {
+            // Cek apakah response-nya beneran JSON sebelum di-parse
+            const isJson = res.headers.get('content-type')?.includes('application/json');
+            const json = isJson ? await res.json() : null;
+
+            if (res.ok && json?.success) {
                 playSuccessBeep()
 
                 Swal.fire({
@@ -1073,7 +1047,13 @@ function initSaveButton() {
                     }
                 }, 700)
             } else {
-                throw new Error(json.message || 'Gagal menyimpan')
+                // Jika validasi gagal (422), ambil pesan error dari Laravel
+                if (res.status === 422 && json?.errors) {
+                    // Gabungkan semua pesan error validasi menjadi satu string
+                    const errorMessages = Object.values(json.errors).flat().join('<br>');
+                    throw new Error(errorMessages);
+                }
+                throw new Error(json?.message || 'Gagal menyimpan (Status: ' + res.status + ')');
             }
         } catch (err) {
             Swal.fire('Error', err.message, 'error')
@@ -1202,7 +1182,7 @@ async function switchDevice(deviceId) {
         const data = await res.json()
 
         if (data.success) {
-            Swal.fire('Sukses!', 'Berhasil pindah device!', 'success').then(
+            Swal.fire('Sukses!', 'Berhasil pindah devicea!', 'success').then(
                 () => {
                     // Redirect sesuai tipe device
                     const type = data.device_type

@@ -14,12 +14,12 @@ class SwitchController extends Controller
     public function available()
     {
         $devices = Device::where(function ($query) {
-                $query->where('status', 'online')
-                      ->orWhere(function ($q) {
-                          $q->where('status', 'in_use')
-                            ->where('user_id', Auth::id());
-                      });
-            })
+            $query->where('status', 'online')
+                ->orWhere(function ($q) {
+                    $q->where('status', 'in_use')
+                        ->where('user_id', Auth::id());
+                });
+        })
             ->orderBy('name')
             ->get(['id', 'esp_id', 'name', 'status', 'user_id']);
 
@@ -63,7 +63,7 @@ class SwitchController extends Controller
 
         // Ambil tipe device
         $deviceType = null;
-        if (preg_match('/Timbangan-([OP])\d+-/', $newDevice->esp_id, $matches)) {
+        if (preg_match('/Timbangan-([OP])\d+/', $newDevice->esp_id, $matches)) {
             $deviceType = $matches[1];
         }
 

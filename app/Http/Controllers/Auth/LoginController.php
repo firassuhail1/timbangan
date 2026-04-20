@@ -59,6 +59,7 @@ class LoginController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('masuk ke validasi');
         // =========================
         // 1. VALIDASI
         // =========================
@@ -67,6 +68,7 @@ class LoginController extends Controller
             'password' => 'required|string',
             'esp_id' => 'nullable|string|exists:devices,esp_id',
         ]);
+        Log::info('selesai validasi');
 
         Log::info('melewati validasi');
 
@@ -82,10 +84,7 @@ class LoginController extends Controller
             ])->withInput();
         }
 
-        Log::info('melewati auth user');
-
         $user = Auth::user();
-        Log::info('user : ' . $user);
 
         // =========================
         // 3. KHUSUS ADMIN (TANPA DEVICE)
@@ -103,14 +102,25 @@ class LoginController extends Controller
             ->where('status', 'in_use')
             ->first();
 
-        if (! $device && $request->filled('esp_id')) {
-            $device = Device::where('esp_id', $request->esp_id)
+        // if (! $device && $request->filled('esp_id')) {
+        //     $device = Device::where('esp_id', $request->esp_id)
+        //         ->where(function ($q) use ($user) {
+        //             $q->whereNull('user_id')
+        //                 ->orWhere('user_id', $user->id);
+        //         })
+        //         ->first();
+        // }
+
+        if (! $device && $request->filled('mac_esp')) {
+            $device = Device::where('mac_esp', $request->mac_esp)
                 ->where(function ($q) use ($user) {
                     $q->whereNull('user_id')
                         ->orWhere('user_id', $user->id);
                 })
                 ->first();
         }
+
+        Log::info('device : ' . $device);
 
         if (! $device) {
             Auth::logout();
@@ -170,18 +180,21 @@ class LoginController extends Controller
             'device_api_key' => $device->api_key,
         ]);
 
+        Log::info('kesini');
         $request->session()->regenerate();
 
         // =========================
         // 9. REDIRECT USER
         // =========================
         if ($user->role === 'user') {
-            if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $m)) {
+            if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $m)) {
                 return $m[1] === 'O'
                     ? redirect()->route('order.view')
                     : redirect()->route('package.view');
             }
         }
+
+        Log::info('kessss');
 
         Auth::logout();
 
