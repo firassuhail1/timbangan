@@ -138,7 +138,9 @@ class OrderSheetController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('ID', 'LIKE', "%{$search}%")
-                    ->orWhere('Order_code', 'LIKE', "%{$search}%")
+                    ->orWhere('KJ', 'LIKE', "%{$search}%")
+                    ->orWhere('ProductCode', 'LIKE', "%{$search}%")
+                    ->orWhere('ColorDescription', 'LIKE', "%{$search}%")
                     ->orWhere('Buyer', 'LIKE', "%{$search}%")
                     ->orWhere('PurchaseOrderNumber', 'LIKE', "%{$search}%")
                     ->orWhere('ProductName', 'LIKE', "%{$search}%")
