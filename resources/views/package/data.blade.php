@@ -9,7 +9,7 @@
 
                 if ($device) {
                     // ambil huruf pertama setelah "Timbangan-" → O atau P
-                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                    if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $matches)) {
                         $deviceType = $matches[1];
                     }
                 }

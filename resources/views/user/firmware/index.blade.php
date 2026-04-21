@@ -5,7 +5,7 @@
             $deviceType = null;
             if (isset($device) && $device) {
                 // Ambil huruf pertama setelah "Timbangan-" → O atau P
-                if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $matches)) {
                     $deviceType = $matches[1];
                 }
             }
@@ -233,14 +233,14 @@
                                 </div>
 
                                 ${firmware.notes ? `
-                                                    <div class="bg-light rounded-3 p-3 mb-3 border">
-                                                        <strong class="d-block mb-1 text-muted">
-                                                            <i class="fa fa-sticky-note text-warning me-1"></i>
-                                                            Catatan Update
-                                                        </strong>
-                                                        <small class="text-muted">${firmware.notes}</small>
-                                                    </div>
-                                                ` : ''}
+                                                            <div class="bg-light rounded-3 p-3 mb-3 border">
+                                                                <strong class="d-block mb-1 text-muted">
+                                                                    <i class="fa fa-sticky-note text-warning me-1"></i>
+                                                                    Catatan Update
+                                                                </strong>
+                                                                <small class="text-muted">${firmware.notes}</small>
+                                                            </div>
+                                                        ` : ''}
 
                                 <button id="updateOtaBtn" class="btn btn-success btn-lg rounded-pill px-4 shadow-sm"
                                     data-firmware-id="${firmware.id}" data-device-id="${deviceId}">

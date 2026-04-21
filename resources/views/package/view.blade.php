@@ -10,7 +10,7 @@
 
                 if ($device) {
                     // ambil huruf pertama setelah "Timbangan-" → O atau P
-                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                    if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $matches)) {
                         $deviceType = $matches[1];
                     }
                 }
@@ -136,7 +136,7 @@
                                     <th>Stitching</th>
                                     <th>Lining</th>
                                     <th>Tanggal</th>
-                                    <th>Berat Terakhir (g)</th>
+                                    <th>Berat Terakhir</th>
                                     {{-- <th>Aksi</th> --}}
                                 </tr>
                             </thead>
@@ -151,7 +151,14 @@
                                         <td>{{ $package->stitching_type }}</td>
                                         <td>{{ $package->lining_material }}</td>
                                         <td>{{ date('d/m/Y', strtotime($package->created_at)) }}</td>
-                                        <td>{{ isset($lastWeight->weight) ? $lastWeight->weight + 0 : '-' }} g</td>
+                                        <td>
+                                            @if (isset($lastWeight->weight))
+                                                {{ number_format($lastWeight->weight, 0, ',', '.') }} g
+                                                ({{ number_format($lastWeight->weight / 1000, 2, ',', '.') }} kg)
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         {{-- <td>
                                             <button class="btn btn-sm btn-outline-primary btn-timbang"
                                                 data-id="{{ $package->id }}">

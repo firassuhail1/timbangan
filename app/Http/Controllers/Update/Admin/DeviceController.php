@@ -44,7 +44,6 @@ class DeviceController extends Controller
 
     public function heartbeat(Request $request)
     {
-        Log::info('data yg masuk : ' . json_encode($request->all()));
         $request->merge([
             'device_type' => $request->device_type ?: 'timbangan'
         ]);

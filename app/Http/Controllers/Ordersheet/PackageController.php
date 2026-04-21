@@ -20,10 +20,10 @@ class PackageController extends Controller
         // Ambil semua package beserta berat terakhir
         $packages = OrdersheetPackage::with(['weights' => function ($q) {
             $q->orderBy('waktu_timbang', 'desc')->limit(1); // Ambil berat terakhir
-                }])->orderBy('created_at', 'desc')
-                ->where('id_user', Auth::id())
-                ->paginate(10);
-        
+        }])->orderBy('created_at', 'desc')
+            ->where('id_user', Auth::id())
+            ->paginate(10);
+
         // $device = Device::all(); 
         // dd(vars: $device);
 
@@ -41,22 +41,31 @@ class PackageController extends Controller
 
         $query = OrdersheetPackage::with('weights')
             ->where('id_user', $userId)
-            ->select('id', 'name', 'description', 'leather_type', 'color', 'size', 
-                    'stitching_type', 'lining_material', 'created_at');
+            ->select(
+                'id',
+                'name',
+                'description',
+                'leather_type',
+                'color',
+                'size',
+                'stitching_type',
+                'lining_material',
+                'created_at'
+            );
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
-                ->orWhere('description', 'LIKE', "%{$search}%")
-                ->orWhere('leather_type', 'LIKE', "%{$search}%")
-                ->orWhere('color', 'LIKE', "%{$search}%")
-                ->orWhere('size', 'LIKE', "%{$search}%")
-                ->orWhere('stitching_type', 'LIKE', "%{$search}%")
-                ->orWhere('lining_material', 'LIKE', "%{$search}%")
-                ->orWhereHas('weights', function ($w) use ($search) {
-                    $w->where('no_package', 'LIKE', "%{$search}%")
-                        ->orWhere('weight', 'LIKE', "%{$search}%");
-                });
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhere('leather_type', 'LIKE', "%{$search}%")
+                    ->orWhere('color', 'LIKE', "%{$search}%")
+                    ->orWhere('size', 'LIKE', "%{$search}%")
+                    ->orWhere('stitching_type', 'LIKE', "%{$search}%")
+                    ->orWhere('lining_material', 'LIKE', "%{$search}%")
+                    ->orWhereHas('weights', function ($w) use ($search) {
+                        $w->where('no_package', 'LIKE', "%{$search}%")
+                            ->orWhere('weight', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -95,6 +104,10 @@ class PackageController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'weight' => $request->weight ?: 8
+        ]);
+
         $request->validate([
             'name' => 'required|string',
             'weight' => 'required|numeric|min:0',
@@ -106,8 +119,8 @@ class PackageController extends Controller
         DB::beginTransaction();
 
         $device = Device::where('user_id', Auth::id())
-                ->where('status', 'in_use')
-                ->first();
+            ->where('status', 'in_use')
+            ->first();
 
         try {
             $package = OrdersheetPackage::updateOrCreate(
@@ -145,7 +158,6 @@ class PackageController extends Controller
                 'package' => $package,
                 'weight' => $weightData
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error simpan ordersheet: ' . $e->getMessage());

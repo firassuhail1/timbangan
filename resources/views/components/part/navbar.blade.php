@@ -26,7 +26,7 @@
             if (Auth::check()) {
                 $device = \App\Models\Update\Device::where('user_id', Auth::id())->where('status', 'in_use')->first();
                 if ($device) {
-                    if (preg_match('/Timbangan-([OP])\d+-/', $device->esp_id, $matches)) {
+                    if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $matches)) {
                         $deviceType = $matches[1];
                     }
                     $deviceName = $device->name ?: $device->esp_id;
