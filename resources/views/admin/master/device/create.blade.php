@@ -3,7 +3,7 @@
         <!-- Responsive fullscreen di HP -->
         <div class="modal-content">
             <div class="modal-header text-dark">
-                <h5 class="modal-title" id="timbangModalLabel">Uploud File Firmware ESP</h5>
+                <h5 class="modal-title" id="timbangModalLabel">Upload File Firmware ESP</h5>
                 <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal"
                     aria-label="Close"></button>
             </div>

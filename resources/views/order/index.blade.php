@@ -131,11 +131,14 @@
                             <thead class="table-info">
                                 <tr>
                                     <th>No</th>
-                                    <th>Buyer</th>
-                                    <th>PO Number</th>
+                                    <th>KJ</th>
+                                    <th>Style</th>
+                                    <th>Color</th>
                                     <th>Product</th>
                                     <th>Qty</th>
-                                    <th>FOB</th>
+                                    <th>PO Number</th>
+                                    <th>Buyer</th>
+                                    {{-- <th>FOB</th> --}}
                                     <th>Tanggal</th>
                                     <th>Aksi</th>
                                 </tr>

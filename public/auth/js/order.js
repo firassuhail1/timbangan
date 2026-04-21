@@ -135,11 +135,13 @@ function initSearch() {
             rows += `
             <tr>
                 <td>${no}</td>
-                <td>${item.Buyer || '-'}</td>
-                <td>${item.PurchaseOrderNumber || '-'}</td>
+                <td>${item.KJ || '-'}</td>
+                <td>${item.ProductCode || '-'}</td>
+                <td>${item.ColorDescription || '-'}</td>
                 <td>${item.ProductName || '-'}</td>
                 <td>${item.Qty || 0}</td>
-                <td>${item.ActualFOB || '-'}</td>
+                <td>${item.PurchaseOrderNumber || '-'}</td>
+                <td>${item.Buyer || '-'}</td>
                 <td>${item.DocumentDate || '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary btn-timbang"
