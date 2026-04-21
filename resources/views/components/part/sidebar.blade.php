@@ -55,8 +55,8 @@
                         </li>
 
                         <li class="sidebar-title">Master</li>
-                        <li class="sidebar-item {{ request()->is('admin/view-user*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.view-firmware') }}" class="sidebar-link">
+                        <li class="sidebar-item {{ request()->is('admin/users*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.users.index') }}" class="sidebar-link">
                                 <i class="fa-solid fa-user"></i>
                                 <span>Tambah User</span>
                             </a>

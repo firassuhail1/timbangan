@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\Rekap\Ordersheet\OrderController;
+use App\Http\Controllers\Admin\Rekap\Package\PackController;
 use App\Http\Controllers\Api\DeviceLoginController;
 use App\Http\Controllers\Api\OrderSheetController;
 use App\Http\Controllers\Api\WeightController;
@@ -9,14 +11,13 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Ordersheet\PackageController;
 use App\Http\Controllers\Ordersheet\Rekap\TimbanganBesarController;
 use App\Http\Controllers\Update\Admin\FirmwareController;
+use App\Http\Controllers\Update\Admin\UserController;
 use App\Http\Controllers\Update\User\NotifikasiController;
+use App\Http\Controllers\Update\User\OtaUpdateController;
 use App\Http\Controllers\Update\User\SettingController;
 use App\Http\Controllers\Update\User\SwitchController;
 use App\Http\Controllers\Update\User\UpdateController;
 use App\Http\Controllers\Update\User\WifiController;
-use App\Http\Controllers\Admin\Rekap\Ordersheet\OrderController;
-use App\Http\Controllers\Admin\Rekap\Package\PackController;
-use App\Http\Controllers\Update\User\OtaUpdateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index']);
@@ -56,6 +57,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // View
     Route::get('/view-firmware', [FirmwareController::class, 'index'])->name('admin.view-firmware');
+
+    Route::resource('users', UserController::class)->names([
+        'index'   => 'admin.users.index',
+        'create'  => 'admin.users.create',
+        'store'   => 'admin.users.store',
+        'edit'    => 'admin.users.edit',
+        'update'  => 'admin.users.update',
+        'destroy' => 'admin.users.destroy',
+    ]);
 
     // Update ESP
     Route::post('/firmware/upload', [FirmwareController::class, 'upload'])
