@@ -171,7 +171,7 @@
                         @else
                             @foreach ($groupedOrders as $groupKey => $orders)
                                 @php
-                                    [$date, $buyer] = explode('|', $groupKey);
+                                    [$date, $orderCode] = explode('|', $groupKey);
                                 @endphp
 
                                 <!-- Kartu Terpisah per Buyer -->
@@ -185,7 +185,7 @@
                                                     Laporan Timbangan Karton
                                                 </h6>
                                                 <small>
-                                                    Buyer: <strong>{{ $buyer }}</strong> |
+                                                    KJ: <strong>{{ $orderCode }}</strong> |
                                                     {{ $date }}
                                                 </small>
                                                 <a href="{{ route('order.print.buyer', $buyer) }}" target="_blank"

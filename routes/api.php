@@ -66,6 +66,6 @@ Route::prefix('package/esp')->group(function () {
 // Route::post('/timbang/status',    [TimbangController::class, 'status']);
 // Route::post('/timbang/heartbeat', [TimbangController::class, 'heartbeat']);
 
-// Route::post('/timbang/data',      [OrderPackageController::class, 'terimaBerat']);
-// Route::post('/timbang/status',    [DeviceController::class, 'heartbeat']);
-// Route::post('/timbang/heartbeat', [DeviceController::class, 'heartbeat']);
+Route::post('/timbang/data',      [OrderPackageController::class, 'terimaBerat']);
+Route::post('/timbang/status',    [DeviceController::class, 'heartbeat']);
+Route::post('/timbang/heartbeat', [DeviceController::class, 'heartbeat']);

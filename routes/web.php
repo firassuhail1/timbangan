@@ -94,7 +94,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
 
     // cetak timbangan
     Route::get('/order/print', [OrderSheetController::class, 'print'])->name('order.print');
-    Route::get('/print/{buyer}', [OrderSheetController::class, 'print'])->name('order.print.buyer');
+    Route::get('/print/{orderCode}', [OrderSheetController::class, 'printByOrderCode'])->name('order.print.orderCode');
 
     // rekap data
     Route::get('/rekap/timbangan/besar', [TimbanganBesarController::class, 'index'])->name('rekap.besar');

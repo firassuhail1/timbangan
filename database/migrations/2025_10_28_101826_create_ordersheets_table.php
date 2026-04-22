@@ -16,9 +16,11 @@ return new class extends Migration
             $table->foreignId('id_user')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('id_device')->nullable()->constrained('devices')->onDelete('set null');
             $table->string('Order_code')->nullable()->index();
+            $table->string('KJ')->nullable();
             $table->string('Buyer')->nullable();
             $table->string('PO')->nullable();
             $table->string('Style')->nullable();
+            $table->integer('Line');
             $table->string('Qty_order')->nullable();
             $table->decimal('Carton_weight_std', 8, 2)->nullable();
             $table->decimal('Pcs_weight_std', 8, 2)->nullable();

@@ -60,43 +60,136 @@ class OrderSheetController extends Controller
 
 
     // Data keseluruhan
+    // public function index()
+    // {
+    //     $auth = Auth::id();
+
+    //     $orders = Ordersheet::with([
+    //         'timbangans' => function ($q) {
+    //             $q->select('id', 'id_ordersheet', 'no_box', 'pcs', 'berat', 'rasio_batas_beban_min', 'rasio_batas_beban_max', 'waktu_timbang')
+    //                 ->orderBy('waktu_timbang');
+    //         }
+    //     ])
+    //         ->where('status', 'Success')
+    //         ->whereHas('timbangans')
+    //         ->select(
+    //             'id',
+    //             'Order_code',
+    //             'KJ',
+    //             'Buyer',
+    //             'PO',
+    //             'Style',
+    //             'Qty_order',
+    //             'Line',
+    //             'PCS',      // ← pcs per carton
+    //             'Ctn',      // ← nomor carton terakhir (input user)
+    //             'Destination',
+    //             'status',
+    //             'created_at'
+    //         )
+    //         ->latest()
+    //         ->get();
+
+    //     // Group by Order_code (KJ)
+    //     $groupedOrders = $orders->groupBy(function ($item) {
+    //         $date = optional($item->timbangans->first())->waktu_timbang;
+    //         $date = $date
+    //             ? \Carbon\Carbon::parse($date)->format('d-m-Y')
+    //             : 'Tanpa Tanggal';
+
+    //         return $date . '|' . $item->Order_code . '|' . $item->KJ . '|' . $item->Line;
+    //     });
+
+    //     return view('order.index', compact('auth', 'groupedOrders'));
+    // }
+
     public function index()
     {
         $auth = Auth::id();
 
         $orders = Ordersheet::with([
             'timbangans' => function ($q) {
-                $q->select('id', 'id_ordersheet', 'no_box', 'berat', 'waktu_timbang');
+                $q->select(
+                    'id',
+                    'id_ordersheet',
+                    'no_box',
+                    'berat',
+                    'pcs',
+                    'waktu_timbang',
+                    'rasio_batas_beban_min',
+                    'rasio_batas_beban_max'
+                )
+                    ->orderBy('waktu_timbang');
             }
         ])
             ->where('status', 'Success')
-            ->whereHas('timbangans') // ambil semua yang punya timbangan
+            ->whereHas('timbangans')
             ->select(
                 'id',
                 'Order_code',
+                'KJ',
                 'Buyer',
                 'PO',
                 'Style',
+                'line',
                 'Qty_order',
+                'PCS',
+                'Ctn',
+                'Less_Ctn',
+                'Pcs_Less_Ctn',
                 'Destination',
+                'Gac_date',
+                'Inspector',
+                'OPT_QC_TIMBANGAN',
+                'SPV_QC',
+                'CHIEF_FINISH_GOOD',
                 'status',
                 'created_at'
             )
             ->latest()
             ->get();
 
-        $groupedOrders = $orders->groupBy(function ($item) {
+        // Group utama by KJ (untuk progress keseluruhan)
+        // Setiap KJ punya sub-group per line
+        $groupedByKJ = $orders->groupBy(function ($item) {
+            return $item->KJ ?? $item->Order_code;
+        })->map(function ($kjOrders) {
+            // Sub-group by line dalam 1 KJ
+            $byLine = $kjOrders->groupBy('line')->sortKeys();
 
-            $date = optional($item->timbangans->first())->waktu_timbang;
+            // Semua timbangan dari semua line dalam KJ ini
+            $allTimbangans = $kjOrders->flatMap(fn($o) => $o->timbangans);
 
-            $date = $date
-                ? Carbon::parse($date)->format('d-m-Y')
+            // Info dari record pertama
+            $first      = $kjOrders->first();
+            $qtyTotal   = intval($first->Qty_order) ?: 0;
+            $qtySudah   = $allTimbangans->sum('pcs');
+            $totalBerat = $allTimbangans->sum('berat');
+            $qtySisa    = max(0, $qtyTotal - $qtySudah);
+
+            // Tanggal timbang pertama
+            $firstDate = optional($allTimbangans->sortBy('waktu_timbang')->first())->waktu_timbang;
+            $date      = $firstDate
+                ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y')
                 : 'Tanpa Tanggal';
 
-            return $date . '|' . $item->Buyer;
+            return [
+                'kj'           => $first->KJ ?? $first->Order_code,
+                'order_code'   => $first->Order_code,
+                'buyer'        => $first->Buyer ?? '-',
+                'style'        => $first->Style ?? '-',
+                'date'         => $date,
+                'qty_total'    => $qtyTotal,
+                'qty_sudah'    => $qtySudah,
+                'qty_sisa'     => $qtySisa,
+                'total_berat'  => $totalBerat,
+                'total_carton' => $allTimbangans->count(),
+                'by_line'      => $byLine,      // collection per line
+                'all_timbangans' => $allTimbangans,
+            ];
         });
 
-        return view('order.index', compact('auth', 'groupedOrders'));
+        return view('order.index', compact('auth', 'groupedByKJ'));
     }
 
     public function reportData()
@@ -433,17 +526,86 @@ class OrderSheetController extends Controller
     // }
 
     // Data keseluruhan
+    // public function print($buyer = null)
+    // {
+    //     $auth = Auth::user();
+
+    //     $orders = Ordersheet::with([
+    //         'timbangans' => function ($q) {
+    //             $q->select('id', 'id_ordersheet', 'no_box', 'berat', 'waktu_timbang');
+    //         }
+    //     ])
+    //         ->where('status', 'Success')
+    //         ->whereHas('timbangans')
+    //         ->latest()
+    //         ->get();
+
+    //     if ($buyer) {
+    //         $orders = $orders->where('Buyer', $buyer);
+    //     }
+
+    //     $groupedOrders = $orders->groupBy(function ($item) {
+
+    //         $date = optional($item->timbangans->first())->waktu_timbang;
+
+    //         $date = $date
+    //             ? Carbon::parse($date)->format('d-m-Y')
+    //             : 'Tanpa Tanggal';
+
+    //         return $date . '|' . $item->Buyer;
+    //     });
+
+    //     return view('order.print', compact('auth', 'groupedOrders'));
+    // }
+
+    /**
+     * Print semua, atau filter by buyer
+     */
     public function print($buyer = null)
     {
         $auth = Auth::user();
 
         $orders = Ordersheet::with([
             'timbangans' => function ($q) {
-                $q->select('id', 'id_ordersheet', 'no_box', 'berat', 'waktu_timbang');
+                $q->select(
+                    'id',
+                    'id_ordersheet',
+                    'no_box',
+                    'berat',
+                    'pcs',
+                    'rasio_batas_beban_min',
+                    'rasio_batas_beban_max',
+                    'waktu_timbang'
+                )
+                    ->orderBy('waktu_timbang');
             }
         ])
             ->where('status', 'Success')
             ->whereHas('timbangans')
+            ->select(
+                'id',
+                'Order_code',
+                'KJ',
+                'Buyer',
+                'PO',
+                'Style',
+                'line',
+                'Qty_order',
+                'PCS',
+                'Ctn',
+                'Less_Ctn',
+                'Pcs_Less_Ctn',
+                'Carton_weight_std',
+                'Pcs_weight_std',
+                'Gac_date',
+                'Destination',
+                'Inspector',
+                'OPT_QC_TIMBANGAN',
+                'SPV_QC',
+                'CHIEF_FINISH_GOOD',
+                'status',
+                'created_at'
+            )
             ->latest()
             ->get();
 
@@ -451,18 +613,146 @@ class OrderSheetController extends Controller
             $orders = $orders->where('Buyer', $buyer);
         }
 
-        $groupedOrders = $orders->groupBy(function ($item) {
+        // Group by KJ → sub-group by line
+        $groupedByKJ = $orders->groupBy(function ($item) {
+            return $item->KJ ?? $item->Order_code;
+        })->map(function ($kjOrders) {
+            $byLine        = $kjOrders->groupBy('line')->sortKeys();
+            $allTimbangans = $kjOrders->flatMap(fn($o) => $o->timbangans)->sortBy('waktu_timbang')->values();
+            $first         = $kjOrders->first();
 
-            $date = optional($item->timbangans->first())->waktu_timbang;
-
-            $date = $date
-                ? Carbon::parse($date)->format('d-m-Y')
+            $firstDate = optional($allTimbangans->first())->waktu_timbang;
+            $date      = $firstDate
+                ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y')
                 : 'Tanpa Tanggal';
 
-            return $date . '|' . $item->Buyer;
+            return [
+                'kj'            => $first->KJ ?? $first->Order_code,
+                'order_code'    => $first->Order_code,
+                'buyer'         => $first->Buyer ?? '-',
+                'style'         => $first->Style ?? '-',
+                'po'            => $first->PO ?? '-',
+                'line_list'     => $byLine->keys()->sort()->values(),
+                'date'          => $date,
+                'qty_total'     => intval($first->Qty_order) ?: 0,
+                'qty_sudah'     => $allTimbangans->sum('pcs'),
+                'total_berat'   => $allTimbangans->sum('berat'),
+                'total_carton'  => $allTimbangans->count(),
+                'carton_std'    => $first->Carton_weight_std,
+                'pcs_std'       => $first->Pcs_weight_std,
+                'less_ctn'      => $first->Less_Ctn,
+                'pcs_less_ctn'  => $first->Pcs_Less_Ctn,
+                'gac_date'      => $first->Gac_date
+                    ? \Carbon\Carbon::parse($first->Gac_date)->format('d-m-Y')
+                    : '-',
+                'destination'   => $first->Destination ?? '-',
+                'inspector'     => $first->Inspector ?? '-',
+                'opt_qc'        => $first->OPT_QC_TIMBANGAN ?? '-',
+                'spv_qc'        => $first->SPV_QC ?? '-',
+                'chief'         => $first->CHIEF_FINISH_GOOD ?? '-',
+                'by_line'       => $byLine,
+                'all_timbangans' => $allTimbangans,
+            ];
         });
 
-        return view('order.print', compact('auth', 'groupedOrders'));
+        return view('order.print', compact('auth', 'groupedByKJ'));
+    }
+
+    /**
+     * Print by Order Code spesifik
+     */
+    public function printByOrderCode($orderCode)
+    {
+        $auth = Auth::user();
+
+        $orders = Ordersheet::with([
+            'timbangans' => function ($q) {
+                $q->select(
+                    'id',
+                    'id_ordersheet',
+                    'no_box',
+                    'berat',
+                    'pcs',
+                    'rasio_batas_beban_min',
+                    'rasio_batas_beban_max',
+                    'waktu_timbang'
+                )
+                    ->orderBy('waktu_timbang');
+            }
+        ])
+            ->where('status', 'Success')
+            ->where('Order_code', $orderCode)
+            ->whereHas('timbangans')
+            ->select(
+                'id',
+                'Order_code',
+                'KJ',
+                'Buyer',
+                'PO',
+                'Style',
+                'line',
+                'Qty_order',
+                'PCS',
+                'Ctn',
+                'Less_Ctn',
+                'Pcs_Less_Ctn',
+                'Carton_weight_std',
+                'Pcs_weight_std',
+                'Gac_date',
+                'Destination',
+                'Inspector',
+                'OPT_QC_TIMBANGAN',
+                'SPV_QC',
+                'CHIEF_FINISH_GOOD',
+                'status',
+                'created_at'
+            )
+            ->latest()
+            ->get();
+
+        // Sama strukturnya, hanya 1 KJ
+        $groupedByKJ = $orders->groupBy(function ($item) {
+            return $item->KJ ?? $item->Order_code;
+        })->map(function ($kjOrders) {
+            $byLine        = $kjOrders->groupBy('line')->sortKeys();
+            $allTimbangans = $kjOrders->flatMap(fn($o) => $o->timbangans)->sortBy('waktu_timbang')->values();
+            $first         = $kjOrders->first();
+
+            $firstDate = optional($allTimbangans->first())->waktu_timbang;
+            $date      = $firstDate
+                ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y')
+                : 'Tanpa Tanggal';
+
+            return [
+                'kj'            => $first->KJ ?? $first->Order_code,
+                'order_code'    => $first->Order_code,
+                'buyer'         => $first->Buyer ?? '-',
+                'style'         => $first->Style ?? '-',
+                'po'            => $first->PO ?? '-',
+                'line_list'     => $byLine->keys()->sort()->values(),
+                'date'          => $date,
+                'qty_total'     => intval($first->Qty_order) ?: 0,
+                'qty_sudah'     => $allTimbangans->sum('pcs'),
+                'total_berat'   => $allTimbangans->sum('berat'),
+                'total_carton'  => $allTimbangans->count(),
+                'carton_std'    => $first->Carton_weight_std,
+                'pcs_std'       => $first->Pcs_weight_std,
+                'less_ctn'      => $first->Less_Ctn,
+                'pcs_less_ctn'  => $first->Pcs_Less_Ctn,
+                'gac_date'      => $first->Gac_date
+                    ? \Carbon\Carbon::parse($first->Gac_date)->format('d-m-Y')
+                    : '-',
+                'destination'   => $first->Destination ?? '-',
+                'inspector'     => $first->Inspector ?? '-',
+                'opt_qc'        => $first->OPT_QC_TIMBANGAN ?? '-',
+                'spv_qc'        => $first->SPV_QC ?? '-',
+                'chief'         => $first->CHIEF_FINISH_GOOD ?? '-',
+                'by_line'       => $byLine,
+                'all_timbangans' => $allTimbangans,
+            ];
+        });
+
+        return view('order.print', compact('auth', 'groupedByKJ'));
     }
 
     // Data perhari ini

@@ -173,115 +173,259 @@
                     <hr>
 
                     <div class="cetak" id="reportContainer">
-                        @if ($groupedOrders->isEmpty())
+                        @if ($groupedByKJ->isEmpty())
                             <div class="alert alert-info text-center">
-                                <i class="fas fa-file"></i> Belum Ada Data
+                                <i class="fas fa-file-alt me-2"></i> Belum Ada Data Timbangan
                             </div>
                         @else
-                            @foreach ($groupedOrders as $groupKey => $orders)
-                                @php
-                                    [$date, $buyer] = explode('|', $groupKey);
-                                @endphp
+                            {{-- ===== KONTROL ATAS ===== --}}
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <div class="small text-muted">
+                                    Total KJ: <strong>{{ $groupedByKJ->count() }}</strong> |
+                                    Menampilkan <strong id="kj-showing">-</strong>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <input type="text" id="kj-search" class="form-control form-control-sm"
+                                        placeholder="Cari KJ / Buyer..." style="width: 180px;">
+                                    <button class="btn btn-sm btn-outline-secondary" id="btn-expand-all">
+                                        <i class="fas fa-expand-alt me-1"></i> Buka Semua
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btn-collapse-all">
+                                        <i class="fas fa-compress-alt me-1"></i> Tutup Semua
+                                    </button>
+                                </div>
+                            </div>
 
-                                <!-- Kartu Terpisah per Buyer -->
-                                <div class="card shadow-sm mb-5 border-0">
-                                    <div class="card-header">
-                                        <div class="d-flex justify-content-center align-items-center">
-                                            <div class="text-center">
-                                                <h5 class="mb-0 fw-bold">Current Weight Report
-                                                </h5>
-                                                <h6>
-                                                    Laporan Timbangan Karton
-                                                </h6>
-                                                <small>
-                                                    Buyer: <strong>{{ $buyer }}</strong> |
-                                                    {{ $date }}
-                                                </small>
-                                                <a href="{{ route('order.print.buyer', $buyer) }}" target="_blank"
-                                                    class="btn btn-outline-info btn-sm text-end">
-                                                    <i class="bi bi-printer"></i> Print
-                                                </a>
+                            {{-- ===== LIST KJ ===== --}}
+                            <div id="kj-list">
+                                @foreach ($groupedByKJ as $kj => $kjData)
+                                    @php
+                                        $kjId = 'kj-' . md5($kj);
+                                        $lines = $kjData['by_line'];
+                                        $lineNumbers = $lines->keys()->sort()->values();
+                                    @endphp
+
+                                    <div class="kj-group card border-0 shadow-sm mb-3"
+                                        id="{{ $kjId }}-wrapper" data-kj="{{ strtolower($kj) }}"
+                                        data-buyer="{{ strtolower($kjData['buyer']) }}">
+
+                                        {{-- ===== KJ HEADER (klik untuk expand) ===== --}}
+                                        <div class="card-header bg-white py-2 px-3 kj-toggle"
+                                            data-target="{{ $kjId }}" style="cursor: pointer;">
+
+                                            <div class="row align-items-center g-2">
+                                                {{-- Info KJ --}}
+                                                <div class="col-12 col-md-6">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <i class="fas fa-chevron-down kj-chevron text-muted"
+                                                            id="{{ $kjId }}-chevron"
+                                                            style="transition: transform 0.2s; font-size: 12px;"></i>
+                                                        <span class="badge bg-primary px-2">{{ $kjData['kj'] }}</span>
+                                                        @foreach ($lineNumbers as $ln)
+                                                            <span class="badge bg-light text-dark border"
+                                                                style="font-size: 11px; color: rgb(43, 43, 43) !important;">
+                                                                Line {{ $ln }}
+                                                            </span>
+                                                        @endforeach
+                                                        <span class="text-muted small">{{ $kjData['buyer'] }}</span>
+                                                    </div>
+                                                    <div class="small text-muted mt-1 ms-3">
+                                                        {{ $kjData['date'] }} · {{ $kjData['style'] }}
+                                                    </div>
+                                                </div>
+
+                                                {{-- Stat ringkas --}}
+                                                <div class="col-12 col-md-6">
+                                                    <div class="d-flex gap-3 justify-content-md-end flex-wrap">
+                                                        <div class="text-center">
+                                                            <div class="fw-bold text-primary">
+                                                                {{ $kjData['total_carton'] }}</div>
+                                                            <div class="text-muted" style="font-size: 11px;">Carton
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <div class="fw-bold text-success">
+                                                                {{ number_format($kjData['qty_sudah']) }}</div>
+                                                            <div class="text-muted" style="font-size: 11px;">Pcs
+                                                                Ditimbang</div>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <div class="fw-bold text-info">
+                                                                {{ number_format($kjData['total_berat'], 2) }} kg</div>
+                                                            <div class="text-muted" style="font-size: 11px;">Total
+                                                                Berat</div>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <div
+                                                                class="fw-bold {{ $kjData['qty_sisa'] == 0 ? 'text-success' : 'text-warning' }}">
+                                                                {{ $kjData['qty_sisa'] == 0 ? '✓ Selesai' : number_format($kjData['qty_sisa']) . ' pcs' }}
+                                                            </div>
+                                                            <div class="text-muted" style="font-size: 11px;">
+                                                                Sisa dari {{ number_format($kjData['qty_total']) }}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <a href="{{ route('order.print.orderCode', $kjData['order_code']) }}"
+                                                                target="_blank" class="btn btn-outline-primary btn-sm"
+                                                                onclick="event.stopPropagation()">
+                                                                <i class="bi bi-printer"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- ===== KJ BODY (collapsible) ===== --}}
+                                        <div class="kj-body collapse" id="{{ $kjId }}-body">
+                                            <div class="card-body p-3">
+
+                                                {{-- Filter line dropdown --}}
+                                                <div
+                                                    class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <label class="small fw-semibold mb-0">Filter Line:</label>
+                                                        <select class="form-select form-select-sm line-filter"
+                                                            data-kj-id="{{ $kjId }}" style="width: 130px;">
+                                                            <option value="all">Semua Line</option>
+                                                            @foreach ($lineNumbers as $ln)
+                                                                <option value="{{ $ln }}">Line
+                                                                    {{ $ln }}</option>
+                                                            @endforeach
+                                                        </select>
+
+                                                        <label class="small fw-semibold mb-0 ms-2">Sort:</label>
+                                                        <select class="form-select form-select-sm carton-sort-kj"
+                                                            data-kj-id="{{ $kjId }}" style="width: 130px;">
+                                                            <option value="asc">No. Urut ↑</option>
+                                                            <option value="desc">No. Urut ↓</option>
+                                                            <option value="berat-desc">Berat ↓</option>
+                                                            <option value="berat-asc">Berat ↑</option>
+                                                        </select>
+
+                                                        <input type="text"
+                                                            class="form-control form-control-sm carton-search-kj"
+                                                            data-kj-id="{{ $kjId }}"
+                                                            placeholder="Cari no. carton..." style="width: 150px;">
+                                                    </div>
+                                                    <div class="small text-muted">
+                                                        Tampil: <strong id="{{ $kjId }}-showing">-</strong>
+                                                        carton
+                                                    </div>
+                                                </div>
+
+                                                {{-- Stat per line --}}
+                                                <div class="row g-2 mb-3">
+                                                    @foreach ($lines as $lineNo => $lineOrders)
+                                                        @php
+                                                            $lineTimbangans = $lineOrders->flatMap(
+                                                                fn($o) => $o->timbangans,
+                                                            );
+                                                            $lineQty = $lineTimbangans->sum('pcs');
+                                                            $lineBerat = $lineTimbangans->sum('berat');
+                                                            $lineCarton = $lineTimbangans->count();
+                                                        @endphp
+                                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                                            <div class="bg-light rounded p-2 text-center border">
+                                                                <div class="badge bg-secondary mb-1">Line
+                                                                    {{ $lineNo }}</div>
+                                                                <div class="fw-bold text-primary small">
+                                                                    {{ $lineCarton }} carton</div>
+                                                                <div class="text-success small">
+                                                                    {{ number_format($lineQty) }} pcs</div>
+                                                                <div class="text-info small">
+                                                                    {{ number_format($lineBerat, 2) }} kg</div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+
+                                                {{-- Grid carton --}}
+                                                <div class="carton-grid-kj row g-2" id="{{ $kjId }}-grid">
+                                                    @foreach ($lines as $lineNo => $lineOrders)
+                                                        @foreach ($lineOrders as $order)
+                                                            @foreach ($order->timbangans as $idx => $t)
+                                                                @php
+                                                                    $beratVal = floatval($t->berat);
+                                                                    $pcsVal = intval($t->pcs);
+                                                                    $waktu = $t->waktu_timbang
+                                                                        ? \Carbon\Carbon::parse(
+                                                                            $t->waktu_timbang,
+                                                                        )->format('H:i')
+                                                                        : '-';
+                                                                    $min = floatval($t->rasio_batas_beban_min ?? 0);
+                                                                    $max = floatval($t->rasio_batas_beban_max ?? 0);
+                                                                    $statusColor = 'success';
+                                                                    $statusLabel = 'Normal';
+                                                                    if ($min > 0 && $max > 0) {
+                                                                        if ($beratVal < $min) {
+                                                                            $statusColor = 'danger';
+                                                                            $statusLabel = 'Kurang';
+                                                                        } elseif ($beratVal > $max) {
+                                                                            $statusColor = 'warning';
+                                                                            $statusLabel = 'Lebih';
+                                                                        }
+                                                                    }
+                                                                @endphp
+                                                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 carton-card-item"
+                                                                    data-kj-id="{{ $kjId }}"
+                                                                    data-line="{{ $lineNo }}"
+                                                                    data-no-box="{{ strtolower($t->no_box ?? '') }}"
+                                                                    data-berat="{{ $beratVal }}"
+                                                                    data-idx="{{ $t->id }}">
+
+                                                                    <div class="card border-{{ $statusColor }} h-100 carton-card"
+                                                                        style="border-width: 2px !important;">
+                                                                        <div
+                                                                            class="card-body p-2 text-center position-relative">
+                                                                            <div
+                                                                                class="d-flex justify-content-between mb-1">
+                                                                                <span class="badge bg-info text-dark"
+                                                                                    style="font-size: 9px;">
+                                                                                    L{{ $lineNo }}
+                                                                                </span>
+                                                                                <span
+                                                                                    class="badge bg-{{ $statusColor }}"
+                                                                                    style="font-size: 9px;">
+                                                                                    {{ $statusLabel }}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div class="fw-bold text-dark"
+                                                                                style="font-size: 0.85rem;">
+                                                                                {{ $t->no_box ?? '-' }}
+                                                                            </div>
+                                                                            <div class="text-primary fw-bold"
+                                                                                style="font-size: 1.05rem;">
+                                                                                {{ number_format($beratVal, 2) }}
+                                                                                <span class="text-muted"
+                                                                                    style="font-size: 0.7rem;">kg</span>
+                                                                            </div>
+                                                                            <div class="text-muted"
+                                                                                style="font-size: 0.72rem;">
+                                                                                {{ number_format($pcsVal) }} pcs ·
+                                                                                {{ $waktu }}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        @endforeach
+                                                    @endforeach
+                                                </div>
+
+                                                {{-- Pagination carton per KJ --}}
+                                                <div class="d-flex justify-content-center mt-3"
+                                                    id="{{ $kjId }}-pagination"></div>
+
                                             </div>
                                         </div>
                                     </div>
+                                @endforeach
+                            </div>
 
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                            <table class="table table-bordered text-center align-middle mb-0"
-                                                style="white-space: nowrap; table-layout: fixed; border-collapse: collapse;">
-                                                <thead class="table sticky-top" style="z-index: 1;">
-                                                    <tr>
-                                                        <th rowspan="2"
-                                                            style="vertical-align: middle; width: 100px; left: 0;">
-                                                            Date</th>
-                                                        @for ($i = 0; $i < 10; $i++)
-                                                            <th style="width: 85px;">Ctn. No</th>
-                                                        @endfor
-                                                        <th rowspan="2"
-                                                            style="vertical-align: middle; width: 90px;">
-                                                            Total</th>
-                                                        <th rowspan="2"
-                                                            style="vertical-align: middle; width: 100px;">
-                                                            Remark</th>
-                                                    </tr>
-                                                    <tr>
-                                                        @for ($i = 0; $i < 10; $i++)
-                                                            <th style="width: 85px;">Weight</th>
-                                                        @endfor
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @php
-                                                        $boxes = [];
-                                                        $weights = [];
+                            {{-- Pagination KJ --}}
+                            <div class="d-flex justify-content-center mt-4" id="kj-pagination"></div>
 
-                                                        foreach ($orders as $order) {
-                                                            foreach ($order->timbangans as $t) {
-                                                                $boxes[] = $t->no_box;
-                                                                $weights[] = $t->berat;
-                                                            }
-                                                        }
-
-                                                        // Pecah per 10 kolom
-                                                        $boxChunks = array_chunk($boxes, 10);
-                                                        $weightChunks = array_chunk($weights, 10);
-                                                    @endphp
-
-                                                    @foreach ($boxChunks as $i => $chunk)
-                                                        @php
-                                                            $boxRow = array_pad($chunk, 10, '-');
-                                                            $weightRow = array_pad($weightChunks[$i] ?? [], 10, '-');
-                                                            $totalWeight = array_sum(
-                                                                array_filter($weightRow, 'is_numeric'),
-                                                            );
-                                                        @endphp
-
-                                                        <tr>
-                                                            <td rowspan="2">{{ $date }}</td>
-
-                                                            @foreach ($boxRow as $box)
-                                                                <td>{{ $box }}</td>
-                                                            @endforeach
-
-                                                            <td rowspan="2" class="fw-bold text-primary">
-                                                                {{ number_format($totalWeight, 2) }}
-                                                            </td>
-                                                            <td rowspan="2"></td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            @foreach ($weightRow as $w)
-                                                                <td class="fw-bold text-primary">{{ $w }}
-                                                                </td>
-                                                            @endforeach
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
                         @endif
                     </div>
                 </div>
@@ -378,6 +522,11 @@
                                                                 readonly></td>
                                                     </tr>
                                                     <tr>
+                                                        <th>KJ.</th>
+                                                        <td><input type="text" id="info_kj" name="KJ"
+                                                                class="form-control form-control-sm" readonly></td>
+                                                    </tr>
+                                                    <tr>
                                                         <th>PO#</th>
                                                         <td><input type="text" id="info_purchaseordernumber"
                                                                 name="PO" class="form-control form-control-sm">
@@ -386,6 +535,11 @@
                                                     <tr>
                                                         <th>Style</th>
                                                         <td><input type="text" id="info_style" name="Style"
+                                                                class="form-control form-control-sm"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Asal Line <span class="text-danger">*</span></th>
+                                                        <td><input type="text" id="info_line" name="Line"
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
@@ -554,7 +708,7 @@
                                                     <div class="col-6">
                                                         <label for="rasio_batas_beban_min"
                                                             class="form-label fw-semibold small text-muted">
-                                                            Batas Min
+                                                            Batas Min <span class="text-danger">*</span>
                                                         </label>
                                                         <input type="number" class="form-control form-control-sm"
                                                             name="rasio_batas_beban_min" id="rasio_batas_beban_min"
@@ -564,7 +718,7 @@
                                                     <div class="col-6">
                                                         <label for="rasio_batas_beban_max"
                                                             class="form-label fw-semibold small text-muted">
-                                                            Batas Max
+                                                            Batas Max <span class="text-danger">*</span>
                                                         </label>
                                                         <input type="number" class="form-control form-control-sm"
                                                             name="rasio_batas_beban_max" id="rasio_batas_beban_max"
@@ -622,7 +776,7 @@
                                             <div class="form-check form-switch mb-2">
                                                 <input class="form-check-input" type="checkbox" id="manualMode">
                                                 <label class="form-check-label fw-bold" for="manualMode">
-                                                    Mode Manual (Tanpa ESP)
+                                                    Mode Manual (Tanpa Timbangan)
                                                 </label>
                                             </div>
 
@@ -728,6 +882,18 @@
                 animation: fadeIn 0.5s;
             }
 
+            /* Chrome, Safari, Edge, Opera */
+            input::-webkit-outer-spin-button,
+            input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            /* Firefox */
+            input[type=number] {
+                -moz-appearance: textfield;
+            }
+
             @keyframes fadeIn {
                 from {
                     opacity: 0;
@@ -742,6 +908,67 @@
                 #timbangModal .modal-body {
                     padding-bottom: 10px !important;
                 }
+            }
+
+            .carton-item .card {
+                transition: transform 0.15s ease, box-shadow 0.15s ease;
+                position: relative;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12) !important;
+            }
+
+            .carton-item .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+            }
+
+            .carton-item.d-none-filtered {
+                display: none !important;
+            }
+
+            .report-group {
+                animation: fadeInUp 0.3s ease;
+            }
+
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .kj-group {
+                transition: box-shadow 0.2s;
+            }
+
+            .kj-group:hover {
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+            }
+
+            .kj-toggle:hover {
+                background: #f8f9fa !important;
+            }
+
+            .carton-card {
+                transition: transform 0.15s, box-shadow 0.15s;
+                cursor: default;
+            }
+
+            .carton-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+            }
+
+            .carton-card-item.kj-hidden {
+                display: none !important;
+            }
+
+            .kj-group.kj-hidden {
+                display: none !important;
             }
         </style>
     @endpush
@@ -760,10 +987,412 @@
                 isAuth: {{ Auth::check() ? 'true' : 'false' }},
                 espId: "{{ optional(\App\Models\Update\Device::where('user_id', Auth::id())->where('status', 'in_use')->first())->esp_id }}"
             }
+
+            document.addEventListener("wheel", function(event) {
+                // Cek apakah elemen yang sedang aktif (focus) adalah input type number
+                if (document.activeElement.type === "number") {
+                    document.activeElement.blur(); // Paksa lepas focus agar scroll halaman tetap jalan
+                }
+            });
         </script>
 
         <script src="{{ asset('auth/js/order.js') }}"></script>
         @vite(['resources/js/app.js'])
+    @endpush
+
+    {{-- ===== JS — Pagination & Filter per group ===== --}}
+    @push('js')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const CARTON_PAGE_SIZE = 30 // tampil 30 carton per halaman
+
+                // Init semua group
+                document.querySelectorAll('.report-group').forEach(group => {
+                    const groupId = group.id.replace('-wrapper', '')
+                    initCartonGroup(groupId)
+                })
+
+                // Search per group
+                document.querySelectorAll('.carton-search').forEach(input => {
+                    input.addEventListener('input', function() {
+                        const groupId = this.dataset.group
+                        filterAndRender(groupId, 1)
+                    })
+                })
+
+                // Sort per group
+                document.querySelectorAll('.carton-sort').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const groupId = this.dataset.group
+                        filterAndRender(groupId, 1)
+                    })
+                })
+
+                function initCartonGroup(groupId) {
+                    filterAndRender(groupId, 1)
+                }
+
+                function getItems(groupId) {
+                    return Array.from(
+                        document.querySelectorAll(`.carton-item[data-group="${groupId}"]`)
+                    )
+                }
+
+                function filterAndRender(groupId, page) {
+                    const searchEl = document.querySelector(`.carton-search[data-group="${groupId}"]`)
+                    const sortEl = document.querySelector(`.carton-sort[data-group="${groupId}"]`)
+                    const showingEl = document.getElementById(`${groupId}-showing`)
+
+                    const keyword = searchEl?.value.toLowerCase().trim() || ''
+                    const sort = sortEl?.value || 'asc'
+
+                    let items = getItems(groupId)
+
+                    // Filter by keyword
+                    const filtered = items.filter(item => {
+                        if (!keyword) return true
+                        return item.dataset.noBox.includes(keyword)
+                    })
+
+                    // Sort
+                    filtered.sort((a, b) => {
+                        if (sort === 'asc') return parseInt(a.dataset.idx) - parseInt(b.dataset.idx)
+                        if (sort === 'desc') return parseInt(b.dataset.idx) - parseInt(a.dataset.idx)
+                        if (sort === 'berat-desc') return parseFloat(b.dataset.berat) - parseFloat(a.dataset
+                            .berat)
+                        if (sort === 'berat-asc') return parseFloat(a.dataset.berat) - parseFloat(b.dataset
+                            .berat)
+                        return 0
+                    })
+
+                    const total = filtered.length
+                    const totalPage = Math.ceil(total / CARTON_PAGE_SIZE) || 1
+                    if (page > totalPage) page = totalPage
+
+                    const start = (page - 1) * CARTON_PAGE_SIZE
+                    const pageItems = filtered.slice(start, start + CARTON_PAGE_SIZE)
+                    const pageSet = new Set(pageItems)
+
+                    // Re-order DOM dan show/hide
+                    const grid = document.getElementById(`${groupId}-grid`)
+                    filtered.forEach(item => grid.appendChild(item)) // reorder sesuai sort
+
+                    items.forEach(item => {
+                        if (pageSet.has(item)) {
+                            item.classList.remove('d-none-filtered')
+                        } else {
+                            item.classList.add('d-none-filtered')
+                        }
+                    })
+
+                    // Update showing info
+                    const from = total === 0 ? 0 : start + 1
+                    const to = Math.min(start + CARTON_PAGE_SIZE, total)
+                    if (showingEl) showingEl.textContent = total === 0 ? '0' : `${from}–${to}`
+
+                    // Render pagination
+                    renderCartonPagination(groupId, page, totalPage)
+                }
+
+                function renderCartonPagination(groupId, currentPage, totalPage) {
+                    const el = document.getElementById(`${groupId}-pagination`)
+                    if (!el) return
+
+                    if (totalPage <= 1) {
+                        el.innerHTML = ''
+                        return
+                    }
+
+                    let html = `<nav><ul class="pagination pagination-sm mb-0 flex-wrap">`
+
+                    // Prev
+                    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-group="${groupId}" data-page="${currentPage - 1}">‹</a>
+        </li>`
+
+                    // Pages
+                    for (let p = 1; p <= totalPage; p++) {
+                        // Tampilkan semua jika <= 7, atau pakai ellipsis
+                        if (
+                            totalPage <= 7 ||
+                            p === 1 ||
+                            p === totalPage ||
+                            Math.abs(p - currentPage) <= 1
+                        ) {
+                            html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-group="${groupId}" data-page="${p}">${p}</a>
+                </li>`
+                        } else if (
+                            p === currentPage - 2 ||
+                            p === currentPage + 2
+                        ) {
+                            html += `<li class="page-item disabled"><span class="page-link">…</span></li>`
+                        }
+                    }
+
+                    // Next
+                    html += `<li class="page-item ${currentPage === totalPage ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-group="${groupId}" data-page="${currentPage + 1}">›</a>
+        </li>`
+
+                    html += `</ul></nav>`
+                    el.innerHTML = html
+
+                    // Event listener
+                    el.querySelectorAll('a[data-page]').forEach(link => {
+                        link.addEventListener('click', e => {
+                            e.preventDefault()
+                            const p = parseInt(link.dataset.page)
+                            const g = link.dataset.group
+                            if (p > 0 && p <= totalPage) {
+                                filterAndRender(g, p)
+                                // Scroll ke group ini
+                                document.getElementById(`${g}-wrapper`)?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'start'
+                                })
+                            }
+                        })
+                    })
+                }
+            })
+        </script>
+    @endpush
+
+    @push('js')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+
+                const KJ_PAGE_SIZE = 10 // jumlah KJ per halaman
+                const CARTON_PAGE_SIZE = 30 // jumlah carton per halaman per KJ
+
+                // =========================================================
+                // KJ LIST — search + paginate
+                // =========================================================
+                let allKjGroups = Array.from(document.querySelectorAll('.kj-group'))
+                let kjCurrentPage = 1
+
+                function filterKJ() {
+                    const keyword = document.getElementById('kj-search')?.value.toLowerCase().trim() || ''
+                    return allKjGroups.filter(el => {
+                        if (!keyword) return true
+                        return el.dataset.kj.includes(keyword) || el.dataset.buyer.includes(keyword)
+                    })
+                }
+
+                function renderKJPage(page) {
+                    const filtered = filterKJ()
+                    const total = filtered.length
+                    const totalPage = Math.ceil(total / KJ_PAGE_SIZE) || 1
+                    if (page > totalPage) page = totalPage
+                    kjCurrentPage = page
+
+                    const start = (page - 1) * KJ_PAGE_SIZE
+                    const visible = new Set(filtered.slice(start, start + KJ_PAGE_SIZE))
+
+                    allKjGroups.forEach(el => {
+                        el.classList.toggle('kj-hidden', !visible.has(el))
+                    })
+
+                    // Update showing
+                    const showingEl = document.getElementById('kj-showing')
+                    if (showingEl) {
+                        const from = total === 0 ? 0 : start + 1
+                        const to = Math.min(start + KJ_PAGE_SIZE, total)
+                        showingEl.textContent = total === 0 ? '0' : `${from}–${to} dari ${total}`
+                    }
+
+                    renderKJPagination(page, totalPage)
+                }
+
+                function renderKJPagination(currentPage, totalPage) {
+                    const el = document.getElementById('kj-pagination')
+                    if (!el || totalPage <= 1) {
+                        if (el) el.innerHTML = '';
+                        return
+                    }
+
+                    let html = `<nav><ul class="pagination pagination-sm mb-0">`
+                    html += `<li class="page-item ${currentPage===1?'disabled':''}">
+            <a class="page-link kj-page-btn" href="#" data-page="${currentPage-1}">‹</a></li>`
+
+                    for (let p = 1; p <= totalPage; p++) {
+                        if (totalPage <= 7 || p === 1 || p === totalPage || Math.abs(p - currentPage) <= 1) {
+                            html += `<li class="page-item ${p===currentPage?'active':''}">
+                    <a class="page-link kj-page-btn" href="#" data-page="${p}">${p}</a></li>`
+                        } else if (p === currentPage - 2 || p === currentPage + 2) {
+                            html += `<li class="page-item disabled"><span class="page-link">…</span></li>`
+                        }
+                    }
+
+                    html += `<li class="page-item ${currentPage===totalPage?'disabled':''}">
+            <a class="page-link kj-page-btn" href="#" data-page="${currentPage+1}">›</a></li>`
+                    html += `</ul></nav>`
+                    el.innerHTML = html
+
+                    el.querySelectorAll('.kj-page-btn').forEach(btn => {
+                        btn.addEventListener('click', e => {
+                            e.preventDefault()
+                            const p = parseInt(btn.dataset.page)
+                            if (p > 0 && p <= totalPage) renderKJPage(p)
+                        })
+                    })
+                }
+
+                // Search KJ
+                document.getElementById('kj-search')?.addEventListener('input', () => renderKJPage(1))
+
+                // Expand / collapse all
+                document.getElementById('btn-expand-all')?.addEventListener('click', () => {
+                    document.querySelectorAll('.kj-body').forEach(b => b.classList.add('show'))
+                    document.querySelectorAll('.kj-chevron').forEach(c => c.style.transform = 'rotate(0deg)')
+                })
+                document.getElementById('btn-collapse-all')?.addEventListener('click', () => {
+                    document.querySelectorAll('.kj-body').forEach(b => b.classList.remove('show'))
+                    document.querySelectorAll('.kj-chevron').forEach(c => c.style.transform = 'rotate(-90deg)')
+                })
+
+                // Toggle collapse per KJ
+                document.querySelectorAll('.kj-toggle').forEach(header => {
+                    header.addEventListener('click', function() {
+                        const targetId = this.dataset.target
+                        const body = document.getElementById(`${targetId}-body`)
+                        const chevron = document.getElementById(`${targetId}-chevron`)
+                        if (!body) return
+
+                        const isOpen = body.classList.toggle('show')
+                        if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' :
+                            'rotate(-90deg)'
+
+                        // Init carton pagination saat pertama dibuka
+                        if (isOpen && !body.dataset.initialized) {
+                            body.dataset.initialized = 'true'
+                            initCartonGroup(targetId)
+                        }
+                    })
+                })
+
+                // =========================================================
+                // CARTON GRID — filter line + search + sort + paginate
+                // =========================================================
+                function initCartonGroup(kjId) {
+                    renderCartonGrid(kjId, 1)
+                }
+
+                function getCartonItems(kjId) {
+                    return Array.from(document.querySelectorAll(`.carton-card-item[data-kj-id="${kjId}"]`))
+                }
+
+                function renderCartonGrid(kjId, page) {
+                    const lineFilter = document.querySelector(`.line-filter[data-kj-id="${kjId}"]`)?.value || 'all'
+                    const sortVal = document.querySelector(`.carton-sort-kj[data-kj-id="${kjId}"]`)?.value || 'asc'
+                    const keyword = document.querySelector(`.carton-search-kj[data-kj-id="${kjId}"]`)?.value
+                        .toLowerCase().trim() || ''
+
+                    let items = getCartonItems(kjId)
+
+                    // Filter line
+                    let filtered = items.filter(item => {
+                        if (lineFilter !== 'all' && item.dataset.line != lineFilter) return false
+                        if (keyword && !item.dataset.noBox.includes(keyword)) return false
+                        return true
+                    })
+
+                    // Sort
+                    filtered.sort((a, b) => {
+                        if (sortVal === 'asc') return parseInt(a.dataset.idx) - parseInt(b.dataset.idx)
+                        if (sortVal === 'desc') return parseInt(b.dataset.idx) - parseInt(a.dataset.idx)
+                        if (sortVal === 'berat-desc') return parseFloat(b.dataset.berat) - parseFloat(a.dataset
+                            .berat)
+                        if (sortVal === 'berat-asc') return parseFloat(a.dataset.berat) - parseFloat(b.dataset
+                            .berat)
+                        return 0
+                    })
+
+                    const total = filtered.length
+                    const totalPage = Math.ceil(total / CARTON_PAGE_SIZE) || 1
+                    if (page > totalPage) page = totalPage
+
+                    const start = (page - 1) * CARTON_PAGE_SIZE
+                    const pageSet = new Set(filtered.slice(start, start + CARTON_PAGE_SIZE))
+
+                    // Reorder DOM
+                    const grid = document.getElementById(`${kjId}-grid`)
+                    filtered.forEach(item => grid.appendChild(item))
+
+                    // Show/hide
+                    items.forEach(item => item.classList.toggle('kj-hidden', !pageSet.has(item)))
+
+                    // Update showing
+                    const showEl = document.getElementById(`${kjId}-showing`)
+                    if (showEl) {
+                        const from = total === 0 ? 0 : start + 1
+                        const to = Math.min(start + CARTON_PAGE_SIZE, total)
+                        showEl.textContent = total === 0 ? '0' : `${from}–${to} dari ${total}`
+                    }
+
+                    renderCartonPagination(kjId, page, totalPage)
+                }
+
+                function renderCartonPagination(kjId, currentPage, totalPage) {
+                    const el = document.getElementById(`${kjId}-pagination`)
+                    if (!el) return
+                    if (totalPage <= 1) {
+                        el.innerHTML = '';
+                        return
+                    }
+
+                    let html = `<nav><ul class="pagination pagination-sm mb-0 flex-wrap">`
+                    html += `<li class="page-item ${currentPage===1?'disabled':''}">
+            <a class="page-link" href="#" data-kj="${kjId}" data-page="${currentPage-1}">‹</a></li>`
+
+                    for (let p = 1; p <= totalPage; p++) {
+                        if (totalPage <= 7 || p === 1 || p === totalPage || Math.abs(p - currentPage) <= 1) {
+                            html += `<li class="page-item ${p===currentPage?'active':''}">
+                    <a class="page-link" href="#" data-kj="${kjId}" data-page="${p}">${p}</a></li>`
+                        } else if (p === currentPage - 2 || p === currentPage + 2) {
+                            html += `<li class="page-item disabled"><span class="page-link">…</span></li>`
+                        }
+                    }
+
+                    html += `<li class="page-item ${currentPage===totalPage?'disabled':''}">
+            <a class="page-link" href="#" data-kj="${kjId}" data-page="${currentPage+1}">›</a></li>`
+                    html += `</ul></nav>`
+                    el.innerHTML = html
+
+                    el.querySelectorAll('a[data-page]').forEach(btn => {
+                        btn.addEventListener('click', e => {
+                            e.preventDefault()
+                            const p = parseInt(btn.dataset.page)
+                            const k = btn.dataset.kj
+                            if (p > 0 && p <= totalPage) {
+                                renderCartonGrid(k, p)
+                                document.getElementById(`${k}-wrapper`)?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'start'
+                                })
+                            }
+                        })
+                    })
+                }
+
+                // Event: line filter, sort, search per KJ
+                document.addEventListener('change', e => {
+                    if (e.target.classList.contains('line-filter') || e.target.classList.contains(
+                            'carton-sort-kj')) {
+                        renderCartonGrid(e.target.dataset.kjId, 1)
+                    }
+                })
+                document.addEventListener('input', e => {
+                    if (e.target.classList.contains('carton-search-kj')) {
+                        renderCartonGrid(e.target.dataset.kjId, 1)
+                    }
+                })
+
+                // Initial render KJ list
+                renderKJPage(1)
+            })
+        </script>
     @endpush
 
 </x-layout.home>

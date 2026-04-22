@@ -372,136 +372,278 @@ class WeightController extends Controller
     }
 
 
+    // public function simpan(Request $request)
+    // {
+    //     Log::info('--- Memulai Validasi Data Timbang ---');
+    //     Log::info('Data yang diterima: ', $request->all());
+
+    //     // 1. Definisikan Validator secara manual
+    //     // Pesan kustom dalam Bahasa Indonesia yang simpel
+    //     $messages = [
+    //         'Order_code.required' => 'Kode Order belum diisi, tolong cek lagi ya.',
+    //         'Buyer.required'      => 'Nama Pembeli jangan dikosongkan.',
+    //         'berat.required'      => 'Timbangan belum stabil atau berat belum masuk.',
+    //         'berat.numeric'       => 'Data berat harus berupa angka.',
+    //         'no_box.required'     => 'Nomor Box harus diisi, jangan sampai tertukar.',
+    //         'rasio_batas_beban_min.required' => 'Batas beban minimum belum ditentukan.',
+    //         'rasio_batas_beban_max.required' => 'Batas beban maksimum belum ditentukan.',
+    //     ];
+
+    //     $validator = Validator::make($request->all(), [
+    //         'Order_code'            => 'required|string',
+    //         'Buyer'                 => 'required|string',
+    //         'berat'                 => 'required|numeric|min:0.01',
+    //         'no_box'                => 'required',
+    //         'rasio_batas_beban_min' => 'required|numeric',
+    //         'rasio_batas_beban_max' => 'required|numeric'
+    //     ], $messages); // Masukkan variabel $messages di sini
+
+    //     if ($validator->fails()) {
+    //         // Ambil pesan pertama saja agar user tidak pusing baca banyak error
+    //         $errors = $validator->errors()->all();
+    //         $pesanSingkat = $errors[0];
+
+    //         Log::warning('User salah input: ' . $pesanSingkat);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => $pesanSingkat, // Kirim satu pesan yang paling jelas
+    //             'errors'  => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     Log::info('Validasi Berhasil. Melanjutkan ke proses simpan...');
+
+    //     $device = Device::where('user_id', Auth::id())
+    //         ->where('status', 'in_use')
+    //         ->first();
+    //     Log::info('ketiga');
+
+    //     if (!$device) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Device tidak aktif atau tidak ditemukan'
+    //         ], 400);
+    //     }
+
+    //     Log::info('keempat');
+    //     DB::beginTransaction();
+    //     try {
+
+    //         $existingOrdersheet = Ordersheet::where('Order_code', $request->Order_code)->first();
+    //         $existingV = VAllOrdersheetPlusCari::where('Order_code', $request->Order_code)->first();
+
+    //         Log::info('kelima');
+    //         $device = Device::where('user_id', Auth::id())
+    //             ->where('status', 'in_use')
+    //             ->first();
+    //         Log::info('keenam');
+
+    //         // Buat Ordersheet baru setiap timbang
+    //         $ordersheet = Ordersheet::create([
+    //             'id_user'           => Auth::id(),
+    //             'id_device'         => $device?->id,
+    //             'Order_code'        => $request->Order_code,
+    //             'Buyer'             => $request->Buyer,
+    //             'PO'                => $request->PO,
+    //             'Style'             => $request->Style,
+    //             'Qty_order'         => $request->Qty_order,
+    //             'Carton_weight_std' => $request->Carton_weight_std,
+    //             'Pcs_weight_std'    => $request->Pcs_weight_std,
+    //             'PCS'               => $request->PCS,
+    //             'Ctn'               => $request->Ctn,
+    //             'Less_Ctn'          => $request->Less_Ctn,
+    //             'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
+    //             'Gac_date'          => $request->Gac_date,
+    //             'Destination'       => $request->Destination,
+    //             'Inspector'         => $request->Inspector,
+    //             'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
+    //             'SPV_QC'            => $request->SPV_QC,
+    //             'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
+    //             'status'            => 'Success'
+    //         ]);
+
+    //         // $ordersheet = Ordersheet::updateOrCreate(
+    //         //     ['Order_code' => $request->Order_code],
+    //         //     [
+    //         //         'id_user'             => Auth::id(),
+    //         //         'id_device'           => $device?->id,
+    //         //         'Buyer'               => $request->Buyer ?? $existingOrdersheet?->Buyer,
+    //         //         'PO'                  => $request->PO ?? $existingOrdersheet?->PO,
+    //         //         'Style'               => $request->Style ?? $existingOrdersheet?->Style,
+    //         //         'Qty_order'           => $request->Qty_order ?? $existingOrdersheet?->Qty_order,
+    //         //         'Carton_weight_std'   => $request->Carton_weight_std ?? $existingOrdersheet?->Carton_weight_std,
+    //         //         'Pcs_weight_std'      => $request->Pcs_weight_std ?? $existingOrdersheet?->Pcs_weight_std,
+    //         //         'PCS'                 => $request->PCS ?? $existingOrdersheet?->PCS,
+    //         //         'Ctn'                 => $request->Ctn ?? $existingOrdersheet?->Ctn,
+    //         //         'Less_Ctn'            => $request->Less_Ctn ?? $existingOrdersheet?->Less_Ctn,
+    //         //         'Pcs_Less_Ctn'        => $request->Pcs_Less_Ctn ?? $existingOrdersheet?->Pcs_Less_Ctn,
+    //         //         'Gac_date'            => $request->Gac_date ?? $existingOrdersheet?->Gac_date,
+    //         //         'Destination'         => $request->Destination ?? $existingOrdersheet?->Destination,
+    //         //         'Inspector'           => $request->Inspector ?? $existingOrdersheet?->Inspector,
+    //         //         'OPT_QC_TIMBANGAN'    => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
+    //         //         'SPV_QC'              => $request->SPV_QC ?? $existingOrdersheet?->SPV_QC,
+    //         //         'CHIEF_FINISH_GOOD'   => $request->CHIEF_FINISH_GOOD ?? $existingOrdersheet?->CHIEF_FINISH_GOOD,
+    //         //         'status'              => 'Success'
+    //         //     ]
+    //         // );
+
+    //         $berat = floatval($request->berat);
+
+    //         Timbangan_riwayat::create([
+    //             'id_user'                    => Auth::id(),
+    //             'id_device'                  => $device?->id,
+    //             'id_ordersheet'              => $ordersheet->id,
+    //             'berat'                      => $berat,
+    //             'no_box'                     => $request->no_box,
+    //             'rasio_batas_beban_min'      => $request->rasio_batas_beban_min,
+    //             'rasio_batas_beban_max'      => $request->rasio_batas_beban_max,
+    //             'status'                     => 'Success',
+    //             'waktu_timbang'              => now(),
+    //         ]);
+
+    //         VAllOrdersheetPlusCari::updateOrCreate(
+    //             ['Order_code' => $request->Order_code],
+    //             [
+    //                 'Buyer'               => $request->Buyer ?? $existingV?->Buyer,
+    //                 'PurchaseOrderNumber' => $request->PO ?? $existingV?->PurchaseOrderNumber,
+    //                 'ProductName'         => $request->Style ?? $existingV?->ProductName,
+    //                 'Qty'                 => $request->Qty_order ?? $existingV?->Qty,
+    //                 'DestinationCountry'  => $request->Destination ?? $existingV?->DestinationCountry,
+    //                 'GAC'                 => $request->Gac_date ?? $existingV?->GAC,
+    //                 'FinalDestination'    => $request->Destination ?? $existingV?->FinalDestination,
+    //                 'status'              => 'Success',
+    //                 'cari'                => ($request->Buyer ?? $existingV?->Buyer)
+    //                     . ' ' . $request->Order_code . ' '
+    //                     . ($request->PO ?? $existingV?->PurchaseOrderNumber),
+    //             ]
+    //         );
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => $berat > 0
+    //                 ? "Data berhasil disimpan dengan berat: {$berat} kg!"
+    //                 : "Data berhasil disimpan (tanpa berat timbangan)",
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         Log::error('Error simpan ordersheet: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function simpan(Request $request)
     {
         Log::info('--- Memulai Validasi Data Timbang ---');
         Log::info('Data yang diterima: ', $request->all());
 
-        // 1. Definisikan Validator secara manual
-        // Pesan kustom dalam Bahasa Indonesia yang simpel
         $messages = [
-            'Order_code.required' => 'Kode Order belum diisi, tolong cek lagi ya.',
-            'Buyer.required'      => 'Nama Pembeli jangan dikosongkan.',
-            'berat.required'      => 'Timbangan belum stabil atau berat belum masuk.',
-            'berat.numeric'       => 'Data berat harus berupa angka.',
-            'no_box.required'     => 'Nomor Box harus diisi, jangan sampai tertukar.',
+            'Order_code.required'            => 'Kode Order belum diisi.',
+            'Line.required'                  => 'Line belum diisi.',
+            'Buyer.required'                 => 'Nama Pembeli jangan dikosongkan.',
+            'berat.required'                 => 'Timbangan belum stabil atau berat belum masuk.',
+            'berat.numeric'                  => 'Data berat harus berupa angka.',
+            'no_box.required'                => 'Nomor Carton harus diisi.',
             'rasio_batas_beban_min.required' => 'Batas beban minimum belum ditentukan.',
             'rasio_batas_beban_max.required' => 'Batas beban maksimum belum ditentukan.',
         ];
 
         $validator = Validator::make($request->all(), [
             'Order_code'            => 'required|string',
+            'Line'                  => 'required|string',
             'Buyer'                 => 'required|string',
             'berat'                 => 'required|numeric|min:0.01',
             'no_box'                => 'required',
             'rasio_batas_beban_min' => 'required|numeric',
-            'rasio_batas_beban_max' => 'required|numeric'
-        ], $messages); // Masukkan variabel $messages di sini
+            'rasio_batas_beban_max' => 'required|numeric',
+        ], $messages);
 
         if ($validator->fails()) {
-            // Ambil pesan pertama saja agar user tidak pusing baca banyak error
-            $errors = $validator->errors()->all();
-            $pesanSingkat = $errors[0];
-
-            Log::warning('User salah input: ' . $pesanSingkat);
+            $pesanSingkat = $validator->errors()->all()[0];
+            Log::warning('Validasi gagal: ' . $pesanSingkat);
 
             return response()->json([
                 'success' => false,
-                'message' => $pesanSingkat, // Kirim satu pesan yang paling jelas
+                'message' => $pesanSingkat,
                 'errors'  => $validator->errors()
             ], 422);
         }
 
-        Log::info('Validasi Berhasil. Melanjutkan ke proses simpan...');
+        Log::info('Validasi Berhasil.');
 
         $device = Device::where('user_id', Auth::id())
             ->where('status', 'in_use')
             ->first();
-        Log::info('ketiga');
 
         if (!$device) {
             return response()->json([
                 'success' => false,
-                'message' => 'Device tidak aktif atau tidak ditemukan'
+                'message' => 'Device tidak aktif atau tidak ditemukan.'
             ], 400);
         }
 
-        Log::info('keempat');
         DB::beginTransaction();
         try {
 
-            $existingOrdersheet = Ordersheet::where('Order_code', $request->Order_code)->first();
-            $existingV = VAllOrdersheetPlusCari::where('Order_code', $request->Order_code)->first();
-
-            Log::info('kelima');
-            $device = Device::where('user_id', Auth::id())
-                ->where('status', 'in_use')
-                ->first();
-            Log::info('keenam');
-
-            // Buat Ordersheet baru setiap timbang
-            $ordersheet = Ordersheet::create([
-                'id_user'           => Auth::id(),
-                'id_device'         => $device?->id,
-                'Order_code'        => $request->Order_code,
-                'Buyer'             => $request->Buyer,
-                'PO'                => $request->PO,
-                'Style'             => $request->Style,
-                'Qty_order'         => $request->Qty_order,
-                'Carton_weight_std' => $request->Carton_weight_std,
-                'Pcs_weight_std'    => $request->Pcs_weight_std,
-                'PCS'               => $request->PCS,
-                'Ctn'               => $request->Ctn,
-                'Less_Ctn'          => $request->Less_Ctn,
-                'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
-                'Gac_date'          => $request->Gac_date,
-                'Destination'       => $request->Destination,
-                'Inspector'         => $request->Inspector,
-                'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
-                'SPV_QC'            => $request->SPV_QC,
-                'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
-                'status'            => 'Success'
-            ]);
-
-            // $ordersheet = Ordersheet::updateOrCreate(
-            //     ['Order_code' => $request->Order_code],
-            //     [
-            //         'id_user'             => Auth::id(),
-            //         'id_device'           => $device?->id,
-            //         'Buyer'               => $request->Buyer ?? $existingOrdersheet?->Buyer,
-            //         'PO'                  => $request->PO ?? $existingOrdersheet?->PO,
-            //         'Style'               => $request->Style ?? $existingOrdersheet?->Style,
-            //         'Qty_order'           => $request->Qty_order ?? $existingOrdersheet?->Qty_order,
-            //         'Carton_weight_std'   => $request->Carton_weight_std ?? $existingOrdersheet?->Carton_weight_std,
-            //         'Pcs_weight_std'      => $request->Pcs_weight_std ?? $existingOrdersheet?->Pcs_weight_std,
-            //         'PCS'                 => $request->PCS ?? $existingOrdersheet?->PCS,
-            //         'Ctn'                 => $request->Ctn ?? $existingOrdersheet?->Ctn,
-            //         'Less_Ctn'            => $request->Less_Ctn ?? $existingOrdersheet?->Less_Ctn,
-            //         'Pcs_Less_Ctn'        => $request->Pcs_Less_Ctn ?? $existingOrdersheet?->Pcs_Less_Ctn,
-            //         'Gac_date'            => $request->Gac_date ?? $existingOrdersheet?->Gac_date,
-            //         'Destination'         => $request->Destination ?? $existingOrdersheet?->Destination,
-            //         'Inspector'           => $request->Inspector ?? $existingOrdersheet?->Inspector,
-            //         'OPT_QC_TIMBANGAN'    => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
-            //         'SPV_QC'              => $request->SPV_QC ?? $existingOrdersheet?->SPV_QC,
-            //         'CHIEF_FINISH_GOOD'   => $request->CHIEF_FINISH_GOOD ?? $existingOrdersheet?->CHIEF_FINISH_GOOD,
-            //         'status'              => 'Success'
-            //     ]
-            // );
+            // ✅ updateOrCreate: 1 Order_code = 1 record Ordersheet
+            // Setiap timbang carton baru TIDAK membuat Ordersheet baru
+            $ordersheet = Ordersheet::updateOrCreate(
+                [
+                    'Order_code' => $request->Order_code,
+                    'Line'       => $request->Line,  // ← tambah line sebagai key
+                ],
+                [
+                    'id_user'           => Auth::id(),
+                    'id_device'         => $device->id,
+                    'KJ'                => $request->KJ,
+                    'Buyer'             => $request->Buyer,
+                    'PO'                => $request->PO,
+                    'Style'             => $request->Style,
+                    'Qty_order'         => $request->Qty_order,
+                    'line'              => $request->Line,
+                    'Carton_weight_std' => $request->Carton_weight_std,
+                    'Pcs_weight_std'    => $request->Pcs_weight_std,
+                    'PCS'               => $request->PCS,
+                    'Ctn'               => $request->Ctn,
+                    'Less_Ctn'          => $request->Less_Ctn,
+                    'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
+                    'Gac_date'          => $request->Gac_date,
+                    'Destination'       => $request->Destination,
+                    'Inspector'         => $request->Inspector,
+                    'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
+                    'SPV_QC'            => $request->SPV_QC,
+                    'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
+                    'status'            => 'Success',
+                ]
+            );
 
             $berat = floatval($request->berat);
 
+            // ✅ Setiap timbang = 1 baris Timbangan_riwayat (per carton)
             Timbangan_riwayat::create([
-                'id_user'                    => Auth::id(),
-                'id_device'                  => $device?->id,
-                'id_ordersheet'              => $ordersheet->id,
-                'berat'                      => $berat,
-                'no_box'                     => $request->no_box,
-                'rasio_batas_beban_min'      => $request->rasio_batas_beban_min,
-                'rasio_batas_beban_max'      => $request->rasio_batas_beban_max,
-                'status'                     => 'Success',
-                'waktu_timbang'              => now(),
+                'id_user'               => Auth::id(),
+                'id_device'             => $device->id,
+                'id_ordersheet'         => $ordersheet->id,
+                'berat'                 => $berat,
+                'no_box'                => $request->no_box,
+                'pcs'                   => intval($request->PCS) ?: 0, // ← simpan PCS saat itu
+                'rasio_batas_beban_min' => $request->rasio_batas_beban_min,
+                'rasio_batas_beban_max' => $request->rasio_batas_beban_max,
+                'status'                => 'Success',
+                'waktu_timbang'         => now(),
             ]);
 
+            // Hitung total carton yang sudah ditimbang untuk Order_code ini
+            $totalCartonDitimbang = Timbangan_riwayat::where('id_ordersheet', $ordersheet->id)->count();
+            $totalCartonTarget    = intval($request->Ctn) ?: 0;
+
+            // Update view/cache pencarian
+            $existingV = VAllOrdersheetPlusCari::where('Order_code', $request->Order_code)->first();
             VAllOrdersheetPlusCari::updateOrCreate(
                 ['Order_code' => $request->Order_code],
                 [
@@ -521,11 +663,15 @@ class WeightController extends Controller
 
             DB::commit();
 
+            // ✅ Kirim info apakah semua carton sudah selesai
+            $selesai = $totalCartonTarget > 0 && $totalCartonDitimbang >= $totalCartonTarget;
+
             return response()->json([
-                'success' => true,
-                'message' => $berat > 0
-                    ? "Data berhasil disimpan dengan berat: {$berat} kg!"
-                    : "Data berhasil disimpan (tanpa berat timbangan)",
+                'success'               => true,
+                'message'               => "Carton {$request->no_box} berhasil disimpan ({$berat} kg)",
+                'total_ditimbang'       => $totalCartonDitimbang,
+                'total_target'          => $totalCartonTarget,
+                'semua_carton_selesai'  => $selesai,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

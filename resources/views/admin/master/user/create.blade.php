@@ -105,8 +105,6 @@
                                             Role --</option>
                                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin
                                         </option>
-                                        <option value="operator" {{ old('role') == 'operator' ? 'selected' : '' }}>
-                                            Operator</option>
                                         <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>User
                                         </option>
                                     </select>

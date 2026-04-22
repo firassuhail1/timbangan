@@ -20,6 +20,7 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->decimal('berat', 10, 2)->nullable();
             $table->string('no_box')->nullable();
+            $table->integer('pcs')->nullable()->default(0);
             $table->decimal('rasio_batas_beban_min', 8, 2)->nullable();
             $table->decimal('rasio_batas_beban_max', 8, 2)->nullable();
             $table->timestamp('waktu_timbang')->useCurrent();

@@ -83,6 +83,10 @@ function initSearch() {
 
     searchBtn.addEventListener('click', () => fetchData(1))
 
+    // Tambah variable global untuk simpan info pagination API
+    let apiLastPage = 1
+    let apiCurrentPage = 1
+
     async function fetchData(page = 1) {
         const search = document.getElementById('search')?.value.trim() || ''
         const start  = document.getElementById('start_date')?.value || ''
@@ -91,10 +95,10 @@ function initSearch() {
         saveSearchState({ search, start, end, page })
 
         spinner.style.display = 'inline-block'
-        tableBody.innerHTML = `<tr><td colspan="9" class="text-center">Memuat...</td></tr>`
+        tableBody.innerHTML = `<tr><td colspan="10" class="text-center">Memuat...</td></tr>`
 
         try {
-            const params = new URLSearchParams({ per_page: 9999 }) // ← minta semua
+            const params = new URLSearchParams({ per_page: PAGE_SIZE, page })
             if (search) params.append('search', search)
             if (start)  params.append('start_date', start)
             if (end)    params.append('end_date', end)
@@ -105,17 +109,23 @@ function initSearch() {
             spinner.style.display = 'none'
 
             if (!json.success) {
-                tableBody.innerHTML = `<tr><td colspan="9" class="text-danger text-center">Gagal memuat data</td></tr>`
+                tableBody.innerHTML = `<tr><td colspan="10" class="text-danger text-center">Gagal memuat data</td></tr>`
                 return
             }
 
-            const weighedIds   = getWeighedIds()
-            allFilteredData    = json.data.filter(item => !weighedIds.includes(item.id))
+            // Simpan info pagination dari API
+            apiLastPage    = json.last_page    || 1
+            apiCurrentPage = json.current_page || 1
 
-            renderPage(page)
+            // Tidak perlu filter weighedIds di sini karena row tidak hilang
+            allFilteredData = json.data
+
+            renderTable(allFilteredData, apiCurrentPage)
+            renderPagination(apiCurrentPage, apiLastPage)
+
         } catch (err) {
             spinner.style.display = 'none'
-            tableBody.innerHTML = `<tr><td colspan="9" class="text-danger text-center">Error: ${err.message}</td></tr>`
+            tableBody.innerHTML = `<tr><td colspan="10" class="text-danger text-center">Error: ${err.message}</td></tr>`
         }
     }
 
@@ -241,11 +251,10 @@ function initSearch() {
             link.addEventListener('click', e => {
                 e.preventDefault()
                 const page = parseInt(link.dataset.page)
-                if (page > 0 && page <= lastPage) {
+                if (page > 0 && page <= apiLastPage) {
                     const state = getSearchState()
                     saveSearchState({ ...state, page })
-                    renderPage(page)
-                    // Scroll ke atas tabel
+                    fetchData(page) // ← langsung fetch ke API
                     document.getElementById('resultTable').scrollIntoView({ behavior: 'smooth', block: 'start' })
                 }
             })
@@ -379,6 +388,7 @@ function applyManualWeight(berat) {
 }
 
 let currentId = null
+let currentItemCtn = 0
 let pollingInterval = null
 let latestPreview = null
 let currentDeviceId = null
@@ -388,6 +398,7 @@ function openModalForItem(item) {
     const modalElement = document.getElementById('timbangModal')
 
     currentId = item.id
+    currentItemCtn = parseInt(item.Ctn) || 0
 
     fillModalFields(item)
     resetPreviewUI()
@@ -447,6 +458,7 @@ function fillModalFields(item) {
     const fields = {
         info_buyer: 'Buyer',
         info_order_code: 'Order_code',
+        info_kj: 'KJ',
         info_purchaseordernumber: 'PurchaseOrderNumber',
         info_style: 'ProductName',
         info_qty_order: 'Qty',
@@ -512,34 +524,74 @@ function stopPolling() {
     }
 }
 
-function startListening(espId) {
-    stopPolling()
-    stopListening() // stop listener lama dulu
-
-    window._currentEspId = espId
-
-    window.Echo.channel(`timbangan.${espId}`)
-        .listen('.berat.updated', (data) => {
-            updateBeratUI(data.berat)
-        })
-}
-
 function stopListening() {
     if (window._currentEspId) {
-        window.Echo.leaveChannel(`timbangan.${window._currentEspId}`)
-        window._currentEspId = null
+        // Gunakan .leave() untuk memastikan semua listener di channel itu dibersihkan
+        window.Echo.leave(`timbangan.${window._currentEspId}`);
+        
+        console.log(`[WS] Berhenti mendengarkan: timbangan.${window._currentEspId}`);
+        window._currentEspId = null;
     }
 }
 
-function updateBeratUI(berat) {
-    display.innerText = formatBerat(berat);
-    hiddenInput.value = berat;
-    hitungLossWeight(berat);
+function startListening(espId) {
+    // if (!espId) return;
 
-    if (berat <= 0.5) {
+    stopListening(); // Bersihkan yang lama
+
+    console.log(`[WS] Mulai mendengarkan: timbangan.${espId}`);
+    window._currentEspId = espId;
+
+    window.Echo.channel(`timbangan.${espId}`)
+        .listen('.berat.updated', (data) => {
+            console.log("[WS] Data Berat Masuk:", data); // Tambahkan ini buat debug
+            
+            if (typeof updateBeratUI === 'function') {
+                updateBeratUI(data.berat);
+            } else {
+                // Jika fungsi tidak ketemu, coba update manual ke elemen id
+                const el = document.getElementById('displayBerat');
+                if(el) el.innerText = data.berat;
+            }
+        });
+}
+
+function updateBeratUI(berat) {
+    // Ambil elemen DOM
+    const display = document.getElementById('currentWeight');
+    const hiddenInput = document.getElementById('hidden_weight'); // sesuaikan dengan ID input hidden Anda
+    const statusText = document.getElementById('previewStatus');
+    const btnSimpan = document.getElementById('btnSimpanTimbang');
+
+    // Validasi elemen ada
+    if (!display || !statusText || !btnSimpan) {
+        console.error('Element tidak ditemukan:', { display, statusText, btnSimpan });
+        return;
+    }
+
+    // Konversi dari gram ke kilogram jika perlu
+    // Asumsi: jika berat > 100, kemungkinan dalam gram, perlu dibagi 1000
+    let beratKg = berat;
+    if (berat > 100) {
+        beratKg = berat / 1000; // konversi gram ke kg
+    }
+
+    // Update display dalam KG
+    display.textContent = beratKg.toFixed(2) + ' kg';
+    
+    // Update hidden input jika ada (simpan dalam kg)
+    if (hiddenInput) {
+        hiddenInput.value = beratKg.toFixed(2);
+    }
+
+    // Hitung loss weight
+    hitungLossWeight();
+
+    // Cek kondisi berat (dalam kg)
+    if (beratKg <= 0.5) {
         statusText.textContent = 'Timbangan Kosong';
-        statusText.className   = 'badge bg-warning text-dark fw-bold px-3 py-2';
-        btnSimpan.disabled     = true;
+        statusText.className = 'badge bg-warning text-dark fw-bold px-3 py-2';
+        btnSimpan.disabled = true;
         hasPlayedStableBeepForThisItem = false;
         lastStableWeight = null;
         return;
@@ -547,15 +599,28 @@ function updateBeratUI(berat) {
 
     // Data masuk = langsung stabil
     statusText.textContent = 'Stabil';
-    statusText.className   = 'badge bg-success fw-bold px-3 py-2';
-    btnSimpan.disabled     = false;
+    statusText.className = 'badge bg-success fw-bold px-3 py-2';
+    btnSimpan.disabled = false;
 
+    // Play beep hanya sekali per item
     if (!hasPlayedStableBeepForThisItem) {
         playStableBeep();
         hasPlayedStableBeepForThisItem = true;
     }
 
-    lastStableWeight = berat;
+    // Update latest preview untuk tombol simpan (dalam kg)
+    latestPreview = {
+        berat: beratKg.toFixed(2)
+    };
+
+    lastStableWeight = beratKg;
+}
+
+// Format berat dalam kg
+function formatBerat(berat) {
+    // Konversi ke kg jika dalam gram
+    let beratKg = berat > 100 ? berat / 1000 : berat;
+    return beratKg.toFixed(2) + ' kg';
 }
 
 const THRESHOLD = 0.002
@@ -972,96 +1037,81 @@ function initBarcodeScanner() {
 function initSaveButton() {
     const btnSimpan = document.getElementById('btnSimpanTimbang')
     if (!btnSimpan) return
-
+ 
     btnSimpan.addEventListener('click', async () => {
         if (!latestPreview || parseFloat(latestPreview.berat) < 0.05) {
-            Swal.fire(
-                'Peringatan',
-                'Berat terlalu kecil atau belum terdeteksi!',
-                'warning'
-            )
+            Swal.fire('Peringatan', 'Berat terlalu kecil atau belum terdeteksi!', 'warning')
             return
         }
-
-        const form = document.getElementById('formOrdersheet')
+ 
+        const form     = document.getElementById('formOrdersheet')
         const formData = new FormData(form)
         formData.set('berat', latestPreview.berat)
         formData.set('id', currentId)
-
-        btnSimpan.disabled = true
-        btnSimpan.innerHTML = 'Menyimpan...'
-
+ 
+        btnSimpan.disabled  = true
+        btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'
+ 
         try {
             const res = await fetch('/user/order/simpan', {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'Accept': 'application/json', // WAJIB: Agar Laravel kirim JSON, bukan HTML
+                    'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'include'
             })
-
-            // Cek apakah response-nya beneran JSON sebelum di-parse
-            const isJson = res.headers.get('content-type')?.includes('application/json');
-            const json = isJson ? await res.json() : null;
-
+ 
+            const isJson = res.headers.get('content-type')?.includes('application/json')
+            const json   = isJson ? await res.json() : null
+ 
             if (res.ok && json?.success) {
                 playSuccessBeep()
-
+ 
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: json.message,
+                    html: json.message,
                     timer: 1200,
                     showConfirmButton: false
                 })
-
-                // Simpan ID yang sudah ditimbang
-                addWeighedId(currentId)
-
-                // Tutup modal
-                const modalEl = document.getElementById('timbangModal')
-                bootstrap.Modal.getInstance(modalEl).hide()
-
-                // Hapus dari data lokal
-                allFilteredData = allFilteredData.filter(
-                    (item) => item.id !== currentId
-                )
-
-                // Render ulang halaman sekarang
-                const state = getSearchState()
-                const currentPage = state?.page || 1
-                renderPage(currentPage)
-
-                // Auto next
+ 
+                // ✅ Reset HANYA field per-carton
+                // Field info ordersheet (Buyer, Style, dll) TETAP terisi
+                document.getElementById('no_box').value       = ''
+                document.getElementById('lost_weight').value  = ''
+ 
+                // Reset field Ctn (nomor carton) — user isi lagi untuk carton berikutnya
+                const ctnEl = document.getElementById('info_ctn')
+                if (ctnEl) ctnEl.value = ''
+ 
+                // Reset timbangan display
+                resetPreviewUI()
+ 
+                // ✅ Modal TIDAK ditutup — user langsung isi no_box carton berikutnya
                 setTimeout(() => {
-                    const next = getNextItem()
-
-                    if (next) {
-                        openModalForItem(next)
-                    } else {
-                        Swal.fire(
-                            'Selesai 🎉',
-                            'Semua data sudah ditimbang',
-                            'success'
-                        )
-                    }
-                }, 700)
+                    document.getElementById('no_box')?.focus()
+                }, 400)
+ 
+                // ✅ Row di tabel pencarian TIDAK dihapus
+                // Tidak ada addWeighedId(), tidak ada filter allFilteredData
+ 
+                // Reload laporan di bawah (tanpa reload halaman)
+                reloadReport()
+ 
             } else {
-                // Jika validasi gagal (422), ambil pesan error dari Laravel
                 if (res.status === 422 && json?.errors) {
-                    // Gabungkan semua pesan error validasi menjadi satu string
-                    const errorMessages = Object.values(json.errors).flat().join('<br>');
-                    throw new Error(errorMessages);
+                    const errorMessages = Object.values(json.errors).flat().join('<br>')
+                    throw new Error(errorMessages)
                 }
-                throw new Error(json?.message || 'Gagal menyimpan (Status: ' + res.status + ')');
+                throw new Error(json?.message || 'Gagal menyimpan (Status: ' + res.status + ')')
             }
         } catch (err) {
             Swal.fire('Error', err.message, 'error')
         } finally {
-            btnSimpan.disabled = false
-            btnSimpan.innerHTML = 'Simpan'
+            btnSimpan.disabled  = false
+            btnSimpan.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan'
         }
     })
 }
@@ -1158,6 +1208,28 @@ function prepareSwitch(id, name, esp_id) {
     modal.show()
 
     document.getElementById('confirmSwitchBtn').onclick = () => switchDevice(id)
+}
+
+async function reloadReport() {
+    try {
+        const res  = await fetch(window.location.href, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        const html = await res.text()
+ 
+        // Parse HTML response, ambil hanya bagian reportContainer
+        const parser  = new DOMParser()
+        const doc     = parser.parseFromString(html, 'text/html')
+        const newReport = doc.getElementById('reportContainer')
+        const oldReport = document.getElementById('reportContainer')
+ 
+        if (newReport && oldReport) {
+            oldReport.innerHTML = newReport.innerHTML
+        }
+    } catch (err) {
+        // Gagal reload laporan tidak kritis, abaikan
+        console.warn('Reload laporan gagal:', err)
+    }
 }
 
 async function switchDevice(deviceId) {
