@@ -54,13 +54,20 @@ class DeviceLoginController extends Controller
             return response()->json([]);
         }
 
-        $devices = Device::where(function ($q) use ($user) {
-            $q->whereNull('user_id')
-                ->where('status', 'online');
-        })
+        $devices = Device::where(function ($q) {
+                // 1. Online = available (tidak peduli user_id)
+                $q->where('status', 'online');
+            })
             ->orWhere(function ($q) use ($user) {
+                // 2. In_use milik user ini sendiri
                 $q->where('status', 'in_use')
-                    ->where('user_id', $user->id);
+                ->where('user_id', $user->id);
+            })
+            ->orWhere(function ($q) {
+                // 3. In_use tapi timeout (> 5 menit) = dianggap available
+                $q->where('status', 'in_use')
+                ->whereNotNull('user_id')
+                ->where('last_seen_at', '<', now()->subMinutes(5));
             })
             ->orderBy('name')
             ->get(['esp_id', 'name']);

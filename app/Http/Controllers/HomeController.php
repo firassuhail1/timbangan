@@ -6,29 +6,57 @@ use App\Models\Update\Device;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $availableDevices = Device::where(function ($query) {
-                $query->where('status', 'online')
-                    ->orWhere(function ($q) {
-                        $q->where('status', 'in_use')
-                            ->where('user_id', Auth::id()); // device milik user tetap muncul
-                    });
+        $autoSelectedEspId = null;
+        $lastUsername = Cookie::get('username');
+
+        if ($lastUsername) {
+            $user = User::where('username', $lastUsername)->first();
+            if ($user) {
+                $device = Device::where('user_id', $user->id)
+                    ->where('status', 'in_use')
+                    ->first();
+
+                if ($device) {
+                    $autoSelectedEspId = $device->esp_id;
+                }
+            }
+        }
+
+        $availableDevices = Device::where(function ($q) {
+                // 1. Kosong & online
+                $q->whereNull('user_id')
+                ->where('status', 'online');
             })
-            ->orderBy('name')
+            ->orWhere(function ($q) use ($autoSelectedEspId) {
+                // 2. Device milik user ini sendiri yang sedang in_use
+                if ($autoSelectedEspId) {
+                    $q->where('esp_id', $autoSelectedEspId)
+                    ->where('status', 'in_use');
+                } else {
+                    // Jika tidak ada autoSelected, skip kondisi ini dengan impossible clause
+                    $q->whereRaw('1 = 0');
+                }
+            })
+            ->orWhere(function ($q) {
+                // 3. In_use tapi sudah timeout (> 5 menit) - dianggap tersedia
+                $q->where('status', 'in_use')
+                ->whereNotNull('user_id')
+                ->where('last_seen_at', '<', now()->subMinutes(5));
+            })
+            ->orderBy('esp_id')
             ->get();
 
-        $lastUsedDevice = Device::where('user_id', Auth::id())
-                        ->orderByDesc('last_seen_at')
-                        ->first();
+        Log::info('available devices : ' . $availableDevices);
 
-        $lastUsedEspId = $lastUsedDevice?->esp_id;
-
-        // dd($lastUsedEspId);
-
-        return view('auth.login', compact('availableDevices', 'lastUsedEspId'));
+        return view('auth.login', compact(
+            'availableDevices',
+            'autoSelectedEspId'
+        ));
     }
 }

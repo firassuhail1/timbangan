@@ -545,7 +545,7 @@
                         <label for="esp_id">Pilih Timbangan (ESP)</label>
                         <div class="input-with-icon">
                             <select name="esp_id" id="esp_id" class="input-field">
-                                <option value="">Pilih timbangan...</option>
+                                <option value="">Pilih timbangan... </option>
                                 @php
                                     $selectedEsp = $autoSelectedEspId ?? null;
                                 @endphp
@@ -645,8 +645,8 @@
             async function fetchDevices() {
                 const username = usernameInput.value.trim();
                 if (!username) {
-                    // Kosongkan dropdown jika username kosong
-                    selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
+                    // // Kosongkan dropdown jika username kosong
+                    // selectEl.innerHTML = `<option value="">Pilih timbangan...</option>`;
                     return;
                 }
 

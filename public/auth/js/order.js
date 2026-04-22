@@ -109,7 +109,7 @@ function initSearch() {
             spinner.style.display = 'none'
 
             if (!json.success) {
-                tableBody.innerHTML = `<tr><td colspan="10" class="text-danger text-center">Gagal memuat data</td></tr>`
+                tableBody.innerHTML = `<tr><td colspan="10" class="text-danger text-center">Gagal memuat data dari server, coba gunakan rentang waktu lebih singkat</td></tr>`
                 return
             }
 
