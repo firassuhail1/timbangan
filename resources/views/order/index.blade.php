@@ -573,7 +573,7 @@
                                                     </tr>
                                                     <tr>
                                                         <th></th>
-                                                        <td>
+                                                        {{-- <td>
                                                             <div class="row g-2">
                                                                 <div class="col-6">
                                                                     <div class="input-group input-group-sm">
@@ -592,7 +592,7 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </td>
+                                                        </td> --}}
                                                     </tr>
                                                     <tr>
                                                         <th>Carton Weight Std.</th>
