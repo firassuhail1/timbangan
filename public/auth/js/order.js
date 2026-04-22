@@ -461,6 +461,7 @@ function fillModalFields(item) {
         info_kj: 'KJ',
         info_purchaseordernumber: 'PurchaseOrderNumber',
         info_style: 'ProductName',
+        info_color_description: 'ColorDescription',
         info_qty_order: 'Qty',
         info_pcs: 'Pcs',
         info_ctn: 'Ctn',

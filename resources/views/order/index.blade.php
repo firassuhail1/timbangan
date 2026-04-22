@@ -186,7 +186,7 @@
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap">
                                     <input type="text" id="kj-search" class="form-control form-control-sm"
-                                        placeholder="Cari KJ / Buyer..." style="width: 180px;">
+                                        placeholder="Cari KJ / Buyer / PO..." style="width: 200px;">
                                     <button class="btn btn-sm btn-outline-secondary" id="btn-expand-all">
                                         <i class="fas fa-expand-alt me-1"></i> Buka Semua
                                     </button>
@@ -199,228 +199,382 @@
                             {{-- ===== LIST KJ ===== --}}
                             <div id="kj-list">
                                 @foreach ($groupedByKJ as $kj => $kjData)
-                                    @php
-                                        $kjId = 'kj-' . md5($kj);
-                                        $lines = $kjData['by_line'];
-                                        $lineNumbers = $lines->keys()->sort()->values();
-                                    @endphp
+                                    @php $kjId = 'kj-' . md5($kj) @endphp
 
                                     <div class="kj-group card border-0 shadow-sm mb-3"
                                         id="{{ $kjId }}-wrapper" data-kj="{{ strtolower($kj) }}"
-                                        data-buyer="{{ strtolower($kjData['buyer']) }}">
+                                        data-buyer="{{ strtolower($kjData['buyer']) }}"
+                                        data-po="{{ strtolower($kjData['by_po']->keys()->implode(' ')) }}">
 
-                                        {{-- ===== KJ HEADER (klik untuk expand) ===== --}}
+                                        {{-- KJ HEADER --}}
                                         <div class="card-header bg-white py-2 px-3 kj-toggle"
-                                            data-target="{{ $kjId }}" style="cursor: pointer;">
-
+                                            data-target="{{ $kjId }}" style="cursor:pointer;">
                                             <div class="row align-items-center g-2">
-                                                {{-- Info KJ --}}
-                                                <div class="col-12 col-md-6">
+                                                <div class="col-12 col-md-7">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                        <i class="fas fa-chevron-down kj-chevron text-muted"
+                                                        <i class="fas fa-chevron-right kj-chevron text-muted"
                                                             id="{{ $kjId }}-chevron"
-                                                            style="transition: transform 0.2s; font-size: 12px;"></i>
-                                                        <span class="badge bg-primary px-2">{{ $kjData['kj'] }}</span>
-                                                        @foreach ($lineNumbers as $ln)
-                                                            <span class="badge bg-light text-dark border"
-                                                                style="font-size: 11px; color: rgb(43, 43, 43) !important;">
-                                                                Line {{ $ln }}
-                                                            </span>
-                                                        @endforeach
-                                                        <span class="text-muted small">{{ $kjData['buyer'] }}</span>
-                                                    </div>
-                                                    <div class="small text-muted mt-1 ms-3">
-                                                        {{ $kjData['date'] }} · {{ $kjData['style'] }}
+                                                            style="transition:transform 0.2s; font-size:11px;"></i>
+                                                        <span
+                                                            class="badge bg-primary px-2 py-1">{{ $kj }}</span>
+                                                        <span
+                                                            class="text-muted small fw-semibold">{{ $kjData['buyer'] }}</span>
+                                                        <span class="badge bg-light text-dark border small"
+                                                            style="color: rgb(20, 20, 20) !important;">
+                                                            {{ $kjData['by_po']->count() }} PO
+                                                        </span>
                                                     </div>
                                                 </div>
-
-                                                {{-- Stat ringkas --}}
-                                                <div class="col-12 col-md-6">
+                                                <div class="col-12 col-md-5">
                                                     <div class="d-flex gap-3 justify-content-md-end flex-wrap">
                                                         <div class="text-center">
-                                                            <div class="fw-bold text-primary">
+                                                            <div class="fw-bold text-primary small">
                                                                 {{ $kjData['total_carton'] }}</div>
-                                                            <div class="text-muted" style="font-size: 11px;">Carton
+                                                            <div style="font-size:10px;" class="text-muted">Carton
                                                             </div>
                                                         </div>
                                                         <div class="text-center">
-                                                            <div class="fw-bold text-success">
+                                                            <div class="fw-bold text-success small">
                                                                 {{ number_format($kjData['qty_sudah']) }}</div>
-                                                            <div class="text-muted" style="font-size: 11px;">Pcs
-                                                                Ditimbang</div>
+                                                            <div style="font-size:10px;" class="text-muted">Pcs</div>
                                                         </div>
                                                         <div class="text-center">
-                                                            <div class="fw-bold text-info">
+                                                            <div class="fw-bold text-info small">
                                                                 {{ number_format($kjData['total_berat'], 2) }} kg</div>
-                                                            <div class="text-muted" style="font-size: 11px;">Total
+                                                            <div style="font-size:10px;" class="text-muted">Total
                                                                 Berat</div>
-                                                        </div>
-                                                        <div class="text-center">
-                                                            <div
-                                                                class="fw-bold {{ $kjData['qty_sisa'] == 0 ? 'text-success' : 'text-warning' }}">
-                                                                {{ $kjData['qty_sisa'] == 0 ? '✓ Selesai' : number_format($kjData['qty_sisa']) . ' pcs' }}
-                                                            </div>
-                                                            <div class="text-muted" style="font-size: 11px;">
-                                                                Sisa dari {{ number_format($kjData['qty_total']) }}
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <a href="{{ route('order.print.orderCode', $kjData['order_code']) }}"
-                                                                target="_blank" class="btn btn-outline-primary btn-sm"
-                                                                onclick="event.stopPropagation()">
-                                                                <i class="bi bi-printer"></i>
-                                                            </a>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {{-- ===== KJ BODY (collapsible) ===== --}}
+                                        {{-- KJ BODY --}}
                                         <div class="kj-body collapse" id="{{ $kjId }}-body">
-                                            <div class="card-body p-3">
+                                            <div class="p-3">
 
-                                                {{-- Filter line dropdown --}}
-                                                <div
-                                                    class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                        <label class="small fw-semibold mb-0">Filter Line:</label>
-                                                        <select class="form-select form-select-sm line-filter"
-                                                            data-kj-id="{{ $kjId }}" style="width: 130px;">
-                                                            <option value="all">Semua Line</option>
-                                                            @foreach ($lineNumbers as $ln)
-                                                                <option value="{{ $ln }}">Line
-                                                                    {{ $ln }}</option>
-                                                            @endforeach
-                                                        </select>
+                                                {{-- ── LEVEL 2: PO ── --}}
+                                                @foreach ($kjData['by_po'] as $po => $poData)
+                                                    @php $poId = $kjId . '-po-' . md5($po) @endphp
 
-                                                        <label class="small fw-semibold mb-0 ms-2">Sort:</label>
-                                                        <select class="form-select form-select-sm carton-sort-kj"
-                                                            data-kj-id="{{ $kjId }}" style="width: 130px;">
-                                                            <option value="asc">No. Urut ↑</option>
-                                                            <option value="desc">No. Urut ↓</option>
-                                                            <option value="berat-desc">Berat ↓</option>
-                                                            <option value="berat-asc">Berat ↑</option>
-                                                        </select>
-
-                                                        <input type="text"
-                                                            class="form-control form-control-sm carton-search-kj"
-                                                            data-kj-id="{{ $kjId }}"
-                                                            placeholder="Cari no. carton..." style="width: 150px;">
-                                                    </div>
-                                                    <div class="small text-muted">
-                                                        Tampil: <strong id="{{ $kjId }}-showing">-</strong>
-                                                        carton
-                                                    </div>
-                                                </div>
-
-                                                {{-- Stat per line --}}
-                                                <div class="row g-2 mb-3">
-                                                    @foreach ($lines as $lineNo => $lineOrders)
-                                                        @php
-                                                            $lineTimbangans = $lineOrders->flatMap(
-                                                                fn($o) => $o->timbangans,
-                                                            );
-                                                            $lineQty = $lineTimbangans->sum('pcs');
-                                                            $lineBerat = $lineTimbangans->sum('berat');
-                                                            $lineCarton = $lineTimbangans->count();
-                                                        @endphp
-                                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                                            <div class="bg-light rounded p-2 text-center border">
-                                                                <div class="badge bg-secondary mb-1">Line
-                                                                    {{ $lineNo }}</div>
-                                                                <div class="fw-bold text-primary small">
-                                                                    {{ $lineCarton }} carton</div>
-                                                                <div class="text-success small">
-                                                                    {{ number_format($lineQty) }} pcs</div>
-                                                                <div class="text-info small">
-                                                                    {{ number_format($lineBerat, 2) }} kg</div>
-                                                            </div>
+                                                    <div class="po-group mb-3">
+                                                        {{-- PO HEADER --}}
+                                                        <div class="d-flex align-items-center gap-2 px-2 py-2 rounded po-toggle"
+                                                            data-target="{{ $poId }}"
+                                                            style="background:#f0f4ff; cursor:pointer; border-left: 3px solid #4361ee;">
+                                                            <i class="fas fa-chevron-right po-chevron text-primary"
+                                                                id="{{ $poId }}-chevron"
+                                                                style="transition:transform 0.2s; font-size:10px;"></i>
+                                                            <span class="badge bg-info text-dark px-2">PO:
+                                                                {{ $po }}</span>
+                                                            <span class="small text-muted">
+                                                                {{ $poData['by_style']->count() }} style ·
+                                                                {{ $poData['total_carton'] }} carton ·
+                                                                {{ number_format($poData['qty_sudah']) }} pcs ·
+                                                                {{ number_format($poData['total_berat'], 2) }} kg
+                                                            </span>
                                                         </div>
-                                                    @endforeach
-                                                </div>
 
-                                                {{-- Grid carton --}}
-                                                <div class="carton-grid-kj row g-2" id="{{ $kjId }}-grid">
-                                                    @foreach ($lines as $lineNo => $lineOrders)
-                                                        @foreach ($lineOrders as $order)
-                                                            @foreach ($order->timbangans as $idx => $t)
-                                                                @php
-                                                                    $beratVal = floatval($t->berat);
-                                                                    $pcsVal = intval($t->pcs);
-                                                                    $waktu = $t->waktu_timbang
-                                                                        ? \Carbon\Carbon::parse(
-                                                                            $t->waktu_timbang,
-                                                                        )->format('H:i')
-                                                                        : '-';
-                                                                    $min = floatval($t->rasio_batas_beban_min ?? 0);
-                                                                    $max = floatval($t->rasio_batas_beban_max ?? 0);
-                                                                    $statusColor = 'success';
-                                                                    $statusLabel = 'Normal';
-                                                                    if ($min > 0 && $max > 0) {
-                                                                        if ($beratVal < $min) {
-                                                                            $statusColor = 'danger';
-                                                                            $statusLabel = 'Kurang';
-                                                                        } elseif ($beratVal > $max) {
-                                                                            $statusColor = 'warning';
-                                                                            $statusLabel = 'Lebih';
-                                                                        }
-                                                                    }
-                                                                @endphp
-                                                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 carton-card-item"
-                                                                    data-kj-id="{{ $kjId }}"
-                                                                    data-line="{{ $lineNo }}"
-                                                                    data-no-box="{{ strtolower($t->no_box ?? '') }}"
-                                                                    data-berat="{{ $beratVal }}"
-                                                                    data-idx="{{ $t->id }}">
+                                                        {{-- PO BODY --}}
+                                                        <div class="po-body collapse ps-3 pt-2"
+                                                            id="{{ $poId }}-body">
 
-                                                                    <div class="card border-{{ $statusColor }} h-100 carton-card"
-                                                                        style="border-width: 2px !important;">
-                                                                        <div
-                                                                            class="card-body p-2 text-center position-relative">
-                                                                            <div
-                                                                                class="d-flex justify-content-between mb-1">
-                                                                                <span class="badge bg-info text-dark"
-                                                                                    style="font-size: 9px;">
-                                                                                    L{{ $lineNo }}
-                                                                                </span>
-                                                                                <span
-                                                                                    class="badge bg-{{ $statusColor }}"
-                                                                                    style="font-size: 9px;">
-                                                                                    {{ $statusLabel }}
-                                                                                </span>
+                                                            {{-- ── LEVEL 3: STYLE ── --}}
+                                                            @foreach ($poData['by_style'] as $style => $styleData)
+                                                                @php $styleId = $poId . '-style-' . md5($style) @endphp
+
+                                                                <div class="style-group mb-2">
+                                                                    {{-- STYLE HEADER --}}
+                                                                    <div class="d-flex align-items-center gap-2 px-2 py-1 rounded style-toggle"
+                                                                        data-target="{{ $styleId }}"
+                                                                        style="background:#fff8e1; cursor:pointer; border-left: 3px solid #f9a825;">
+                                                                        <i class="fas fa-chevron-right style-chevron text-warning"
+                                                                            id="{{ $styleId }}-chevron"
+                                                                            style="transition:transform 0.2s; font-size:10px;"></i>
+                                                                        <span
+                                                                            class="badge bg-warning text-dark px-2">{{ $style }}</span>
+                                                                        <span class="small text-muted">
+                                                                            {{ $styleData['by_color']->count() }} color
+                                                                            ·
+                                                                            {{ $styleData['total_carton'] }} carton ·
+                                                                            {{ number_format($styleData['qty_sudah']) }}
+                                                                            pcs ·
+                                                                            {{ number_format($styleData['total_berat'], 2) }}
+                                                                            kg
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {{-- STYLE BODY --}}
+                                                                    <div class="style-body collapse ps-3 pt-2"
+                                                                        id="{{ $styleId }}-body">
+
+                                                                        {{-- ── LEVEL 4: COLOR ── --}}
+                                                                        @foreach ($styleData['by_color'] as $color => $colorData)
+                                                                            @php $colorId = $styleId . '-color-' . md5($color) @endphp
+
+                                                                            <div class="color-group mb-3 border rounded p-2"
+                                                                                style="border-left: 3px solid #2ec4b6 !important;">
+
+                                                                                {{-- COLOR HEADER --}}
+                                                                                <div
+                                                                                    class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                                                                    <div
+                                                                                        class="d-flex align-items-center gap-2 flex-wrap">
+                                                                                        <span class="badge px-2 py-1"
+                                                                                            style="background:#2ec4b6; color:#fff;">
+                                                                                            <i
+                                                                                                class="fas fa-palette me-1"></i>{{ $color }}
+                                                                                        </span>
+                                                                                        <span class="small text-muted">
+                                                                                            Order:
+                                                                                            <strong>{{ $colorData['order_code'] }}</strong>
+                                                                                        </span>
+                                                                                    </div>
+
+                                                                                    {{-- INFO QTY & DEST --}}
+                                                                                    <div
+                                                                                        class="d-flex gap-3 flex-wrap align-items-center">
+                                                                                        <div class="text-center">
+                                                                                            <div
+                                                                                                class="fw-bold small text-dark">
+                                                                                                {{ number_format($colorData['qty_sudah']) }}
+                                                                                                /
+                                                                                                {{ number_format($colorData['qty_order']) }}
+                                                                                                <span
+                                                                                                    class="text-muted"
+                                                                                                    style="font-size:10px;">pcs</span>
+                                                                                            </div>
+                                                                                            <div style="font-size:10px;"
+                                                                                                class="text-muted">Qty
+                                                                                                Ditimbang</div>
+                                                                                        </div>
+                                                                                        <div class="text-center">
+                                                                                            <div
+                                                                                                class="fw-bold small {{ $colorData['qty_sisa'] == 0 ? 'text-success' : 'text-warning' }}">
+                                                                                                {{ $colorData['qty_sisa'] == 0 ? '✓ Selesai' : number_format($colorData['qty_sisa']) . ' pcs' }}
+                                                                                            </div>
+                                                                                            <div style="font-size:10px;"
+                                                                                                class="text-muted">Sisa
+                                                                                                Qty</div>
+                                                                                        </div>
+                                                                                        <div class="text-center">
+                                                                                            <div
+                                                                                                class="fw-bold small text-info">
+                                                                                                {{ number_format($colorData['total_berat'], 2) }}
+                                                                                                kg</div>
+                                                                                            <div style="font-size:10px;"
+                                                                                                class="text-muted">
+                                                                                                Total Berat</div>
+                                                                                        </div>
+                                                                                        <div class="text-center">
+                                                                                            <div
+                                                                                                class="fw-bold small text-secondary">
+                                                                                                {{ $colorData['destination'] }}
+                                                                                            </div>
+                                                                                            <div style="font-size:10px;"
+                                                                                                class="text-muted">
+                                                                                                Destination</div>
+                                                                                        </div>
+                                                                                        <div class="text-center">
+                                                                                            <div
+                                                                                                class="fw-bold small text-muted">
+                                                                                                {{ $colorData['gac_date'] }}
+                                                                                            </div>
+                                                                                            <div style="font-size:10px;"
+                                                                                                class="text-muted">GAC
+                                                                                                Date</div>
+                                                                                        </div>
+                                                                                        <a href="{{ route('order.print.orderCode', $colorData['order_code']) }}"
+                                                                                            target="_blank"
+                                                                                            class="btn btn-outline-primary btn-sm"
+                                                                                            onclick="event.stopPropagation()">
+                                                                                            <i
+                                                                                                class="bi bi-printer"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {{-- ── LEVEL 5: LINE ── --}}
+                                                                                @foreach ($colorData['by_line'] as $lineNo => $lineData)
+                                                                                    @php
+                                                                                        $lineUid =
+                                                                                            $colorId .
+                                                                                            '-line-' .
+                                                                                            $lineNo;
+                                                                                    @endphp
+
+                                                                                    <div class="line-section mt-2">
+                                                                                        {{-- LINE HEADER --}}
+                                                                                        <div class="d-flex justify-content-between align-items-center
+                                                                        flex-wrap gap-2 px-2 py-1 rounded mb-2"
+                                                                                            style="background:#e8f5e9; border-left: 3px solid #43a047;">
+                                                                                            <div
+                                                                                                class="d-flex align-items-center gap-2 flex-wrap">
+                                                                                                <span
+                                                                                                    class="badge bg-success px-2"
+                                                                                                    style="font-size:11px;">
+                                                                                                    Line
+                                                                                                    {{ $lineNo }}
+                                                                                                </span>
+                                                                                                <span
+                                                                                                    class="small text-muted">
+                                                                                                    {{ $lineData['total_carton'] }}
+                                                                                                    carton ·
+                                                                                                    {{ number_format($lineData['qty_sudah']) }}
+                                                                                                    pcs ·
+                                                                                                    {{ number_format($lineData['total_berat'], 2) }}
+                                                                                                    kg
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            {{-- Filter & search per line --}}
+                                                                                            <div
+                                                                                                class="d-flex gap-2 align-items-center flex-wrap">
+                                                                                                <input type="text"
+                                                                                                    class="form-control form-control-sm line-search"
+                                                                                                    data-line-id="{{ $lineUid }}"
+                                                                                                    placeholder="Cari no. carton..."
+                                                                                                    style="width:140px; font-size:11px;">
+                                                                                                <select
+                                                                                                    class="form-select form-select-sm line-sort"
+                                                                                                    data-line-id="{{ $lineUid }}"
+                                                                                                    style="width:120px; font-size:11px;">
+                                                                                                    <option
+                                                                                                        value="asc">
+                                                                                                        Urut ↑</option>
+                                                                                                    <option
+                                                                                                        value="desc">
+                                                                                                        Urut ↓</option>
+                                                                                                    <option
+                                                                                                        value="berat-desc">
+                                                                                                        Berat ↓</option>
+                                                                                                    <option
+                                                                                                        value="berat-asc">
+                                                                                                        Berat ↑</option>
+                                                                                                </select>
+                                                                                                <span
+                                                                                                    class="small text-muted"
+                                                                                                    id="{{ $lineUid }}-showing"></span>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {{-- CARTON CARDS --}}
+                                                                                        <div class="row g-2 carton-grid"
+                                                                                            id="{{ $lineUid }}-grid">
+                                                                                            @foreach ($lineData['timbangans'] as $idx => $t)
+                                                                                                @php
+                                                                                                    $beratVal = floatval(
+                                                                                                        $t->berat,
+                                                                                                    );
+                                                                                                    $pcsVal = intval(
+                                                                                                        $t->pcs,
+                                                                                                    );
+                                                                                                    $waktu = $t->waktu_timbang
+                                                                                                        ? \Carbon\Carbon::parse(
+                                                                                                            $t->waktu_timbang,
+                                                                                                        )->format('H:i')
+                                                                                                        : '-';
+                                                                                                    $min = floatval(
+                                                                                                        $t->rasio_batas_beban_min ??
+                                                                                                            0,
+                                                                                                    );
+                                                                                                    $max = floatval(
+                                                                                                        $t->rasio_batas_beban_max ??
+                                                                                                            0,
+                                                                                                    );
+                                                                                                    $statusColor =
+                                                                                                        'success';
+                                                                                                    $statusLabel = 'OK';
+                                                                                                    if (
+                                                                                                        $min > 0 &&
+                                                                                                        $max > 0
+                                                                                                    ) {
+                                                                                                        if (
+                                                                                                            $beratVal <
+                                                                                                            $min
+                                                                                                        ) {
+                                                                                                            $statusColor =
+                                                                                                                'danger';
+                                                                                                            $statusLabel =
+                                                                                                                'Kurang';
+                                                                                                        } elseif (
+                                                                                                            $beratVal >
+                                                                                                            $max
+                                                                                                        ) {
+                                                                                                            $statusColor =
+                                                                                                                'warning';
+                                                                                                            $statusLabel =
+                                                                                                                'Lebih';
+                                                                                                        }
+                                                                                                    }
+                                                                                                @endphp
+                                                                                                <div class="col-6 col-sm-4 col-md-3 col-xl-2 carton-item"
+                                                                                                    data-line-id="{{ $lineUid }}"
+                                                                                                    data-no-box="{{ strtolower($t->no_box ?? '') }}"
+                                                                                                    data-berat="{{ $beratVal }}"
+                                                                                                    data-idx="{{ $t->id }}">
+                                                                                                    <div class="card border-{{ $statusColor }} h-100"
+                                                                                                        style="border-width:2px !important;">
+                                                                                                        <div
+                                                                                                            class="card-body p-2 text-center">
+                                                                                                            <div
+                                                                                                                class="d-flex justify-content-between mb-1">
+                                                                                                                <span
+                                                                                                                    class="badge bg-light text-dark border"
+                                                                                                                    style="font-size:9px;">#{{ $idx + 1 }}</span>
+                                                                                                                <span
+                                                                                                                    class="badge bg-{{ $statusColor }}"
+                                                                                                                    style="font-size:9px;">{{ $statusLabel }}</span>
+                                                                                                            </div>
+                                                                                                            <div class="fw-bold text-dark"
+                                                                                                                style="font-size:0.82rem;">
+                                                                                                                {{ $t->no_box ?? '-' }}
+                                                                                                            </div>
+                                                                                                            <div class="text-primary fw-bold"
+                                                                                                                style="font-size:1rem;">
+                                                                                                                {{ number_format($beratVal, 2) }}
+                                                                                                                <span
+                                                                                                                    class="text-muted"
+                                                                                                                    style="font-size:0.68rem;">kg</span>
+                                                                                                            </div>
+                                                                                                            <div class="text-muted"
+                                                                                                                style="font-size:0.7rem;">
+                                                                                                                {{ number_format($pcsVal) }}
+                                                                                                                pcs ·
+                                                                                                                {{ $waktu }}
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            @endforeach
+                                                                                        </div>
+
+                                                                                        {{-- Pagination carton per line --}}
+                                                                                        <div class="d-flex justify-content-center mt-2"
+                                                                                            id="{{ $lineUid }}-pagination">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                @endforeach
+                                                                                {{-- END LINE --}}
+
                                                                             </div>
-                                                                            <div class="fw-bold text-dark"
-                                                                                style="font-size: 0.85rem;">
-                                                                                {{ $t->no_box ?? '-' }}
-                                                                            </div>
-                                                                            <div class="text-primary fw-bold"
-                                                                                style="font-size: 1.05rem;">
-                                                                                {{ number_format($beratVal, 2) }}
-                                                                                <span class="text-muted"
-                                                                                    style="font-size: 0.7rem;">kg</span>
-                                                                            </div>
-                                                                            <div class="text-muted"
-                                                                                style="font-size: 0.72rem;">
-                                                                                {{ number_format($pcsVal) }} pcs ·
-                                                                                {{ $waktu }}
-                                                                            </div>
-                                                                        </div>
+                                                                        @endforeach
+                                                                        {{-- END COLOR --}}
+
                                                                     </div>
                                                                 </div>
                                                             @endforeach
-                                                        @endforeach
-                                                    @endforeach
-                                                </div>
+                                                            {{-- END STYLE --}}
 
-                                                {{-- Pagination carton per KJ --}}
-                                                <div class="d-flex justify-content-center mt-3"
-                                                    id="{{ $kjId }}-pagination"></div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                                {{-- END PO --}}
 
                                             </div>
                                         </div>
                                     </div>
                                 @endforeach
+                                {{-- END KJ --}}
                             </div>
 
                             {{-- Pagination KJ --}}
@@ -535,6 +689,12 @@
                                                     <tr>
                                                         <th>Style</th>
                                                         <td><input type="text" id="info_style" name="Style"
+                                                                class="form-control form-control-sm"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Color Description</th>
+                                                        <td><input type="text" id="info_color_description"
+                                                                name="ColorDescription"
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
@@ -945,29 +1105,26 @@
                 transition: box-shadow 0.2s;
             }
 
-            .kj-group:hover {
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+            .kj-toggle:hover,
+            .po-toggle:hover,
+            .style-toggle:hover {
+                filter: brightness(0.97);
             }
 
-            .kj-toggle:hover {
-                background: #f8f9fa !important;
+            .carton-item .card {
+                transition: transform 0.12s, box-shadow 0.12s;
             }
 
-            .carton-card {
-                transition: transform 0.15s, box-shadow 0.15s;
-                cursor: default;
-            }
-
-            .carton-card:hover {
+            .carton-item .card:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, .1) !important;
             }
 
-            .carton-card-item.kj-hidden {
+            .carton-item.rpt-hidden {
                 display: none !important;
             }
 
-            .kj-group.kj-hidden {
+            .kj-group.rpt-hidden {
                 display: none !important;
             }
         </style>
@@ -1163,233 +1320,221 @@
         <script>
             document.addEventListener('DOMContentLoaded', () => {
 
-                const KJ_PAGE_SIZE = 10 // jumlah KJ per halaman
-                const CARTON_PAGE_SIZE = 30 // jumlah carton per halaman per KJ
+                const KJ_PAGE = 10
+                const CARTON_PAGE = 30
 
-                // =========================================================
-                // KJ LIST — search + paginate
-                // =========================================================
-                let allKjGroups = Array.from(document.querySelectorAll('.kj-group'))
-                let kjCurrentPage = 1
+                // ── KJ list ──────────────────────────────────────────────
+                let allKJ = Array.from(document.querySelectorAll('.kj-group'))
+                let kjPage = 1
 
-                function filterKJ() {
-                    const keyword = document.getElementById('kj-search')?.value.toLowerCase().trim() || ''
-                    return allKjGroups.filter(el => {
-                        if (!keyword) return true
-                        return el.dataset.kj.includes(keyword) || el.dataset.buyer.includes(keyword)
-                    })
+                function filteredKJ() {
+                    const q = (document.getElementById('kj-search')?.value || '').toLowerCase().trim()
+                    return allKJ.filter(el =>
+                        !q ||
+                        el.dataset.kj.includes(q) ||
+                        el.dataset.buyer.includes(q) ||
+                        el.dataset.po.includes(q)
+                    )
                 }
 
                 function renderKJPage(page) {
-                    const filtered = filterKJ()
-                    const total = filtered.length
-                    const totalPage = Math.ceil(total / KJ_PAGE_SIZE) || 1
-                    if (page > totalPage) page = totalPage
-                    kjCurrentPage = page
+                    const list = filteredKJ()
+                    const total = list.length
+                    const tp = Math.ceil(total / KJ_PAGE) || 1
+                    if (page > tp) page = tp
+                    kjPage = page
 
-                    const start = (page - 1) * KJ_PAGE_SIZE
-                    const visible = new Set(filtered.slice(start, start + KJ_PAGE_SIZE))
+                    const start = (page - 1) * KJ_PAGE
+                    const visible = new Set(list.slice(start, start + KJ_PAGE))
+                    allKJ.forEach(el => el.classList.toggle('rpt-hidden', !visible.has(el)))
 
-                    allKjGroups.forEach(el => {
-                        el.classList.toggle('kj-hidden', !visible.has(el))
-                    })
+                    const s = document.getElementById('kj-showing')
+                    if (s) s.textContent = total === 0 ? '0' :
+                        `${start + 1}–${Math.min(start + KJ_PAGE, total)} dari ${total}`
 
-                    // Update showing
-                    const showingEl = document.getElementById('kj-showing')
-                    if (showingEl) {
-                        const from = total === 0 ? 0 : start + 1
-                        const to = Math.min(start + KJ_PAGE_SIZE, total)
-                        showingEl.textContent = total === 0 ? '0' : `${from}–${to} dari ${total}`
-                    }
-
-                    renderKJPagination(page, totalPage)
+                    renderKJPag(page, tp)
                 }
 
-                function renderKJPagination(currentPage, totalPage) {
+                function renderKJPag(cur, total) {
                     const el = document.getElementById('kj-pagination')
-                    if (!el || totalPage <= 1) {
+                    if (!el || total <= 1) {
                         if (el) el.innerHTML = '';
                         return
                     }
-
-                    let html = `<nav><ul class="pagination pagination-sm mb-0">`
-                    html += `<li class="page-item ${currentPage===1?'disabled':''}">
-            <a class="page-link kj-page-btn" href="#" data-page="${currentPage-1}">‹</a></li>`
-
-                    for (let p = 1; p <= totalPage; p++) {
-                        if (totalPage <= 7 || p === 1 || p === totalPage || Math.abs(p - currentPage) <= 1) {
-                            html += `<li class="page-item ${p===currentPage?'active':''}">
-                    <a class="page-link kj-page-btn" href="#" data-page="${p}">${p}</a></li>`
-                        } else if (p === currentPage - 2 || p === currentPage + 2) {
-                            html += `<li class="page-item disabled"><span class="page-link">…</span></li>`
-                        }
+                    let h = `<nav><ul class="pagination pagination-sm mb-0">`
+                    h += pagBtn(cur - 1, '‹', cur === 1)
+                    for (let p = 1; p <= total; p++) {
+                        if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1)
+                            h += pagBtn(p, p, false, p === cur)
+                        else if (p === cur - 2 || p === cur + 2)
+                            h += `<li class="page-item disabled"><span class="page-link">…</span></li>`
                     }
-
-                    html += `<li class="page-item ${currentPage===totalPage?'disabled':''}">
-            <a class="page-link kj-page-btn" href="#" data-page="${currentPage+1}">›</a></li>`
-                    html += `</ul></nav>`
-                    el.innerHTML = html
-
-                    el.querySelectorAll('.kj-page-btn').forEach(btn => {
-                        btn.addEventListener('click', e => {
-                            e.preventDefault()
-                            const p = parseInt(btn.dataset.page)
-                            if (p > 0 && p <= totalPage) renderKJPage(p)
-                        })
-                    })
+                    h += pagBtn(cur + 1, '›', cur === total)
+                    h += `</ul></nav>`
+                    el.innerHTML = h
+                    el.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+                        e.preventDefault()
+                        renderKJPage(parseInt(b.dataset.p))
+                    }))
                 }
 
-                // Search KJ
+                function pagBtn(p, label, disabled, active = false) {
+                    return `<li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
+            <a class="page-link" href="#" data-p="${p}">${label}</a></li>`
+                }
+
+                // Search
                 document.getElementById('kj-search')?.addEventListener('input', () => renderKJPage(1))
 
                 // Expand / collapse all
                 document.getElementById('btn-expand-all')?.addEventListener('click', () => {
-                    document.querySelectorAll('.kj-body').forEach(b => b.classList.add('show'))
-                    document.querySelectorAll('.kj-chevron').forEach(c => c.style.transform = 'rotate(0deg)')
+                    document.querySelectorAll('.kj-body,.po-body,.style-body').forEach(b => b.classList.add(
+                        'show'))
+                    document.querySelectorAll('.kj-chevron,.po-chevron,.style-chevron').forEach(c => c.style
+                        .transform = 'rotate(90deg)')
+                    // Init semua carton grid
+                    document.querySelectorAll('.carton-grid').forEach(g => {
+                        const lineId = g.id.replace('-grid', '')
+                        initLineGrid(lineId)
+                    })
                 })
                 document.getElementById('btn-collapse-all')?.addEventListener('click', () => {
-                    document.querySelectorAll('.kj-body').forEach(b => b.classList.remove('show'))
-                    document.querySelectorAll('.kj-chevron').forEach(c => c.style.transform = 'rotate(-90deg)')
+                    document.querySelectorAll('.kj-body,.po-body,.style-body').forEach(b => b.classList.remove(
+                        'show'))
+                    document.querySelectorAll('.kj-chevron,.po-chevron,.style-chevron').forEach(c => c.style
+                        .transform = 'rotate(0deg)')
                 })
 
-                // Toggle collapse per KJ
-                document.querySelectorAll('.kj-toggle').forEach(header => {
-                    header.addEventListener('click', function() {
-                        const targetId = this.dataset.target
-                        const body = document.getElementById(`${targetId}-body`)
-                        const chevron = document.getElementById(`${targetId}-chevron`)
-                        if (!body) return
+                // Toggle KJ
+                document.querySelectorAll('.kj-toggle').forEach(h => h.addEventListener('click', function() {
+                    toggle(this.dataset.target, 'kj-chevron', 'kj-body')
+                }))
 
-                        const isOpen = body.classList.toggle('show')
-                        if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' :
-                            'rotate(-90deg)'
+                // Toggle PO
+                document.querySelectorAll('.po-toggle').forEach(h => h.addEventListener('click', function() {
+                    toggle(this.dataset.target, 'po-chevron', 'po-body')
+                }))
 
-                        // Init carton pagination saat pertama dibuka
-                        if (isOpen && !body.dataset.initialized) {
-                            body.dataset.initialized = 'true'
-                            initCartonGroup(targetId)
-                        }
-                    })
-                })
+                // Toggle Style
+                document.querySelectorAll('.style-toggle').forEach(h => h.addEventListener('click', function() {
+                    const id = this.dataset.target
+                    const body = document.getElementById(`${id}-body`)
+                    const chevron = document.getElementById(`${id}-chevron`)
+                    if (!body) return
+                    const open = body.classList.toggle('show')
+                    if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)'
+                    // Init carton grids saat style dibuka
+                    if (open && !body.dataset.init) {
+                        body.dataset.init = '1'
+                        body.querySelectorAll('.carton-grid').forEach(g => {
+                            initLineGrid(g.id.replace('-grid', ''))
+                        })
+                    }
+                }))
 
-                // =========================================================
-                // CARTON GRID — filter line + search + sort + paginate
-                // =========================================================
-                function initCartonGroup(kjId) {
-                    renderCartonGrid(kjId, 1)
+                function toggle(targetId, chevronClass, bodyClass) {
+                    const body = document.getElementById(`${targetId}-body`)
+                    const chevron = document.getElementById(`${targetId}-chevron`)
+                    if (!body) return
+                    const open = body.classList.toggle('show')
+                    if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)'
                 }
 
-                function getCartonItems(kjId) {
-                    return Array.from(document.querySelectorAll(`.carton-card-item[data-kj-id="${kjId}"]`))
+                // ── Carton grid per line ──────────────────────────────────
+                const lineState = {} // { lineId: { page } }
+
+                function initLineGrid(lineId) {
+                    if (!lineState[lineId]) lineState[lineId] = {
+                        page: 1
+                    }
+                    renderLineGrid(lineId, 1)
                 }
 
-                function renderCartonGrid(kjId, page) {
-                    const lineFilter = document.querySelector(`.line-filter[data-kj-id="${kjId}"]`)?.value || 'all'
-                    const sortVal = document.querySelector(`.carton-sort-kj[data-kj-id="${kjId}"]`)?.value || 'asc'
-                    const keyword = document.querySelector(`.carton-search-kj[data-kj-id="${kjId}"]`)?.value
-                        .toLowerCase().trim() || ''
+                function renderLineGrid(lineId, page) {
+                    const search = (document.querySelector(`.line-search[data-line-id="${lineId}"]`)?.value || '')
+                        .toLowerCase().trim()
+                    const sort = document.querySelector(`.line-sort[data-line-id="${lineId}"]`)?.value || 'asc'
 
-                    let items = getCartonItems(kjId)
+                    let items = Array.from(document.querySelectorAll(`.carton-item[data-line-id="${lineId}"]`))
 
-                    // Filter line
-                    let filtered = items.filter(item => {
-                        if (lineFilter !== 'all' && item.dataset.line != lineFilter) return false
-                        if (keyword && !item.dataset.noBox.includes(keyword)) return false
-                        return true
-                    })
+                    // Filter
+                    let filtered = items.filter(el =>
+                        !search || el.dataset.noBox.includes(search)
+                    )
 
                     // Sort
                     filtered.sort((a, b) => {
-                        if (sortVal === 'asc') return parseInt(a.dataset.idx) - parseInt(b.dataset.idx)
-                        if (sortVal === 'desc') return parseInt(b.dataset.idx) - parseInt(a.dataset.idx)
-                        if (sortVal === 'berat-desc') return parseFloat(b.dataset.berat) - parseFloat(a.dataset
+                        if (sort === 'asc') return parseInt(a.dataset.idx) - parseInt(b.dataset.idx)
+                        if (sort === 'desc') return parseInt(b.dataset.idx) - parseInt(a.dataset.idx)
+                        if (sort === 'berat-desc') return parseFloat(b.dataset.berat) - parseFloat(a.dataset
                             .berat)
-                        if (sortVal === 'berat-asc') return parseFloat(a.dataset.berat) - parseFloat(b.dataset
+                        if (sort === 'berat-asc') return parseFloat(a.dataset.berat) - parseFloat(b.dataset
                             .berat)
                         return 0
                     })
 
                     const total = filtered.length
-                    const totalPage = Math.ceil(total / CARTON_PAGE_SIZE) || 1
-                    if (page > totalPage) page = totalPage
+                    const tp = Math.ceil(total / CARTON_PAGE) || 1
+                    if (page > tp) page = tp
 
-                    const start = (page - 1) * CARTON_PAGE_SIZE
-                    const pageSet = new Set(filtered.slice(start, start + CARTON_PAGE_SIZE))
+                    const start = (page - 1) * CARTON_PAGE
+                    const pageSet = new Set(filtered.slice(start, start + CARTON_PAGE))
 
-                    // Reorder DOM
-                    const grid = document.getElementById(`${kjId}-grid`)
-                    filtered.forEach(item => grid.appendChild(item))
+                    const grid = document.getElementById(`${lineId}-grid`)
+                    if (grid) filtered.forEach(el => grid.appendChild(el))
 
-                    // Show/hide
-                    items.forEach(item => item.classList.toggle('kj-hidden', !pageSet.has(item)))
+                    items.forEach(el => el.classList.toggle('rpt-hidden', !pageSet.has(el)))
 
-                    // Update showing
-                    const showEl = document.getElementById(`${kjId}-showing`)
-                    if (showEl) {
+                    const show = document.getElementById(`${lineId}-showing`)
+                    if (show) {
                         const from = total === 0 ? 0 : start + 1
-                        const to = Math.min(start + CARTON_PAGE_SIZE, total)
-                        showEl.textContent = total === 0 ? '0' : `${from}–${to} dari ${total}`
+                        const to = Math.min(start + CARTON_PAGE, total)
+                        show.textContent = total === 0 ? '0 carton' : `${from}–${to} / ${total}`
                     }
 
-                    renderCartonPagination(kjId, page, totalPage)
+                    renderLinePag(lineId, page, tp)
                 }
 
-                function renderCartonPagination(kjId, currentPage, totalPage) {
-                    const el = document.getElementById(`${kjId}-pagination`)
-                    if (!el) return
-                    if (totalPage <= 1) {
-                        el.innerHTML = '';
+                function renderLinePag(lineId, cur, total) {
+                    const el = document.getElementById(`${lineId}-pagination`)
+                    if (!el || total <= 1) {
+                        if (el) el.innerHTML = '';
                         return
                     }
-
-                    let html = `<nav><ul class="pagination pagination-sm mb-0 flex-wrap">`
-                    html += `<li class="page-item ${currentPage===1?'disabled':''}">
-            <a class="page-link" href="#" data-kj="${kjId}" data-page="${currentPage-1}">‹</a></li>`
-
-                    for (let p = 1; p <= totalPage; p++) {
-                        if (totalPage <= 7 || p === 1 || p === totalPage || Math.abs(p - currentPage) <= 1) {
-                            html += `<li class="page-item ${p===currentPage?'active':''}">
-                    <a class="page-link" href="#" data-kj="${kjId}" data-page="${p}">${p}</a></li>`
-                        } else if (p === currentPage - 2 || p === currentPage + 2) {
-                            html += `<li class="page-item disabled"><span class="page-link">…</span></li>`
-                        }
+                    let h = `<nav><ul class="pagination pagination-sm mb-0 flex-wrap">`
+                    h += pagBtn(cur - 1, '‹', cur === 1)
+                    for (let p = 1; p <= total; p++) {
+                        if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1)
+                            h += pagBtn(p, p, false, p === cur)
+                        else if (p === cur - 2 || p === cur + 2)
+                            h += `<li class="page-item disabled"><span class="page-link">…</span></li>`
                     }
-
-                    html += `<li class="page-item ${currentPage===totalPage?'disabled':''}">
-            <a class="page-link" href="#" data-kj="${kjId}" data-page="${currentPage+1}">›</a></li>`
-                    html += `</ul></nav>`
-                    el.innerHTML = html
-
-                    el.querySelectorAll('a[data-page]').forEach(btn => {
-                        btn.addEventListener('click', e => {
-                            e.preventDefault()
-                            const p = parseInt(btn.dataset.page)
-                            const k = btn.dataset.kj
-                            if (p > 0 && p <= totalPage) {
-                                renderCartonGrid(k, p)
-                                document.getElementById(`${k}-wrapper`)?.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'start'
-                                })
-                            }
-                        })
-                    })
+                    h += pagBtn(cur + 1, '›', cur === total)
+                    h += `</ul></nav>`
+                    el.innerHTML = h
+                    el.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+                        e.preventDefault()
+                        const p = parseInt(b.dataset.p)
+                        renderLineGrid(lineId, p)
+                        document.getElementById(`${lineId}-grid`)?.closest('.line-section')
+                            ?.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            })
+                    }))
                 }
 
-                // Event: line filter, sort, search per KJ
-                document.addEventListener('change', e => {
-                    if (e.target.classList.contains('line-filter') || e.target.classList.contains(
-                            'carton-sort-kj')) {
-                        renderCartonGrid(e.target.dataset.kjId, 1)
-                    }
-                })
+                // Event: search & sort per line
                 document.addEventListener('input', e => {
-                    if (e.target.classList.contains('carton-search-kj')) {
-                        renderCartonGrid(e.target.dataset.kjId, 1)
-                    }
+                    if (e.target.classList.contains('line-search'))
+                        renderLineGrid(e.target.dataset.lineId, 1)
+                })
+                document.addEventListener('change', e => {
+                    if (e.target.classList.contains('line-sort'))
+                        renderLineGrid(e.target.dataset.lineId, 1)
                 })
 
-                // Initial render KJ list
+                // Initial render
                 renderKJPage(1)
             })
         </script>
