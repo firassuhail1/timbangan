@@ -551,11 +551,11 @@
                                 @endphp
 
                                 @foreach ($availableDevices as $device)
-                                    <option value="{{ $device->esp_id }}"
-                                        {{ $selectedEsp === $device->esp_id ? 'selected' : '' }}>
+                                    {{-- Kita simpan MAC di atribut data-mac --}}
+                                    <option value="{{ $device->esp_id }}" data-mac="{{ $device->mac_esp }}"
+                                        {{ ($selectedEsp ?? null) === $device->esp_id ? 'selected' : '' }}>
                                         {{ $device->name ?? $device->esp_id }}
                                     </option>
-                                    <input type="hidden" value="{{ $device->mac_esp }}" name="mac_esp">
                                 @endforeach
                             </select>
 
@@ -693,6 +693,26 @@
 
             // 3. Optional: polling jika ingin real-time (tapi jangan terlalu sering)
             // setInterval(fetchDevices, 10000);  // misal setiap 10 detik, atau hapus jika tidak perlu
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectElement = document.getElementById('esp_select');
+            const macInput = document.getElementById('mac_esp_hidden');
+
+            function updateMac() {
+                // Ambil option yang sedang dipilih
+                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                // Ambil data-mac dari option tersebut
+                const mac = selectedOption.getAttribute('data-mac');
+                // Masukkan ke input hidden
+                macInput.value = mac || '';
+            }
+
+            // Jalankan fungsi saat pilihan berubah
+            selectElement.addEventListener('change', updateMac);
+
+            // Jalankan sekali saat halaman pertama kali dibuka (untuk auto-select)
+            updateMac();
         });
     </script>
 </body>

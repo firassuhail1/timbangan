@@ -86,6 +86,8 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
 
     // ORDERSHEET
     Route::get('/ordersheet-view', [OrderSheetController::class, 'index'])->name('order.view');
+    Route::get('/order/formal-report', [OrderSheetController::class, 'formalReport'])
+        ->name('order.formal-report');
 
     // tambah data ordersheet
     Route::get('/ordersheet-view/create', [OrderSheetController::class, 'create'])->name('ordersheet.create');

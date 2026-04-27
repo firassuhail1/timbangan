@@ -457,14 +457,14 @@ function initTimbangModal() {
 function fillModalFields(item) {
     const fields = {
         info_buyer: 'Buyer',
-        info_order_code: 'Order_code',
+        info_order_code: 'id',
         info_kj: 'KJ',
         info_purchaseordernumber: 'PurchaseOrderNumber',
         info_style: 'ProductName',
         info_color_description: 'ColorDescription',
         info_qty_order: 'Qty',
         info_pcs: 'Pcs',
-        info_ctn: 'Ctn',
+        // info_ctn: 'Ctn',
         info_less_ctn: 'Less_ctn',
         info_pcs_less_ctn: 'Pcs_less_ctn',
         info_carton_weight: 'Carton_weight_std',
@@ -485,6 +485,16 @@ function fillModalFields(item) {
         }
         el.value = value
     })
+
+    // ← TAMBAHKAN DI SINI, setelah forEach tutup
+    const productCode = item.ProductCode ?? ''
+    const productName = item.ProductName ?? ''
+    const styleEl = document.getElementById('info_style')
+    if (styleEl) {
+        styleEl.value = productCode && productName
+            ? `${productCode} - ${productName}`
+            : productCode || productName || ''
+    }
 
     // Rasio & lost weight
     document.getElementById('rasio_batas_beban_min').value =
@@ -1084,8 +1094,8 @@ function initSaveButton() {
                 document.getElementById('lost_weight').value  = ''
  
                 // Reset field Ctn (nomor carton) — user isi lagi untuk carton berikutnya
-                const ctnEl = document.getElementById('info_ctn')
-                if (ctnEl) ctnEl.value = ''
+                // const ctnEl = document.getElementById('info_ctn')
+                // if (ctnEl) ctnEl.value = ''
  
                 // Reset timbangan display
                 resetPreviewUI()

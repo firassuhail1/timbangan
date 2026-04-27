@@ -172,416 +172,87 @@
                     </div>
                     <hr>
 
-                    <div class="cetak" id="reportContainer">
-                        @if ($groupedByKJ->isEmpty())
-                            <div class="alert alert-info text-center">
-                                <i class="fas fa-file-alt me-2"></i> Belum Ada Data Timbangan
-                            </div>
-                        @else
-                            {{-- ===== KONTROL ATAS ===== --}}
-                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                                <div class="small text-muted">
-                                    Total KJ: <strong>{{ $groupedByKJ->count() }}</strong> |
-                                    Menampilkan <strong id="kj-showing">-</strong>
-                                </div>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <input type="text" id="kj-search" class="form-control form-control-sm"
-                                        placeholder="Cari KJ / Buyer / PO..." style="width: 200px;">
-                                    <button class="btn btn-sm btn-outline-secondary" id="btn-expand-all">
-                                        <i class="fas fa-expand-alt me-1"></i> Buka Semua
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" id="btn-collapse-all">
-                                        <i class="fas fa-compress-alt me-1"></i> Tutup Semua
-                                    </button>
+                    {{-- REPORT FORMAL ASLI --}}
+                    <div class="formal-report-wrap">
+
+                        {{-- HEADER --}}
+                        <div class="formal-report-header">
+                            <div>
+                                <div class="formal-report-title">
+                                    📋 Carton Weight Report
+                                    <small>Laporan Timbangan Karton — PT. Kanindo Makmur Jaya</small>
                                 </div>
                             </div>
-
-                            {{-- ===== LIST KJ ===== --}}
-                            <div id="kj-list">
-                                @foreach ($groupedByKJ as $kj => $kjData)
-                                    @php $kjId = 'kj-' . md5($kj) @endphp
-
-                                    <div class="kj-group card border-0 shadow-sm mb-3"
-                                        id="{{ $kjId }}-wrapper" data-kj="{{ strtolower($kj) }}"
-                                        data-buyer="{{ strtolower($kjData['buyer']) }}"
-                                        data-po="{{ strtolower($kjData['by_po']->keys()->implode(' ')) }}">
-
-                                        {{-- KJ HEADER --}}
-                                        <div class="card-header bg-white py-2 px-3 kj-toggle"
-                                            data-target="{{ $kjId }}" style="cursor:pointer;">
-                                            <div class="row align-items-center g-2">
-                                                <div class="col-12 col-md-7">
-                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                        <i class="fas fa-chevron-right kj-chevron text-muted"
-                                                            id="{{ $kjId }}-chevron"
-                                                            style="transition:transform 0.2s; font-size:11px;"></i>
-                                                        <span
-                                                            class="badge bg-primary px-2 py-1">{{ $kj }}</span>
-                                                        <span
-                                                            class="text-muted small fw-semibold">{{ $kjData['buyer'] }}</span>
-                                                        <span class="badge bg-light text-dark border small"
-                                                            style="color: rgb(20, 20, 20) !important;">
-                                                            {{ $kjData['by_po']->count() }} PO
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-12 col-md-5">
-                                                    <div class="d-flex gap-3 justify-content-md-end flex-wrap">
-                                                        <div class="text-center">
-                                                            <div class="fw-bold text-primary small">
-                                                                {{ $kjData['total_carton'] }}</div>
-                                                            <div style="font-size:10px;" class="text-muted">Carton
-                                                            </div>
-                                                        </div>
-                                                        <div class="text-center">
-                                                            <div class="fw-bold text-success small">
-                                                                {{ number_format($kjData['qty_sudah']) }}</div>
-                                                            <div style="font-size:10px;" class="text-muted">Pcs</div>
-                                                        </div>
-                                                        <div class="text-center">
-                                                            <div class="fw-bold text-info small">
-                                                                {{ number_format($kjData['total_berat'], 2) }} kg</div>
-                                                            <div style="font-size:10px;" class="text-muted">Total
-                                                                Berat</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- KJ BODY --}}
-                                        <div class="kj-body collapse" id="{{ $kjId }}-body">
-                                            <div class="p-3">
-
-                                                {{-- ── LEVEL 2: PO ── --}}
-                                                @foreach ($kjData['by_po'] as $po => $poData)
-                                                    @php $poId = $kjId . '-po-' . md5($po) @endphp
-
-                                                    <div class="po-group mb-3">
-                                                        {{-- PO HEADER --}}
-                                                        <div class="d-flex align-items-center gap-2 px-2 py-2 rounded po-toggle"
-                                                            data-target="{{ $poId }}"
-                                                            style="background:#f0f4ff; cursor:pointer; border-left: 3px solid #4361ee;">
-                                                            <i class="fas fa-chevron-right po-chevron text-primary"
-                                                                id="{{ $poId }}-chevron"
-                                                                style="transition:transform 0.2s; font-size:10px;"></i>
-                                                            <span class="badge bg-info text-dark px-2">PO:
-                                                                {{ $po }}</span>
-                                                            <span class="small text-muted">
-                                                                {{ $poData['by_style']->count() }} style ·
-                                                                {{ $poData['total_carton'] }} carton ·
-                                                                {{ number_format($poData['qty_sudah']) }} pcs ·
-                                                                {{ number_format($poData['total_berat'], 2) }} kg
-                                                            </span>
-                                                        </div>
-
-                                                        {{-- PO BODY --}}
-                                                        <div class="po-body collapse ps-3 pt-2"
-                                                            id="{{ $poId }}-body">
-
-                                                            {{-- ── LEVEL 3: STYLE ── --}}
-                                                            @foreach ($poData['by_style'] as $style => $styleData)
-                                                                @php $styleId = $poId . '-style-' . md5($style) @endphp
-
-                                                                <div class="style-group mb-2">
-                                                                    {{-- STYLE HEADER --}}
-                                                                    <div class="d-flex align-items-center gap-2 px-2 py-1 rounded style-toggle"
-                                                                        data-target="{{ $styleId }}"
-                                                                        style="background:#fff8e1; cursor:pointer; border-left: 3px solid #f9a825;">
-                                                                        <i class="fas fa-chevron-right style-chevron text-warning"
-                                                                            id="{{ $styleId }}-chevron"
-                                                                            style="transition:transform 0.2s; font-size:10px;"></i>
-                                                                        <span
-                                                                            class="badge bg-warning text-dark px-2">{{ $style }}</span>
-                                                                        <span class="small text-muted">
-                                                                            {{ $styleData['by_color']->count() }} color
-                                                                            ·
-                                                                            {{ $styleData['total_carton'] }} carton ·
-                                                                            {{ number_format($styleData['qty_sudah']) }}
-                                                                            pcs ·
-                                                                            {{ number_format($styleData['total_berat'], 2) }}
-                                                                            kg
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {{-- STYLE BODY --}}
-                                                                    <div class="style-body collapse ps-3 pt-2"
-                                                                        id="{{ $styleId }}-body">
-
-                                                                        {{-- ── LEVEL 4: COLOR ── --}}
-                                                                        @foreach ($styleData['by_color'] as $color => $colorData)
-                                                                            @php $colorId = $styleId . '-color-' . md5($color) @endphp
-
-                                                                            <div class="color-group mb-3 border rounded p-2"
-                                                                                style="border-left: 3px solid #2ec4b6 !important;">
-
-                                                                                {{-- COLOR HEADER --}}
-                                                                                <div
-                                                                                    class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
-                                                                                    <div
-                                                                                        class="d-flex align-items-center gap-2 flex-wrap">
-                                                                                        <span class="badge px-2 py-1"
-                                                                                            style="background:#2ec4b6; color:#fff;">
-                                                                                            <i
-                                                                                                class="fas fa-palette me-1"></i>{{ $color }}
-                                                                                        </span>
-                                                                                        <span class="small text-muted">
-                                                                                            Order:
-                                                                                            <strong>{{ $colorData['order_code'] }}</strong>
-                                                                                        </span>
-                                                                                    </div>
-
-                                                                                    {{-- INFO QTY & DEST --}}
-                                                                                    <div
-                                                                                        class="d-flex gap-3 flex-wrap align-items-center">
-                                                                                        <div class="text-center">
-                                                                                            <div
-                                                                                                class="fw-bold small text-dark">
-                                                                                                {{ number_format($colorData['qty_sudah']) }}
-                                                                                                /
-                                                                                                {{ number_format($colorData['qty_order']) }}
-                                                                                                <span
-                                                                                                    class="text-muted"
-                                                                                                    style="font-size:10px;">pcs</span>
-                                                                                            </div>
-                                                                                            <div style="font-size:10px;"
-                                                                                                class="text-muted">Qty
-                                                                                                Ditimbang</div>
-                                                                                        </div>
-                                                                                        <div class="text-center">
-                                                                                            <div
-                                                                                                class="fw-bold small {{ $colorData['qty_sisa'] == 0 ? 'text-success' : 'text-warning' }}">
-                                                                                                {{ $colorData['qty_sisa'] == 0 ? '✓ Selesai' : number_format($colorData['qty_sisa']) . ' pcs' }}
-                                                                                            </div>
-                                                                                            <div style="font-size:10px;"
-                                                                                                class="text-muted">Sisa
-                                                                                                Qty</div>
-                                                                                        </div>
-                                                                                        <div class="text-center">
-                                                                                            <div
-                                                                                                class="fw-bold small text-info">
-                                                                                                {{ number_format($colorData['total_berat'], 2) }}
-                                                                                                kg</div>
-                                                                                            <div style="font-size:10px;"
-                                                                                                class="text-muted">
-                                                                                                Total Berat</div>
-                                                                                        </div>
-                                                                                        <div class="text-center">
-                                                                                            <div
-                                                                                                class="fw-bold small text-secondary">
-                                                                                                {{ $colorData['destination'] }}
-                                                                                            </div>
-                                                                                            <div style="font-size:10px;"
-                                                                                                class="text-muted">
-                                                                                                Destination</div>
-                                                                                        </div>
-                                                                                        <div class="text-center">
-                                                                                            <div
-                                                                                                class="fw-bold small text-muted">
-                                                                                                {{ $colorData['gac_date'] }}
-                                                                                            </div>
-                                                                                            <div style="font-size:10px;"
-                                                                                                class="text-muted">GAC
-                                                                                                Date</div>
-                                                                                        </div>
-                                                                                        <a href="{{ route('order.print.orderCode', $colorData['order_code']) }}"
-                                                                                            target="_blank"
-                                                                                            class="btn btn-outline-primary btn-sm"
-                                                                                            onclick="event.stopPropagation()">
-                                                                                            <i
-                                                                                                class="bi bi-printer"></i>
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                {{-- ── LEVEL 5: LINE ── --}}
-                                                                                @foreach ($colorData['by_line'] as $lineNo => $lineData)
-                                                                                    @php
-                                                                                        $lineUid =
-                                                                                            $colorId .
-                                                                                            '-line-' .
-                                                                                            $lineNo;
-                                                                                    @endphp
-
-                                                                                    <div class="line-section mt-2">
-                                                                                        {{-- LINE HEADER --}}
-                                                                                        <div class="d-flex justify-content-between align-items-center
-                                                                        flex-wrap gap-2 px-2 py-1 rounded mb-2"
-                                                                                            style="background:#e8f5e9; border-left: 3px solid #43a047;">
-                                                                                            <div
-                                                                                                class="d-flex align-items-center gap-2 flex-wrap">
-                                                                                                <span
-                                                                                                    class="badge bg-success px-2"
-                                                                                                    style="font-size:11px;">
-                                                                                                    Line
-                                                                                                    {{ $lineNo }}
-                                                                                                </span>
-                                                                                                <span
-                                                                                                    class="small text-muted">
-                                                                                                    {{ $lineData['total_carton'] }}
-                                                                                                    carton ·
-                                                                                                    {{ number_format($lineData['qty_sudah']) }}
-                                                                                                    pcs ·
-                                                                                                    {{ number_format($lineData['total_berat'], 2) }}
-                                                                                                    kg
-                                                                                                </span>
-                                                                                            </div>
-                                                                                            {{-- Filter & search per line --}}
-                                                                                            <div
-                                                                                                class="d-flex gap-2 align-items-center flex-wrap">
-                                                                                                <input type="text"
-                                                                                                    class="form-control form-control-sm line-search"
-                                                                                                    data-line-id="{{ $lineUid }}"
-                                                                                                    placeholder="Cari no. carton..."
-                                                                                                    style="width:140px; font-size:11px;">
-                                                                                                <select
-                                                                                                    class="form-select form-select-sm line-sort"
-                                                                                                    data-line-id="{{ $lineUid }}"
-                                                                                                    style="width:120px; font-size:11px;">
-                                                                                                    <option
-                                                                                                        value="asc">
-                                                                                                        Urut ↑</option>
-                                                                                                    <option
-                                                                                                        value="desc">
-                                                                                                        Urut ↓</option>
-                                                                                                    <option
-                                                                                                        value="berat-desc">
-                                                                                                        Berat ↓</option>
-                                                                                                    <option
-                                                                                                        value="berat-asc">
-                                                                                                        Berat ↑</option>
-                                                                                                </select>
-                                                                                                <span
-                                                                                                    class="small text-muted"
-                                                                                                    id="{{ $lineUid }}-showing"></span>
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {{-- CARTON CARDS --}}
-                                                                                        <div class="row g-2 carton-grid"
-                                                                                            id="{{ $lineUid }}-grid">
-                                                                                            @foreach ($lineData['timbangans'] as $idx => $t)
-                                                                                                @php
-                                                                                                    $beratVal = floatval(
-                                                                                                        $t->berat,
-                                                                                                    );
-                                                                                                    $pcsVal = intval(
-                                                                                                        $t->pcs,
-                                                                                                    );
-                                                                                                    $waktu = $t->waktu_timbang
-                                                                                                        ? \Carbon\Carbon::parse(
-                                                                                                            $t->waktu_timbang,
-                                                                                                        )->format('H:i')
-                                                                                                        : '-';
-                                                                                                    $min = floatval(
-                                                                                                        $t->rasio_batas_beban_min ??
-                                                                                                            0,
-                                                                                                    );
-                                                                                                    $max = floatval(
-                                                                                                        $t->rasio_batas_beban_max ??
-                                                                                                            0,
-                                                                                                    );
-                                                                                                    $statusColor =
-                                                                                                        'success';
-                                                                                                    $statusLabel = 'OK';
-                                                                                                    if (
-                                                                                                        $min > 0 &&
-                                                                                                        $max > 0
-                                                                                                    ) {
-                                                                                                        if (
-                                                                                                            $beratVal <
-                                                                                                            $min
-                                                                                                        ) {
-                                                                                                            $statusColor =
-                                                                                                                'danger';
-                                                                                                            $statusLabel =
-                                                                                                                'Kurang';
-                                                                                                        } elseif (
-                                                                                                            $beratVal >
-                                                                                                            $max
-                                                                                                        ) {
-                                                                                                            $statusColor =
-                                                                                                                'warning';
-                                                                                                            $statusLabel =
-                                                                                                                'Lebih';
-                                                                                                        }
-                                                                                                    }
-                                                                                                @endphp
-                                                                                                <div class="col-6 col-sm-4 col-md-3 col-xl-2 carton-item"
-                                                                                                    data-line-id="{{ $lineUid }}"
-                                                                                                    data-no-box="{{ strtolower($t->no_box ?? '') }}"
-                                                                                                    data-berat="{{ $beratVal }}"
-                                                                                                    data-idx="{{ $t->id }}">
-                                                                                                    <div class="card border-{{ $statusColor }} h-100"
-                                                                                                        style="border-width:2px !important;">
-                                                                                                        <div
-                                                                                                            class="card-body p-2 text-center">
-                                                                                                            <div
-                                                                                                                class="d-flex justify-content-between mb-1">
-                                                                                                                <span
-                                                                                                                    class="badge bg-light text-dark border"
-                                                                                                                    style="font-size:9px;">#{{ $idx + 1 }}</span>
-                                                                                                                <span
-                                                                                                                    class="badge bg-{{ $statusColor }}"
-                                                                                                                    style="font-size:9px;">{{ $statusLabel }}</span>
-                                                                                                            </div>
-                                                                                                            <div class="fw-bold text-dark"
-                                                                                                                style="font-size:0.82rem;">
-                                                                                                                {{ $t->no_box ?? '-' }}
-                                                                                                            </div>
-                                                                                                            <div class="text-primary fw-bold"
-                                                                                                                style="font-size:1rem;">
-                                                                                                                {{ number_format($beratVal, 2) }}
-                                                                                                                <span
-                                                                                                                    class="text-muted"
-                                                                                                                    style="font-size:0.68rem;">kg</span>
-                                                                                                            </div>
-                                                                                                            <div class="text-muted"
-                                                                                                                style="font-size:0.7rem;">
-                                                                                                                {{ number_format($pcsVal) }}
-                                                                                                                pcs ·
-                                                                                                                {{ $waktu }}
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            @endforeach
-                                                                                        </div>
-
-                                                                                        {{-- Pagination carton per line --}}
-                                                                                        <div class="d-flex justify-content-center mt-2"
-                                                                                            id="{{ $lineUid }}-pagination">
-                                                                                        </div>
-                                                                                    </div>
-                                                                                @endforeach
-                                                                                {{-- END LINE --}}
-
-                                                                            </div>
-                                                                        @endforeach
-                                                                        {{-- END COLOR --}}
-
-                                                                    </div>
-                                                                </div>
-                                                            @endforeach
-                                                            {{-- END STYLE --}}
-
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-                                                {{-- END PO --}}
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                                {{-- END KJ --}}
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="btn-print-formal" onclick="printFormalReport()">
+                                    <i class="bi bi-printer"></i> Print Laporan
+                                </button>
                             </div>
+                        </div>
 
-                            {{-- Pagination KJ --}}
-                            <div class="d-flex justify-content-center mt-4" id="kj-pagination"></div>
+                        {{-- FILTER BAR --}}
+                        <div class="formal-filter-bar">
+                            <div>
+                                <label>Tanggal Mulai</label>
+                                <input type="date" id="formal-date-start" value="{{ now()->format('Y-m-d') }}">
+                            </div>
+                            <div>
+                                <label>Tanggal Akhir</label>
+                                <input type="date" id="formal-date-end" value="{{ now()->format('Y-m-d') }}">
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:flex-end;">
+                                <button class="btn-filter" id="btn-formal-filter">
+                                    <i class="fas fa-search" style="font-size:10px;"></i> Tampilkan
+                                </button>
+                                <button class="btn-reset-filter" id="btn-formal-reset">Reset</button>
+                            </div>
+                            <div style="margin-left:auto; font-size:11px; color:var(--muted); align-self:flex-end;">
+                                Menampilkan: <strong id="formal-range-label">Hari ini</strong>
+                            </div>
+                        </div>
 
-                        @endif
+                        {{-- TABS --}}
+                        <div class="formal-tabs">
+                            <div class="formal-tab active" data-tab="nike">
+                                <i class="fas fa-check-circle" style="font-size:11px;"></i>
+                                NIKE
+                                <span class="tab-badge" id="nike-count-badge">0</span>
+                            </div>
+                            <div class="formal-tab" data-tab="non-nike">
+                                <i class="fas fa-layer-group" style="font-size:11px;"></i>
+                                NON-NIKE
+                                <span class="tab-badge" id="non-nike-count-badge">0</span>
+                            </div>
+                        </div>
+
+                        {{-- NIKE PANEL --}}
+                        <div class="formal-panel active" id="panel-nike">
+                            <div id="nike-report-content">
+                                <div class="formal-empty">
+                                    <i class="fas fa-search"
+                                        style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
+                                    Klik "Tampilkan" untuk memuat laporan
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- NON-NIKE PANEL --}}
+                        <div class="formal-panel" id="panel-non-nike">
+                            <div id="non-nike-report-content">
+                                <div class="formal-empty">
+                                    <i class="fas fa-search"
+                                        style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
+                                    Klik "Tampilkan" untuk memuat laporan
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
+                    {{-- ═══════════════════════════════════════════════════════
+     PRINT TEMPLATE (hidden, hanya saat print)
+═══════════════════════════════════════════════════════ --}}
+                    <div id="print-formal-area" style="display:none;"></div>
                 </div>
             </div>
         </section>
@@ -670,11 +341,18 @@
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
+                                                        <th>Asal Line <span class="text-danger">*</span></th>
+                                                        <td><input type="text" id="info_line" name="Line"
+                                                                class="form-control form-control-sm"></td>
+                                                    </tr>
+                                                    {{-- <tr>
                                                         <th>Order No.</th>
                                                         <td><input type="text" id="info_order_code"
                                                                 name="Order_code" class="form-control form-control-sm"
                                                                 readonly></td>
-                                                    </tr>
+                                                    </tr> --}}
+                                                    <input type="hidden" id="info_order_code" name="Order_code"
+                                                        class="form-control form-control-sm" readonly>
                                                     <tr>
                                                         <th>KJ.</th>
                                                         <td><input type="text" id="info_kj" name="KJ"
@@ -698,9 +376,9 @@
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th>Asal Line <span class="text-danger">*</span></th>
-                                                        <td><input type="text" id="info_line" name="Line"
-                                                                class="form-control form-control-sm"></td>
+                                                        <th>Destination</th>
+                                                        <td><input type="text" class="form-control form-control-sm"
+                                                                id="info_FinalDestination" name="Destination"></td>
                                                     </tr>
                                                     <tr>
                                                         <th>Qty Order</th>
@@ -725,7 +403,7 @@
                                                                         <span class="input-group-text">Ctn</span>
                                                                         <input type="number" id="info_ctn"
                                                                             name="Ctn" class="form-control"
-                                                                            placeholder="0">
+                                                                            value="1">
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -782,14 +460,10 @@
                                                                 id="info_GAC" name="Gac_date"></td>
                                                     </tr>
                                                     <tr>
-                                                        <th>Destination</th>
-                                                        <td><input type="text" class="form-control form-control-sm"
-                                                                id="info_FinalDestination" name="Destination"></td>
-                                                    </tr>
-                                                    <tr>
                                                         <th>Inspector</th>
                                                         <td><input type="text" class="form-control form-control-sm"
-                                                                id="info_inspector" name="Inspector"></td>
+                                                                id="info_inspector" name="Inspector"
+                                                                value="{{ Auth::user()->username }}"></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -997,137 +671,7 @@
     </div>
 
     @push('css')
-        <style>
-            .action-bar {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                flex-wrap: wrap;
-            }
-
-            .ctn-cell {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                line-height: 1.2;
-            }
-
-            .ctn-no {
-                font-weight: 600;
-            }
-
-            .weight {
-                font-size: 0.9em;
-                color: #555;
-            }
-
-            /* Optional: buat tinggi sama seperti header */
-            th,
-            td {
-                vertical-align: middle !important;
-                padding: 6px;
-            }
-
-            th {
-                font-weight: 600;
-            }
-
-            #currentWeight {
-                font-size: 2.5rem;
-                transition: color 0.3s;
-            }
-
-            .riwayat-item {
-                animation: fadeIn 0.5s;
-            }
-
-            /* Chrome, Safari, Edge, Opera */
-            input::-webkit-outer-spin-button,
-            input::-webkit-inner-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-            }
-
-            /* Firefox */
-            input[type=number] {
-                -moz-appearance: textfield;
-            }
-
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                }
-
-                to {
-                    opacity: 1;
-                }
-            }
-
-            @media (max-width: 576px) {
-                #timbangModal .modal-body {
-                    padding-bottom: 10px !important;
-                }
-            }
-
-            .carton-item .card {
-                transition: transform 0.15s ease, box-shadow 0.15s ease;
-                position: relative;
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12) !important;
-            }
-
-            .carton-item .card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-            }
-
-            .carton-item.d-none-filtered {
-                display: none !important;
-            }
-
-            .report-group {
-                animation: fadeInUp 0.3s ease;
-            }
-
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            .kj-group {
-                transition: box-shadow 0.2s;
-            }
-
-            .kj-toggle:hover,
-            .po-toggle:hover,
-            .style-toggle:hover {
-                filter: brightness(0.97);
-            }
-
-            .carton-item .card {
-                transition: transform 0.12s, box-shadow 0.12s;
-            }
-
-            .carton-item .card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, .1) !important;
-            }
-
-            .carton-item.rpt-hidden {
-                display: none !important;
-            }
-
-            .kj-group.rpt-hidden {
-                display: none !important;
-            }
-        </style>
+        <link rel="stylesheet" href="{{ asset('auth/css/order.css') }}">
     @endpush
 
     @push('js')
@@ -1158,7 +702,7 @@
     @endpush
 
     {{-- ===== JS — Pagination & Filter per group ===== --}}
-    @push('js')
+    {{-- @push('js')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const CARTON_PAGE_SIZE = 30 // tampil 30 carton per halaman
@@ -1314,229 +858,1110 @@
                 }
             })
         </script>
-    @endpush
+    @endpush --}}
 
+    @php
+        $logoPath = public_path('assets/images/logo/kanindo.png');
+        $logoBase64 = file_exists($logoPath)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+            : null;
+    @endphp
+
+    {{-- JS UNTUK FORMAL REPORT --}}
     @push('js')
         <script>
-            document.addEventListener('DOMContentLoaded', () => {
+            const LOGO_BASE64 = @json($logoBase64);
 
-                const KJ_PAGE = 10
-                const CARTON_PAGE = 30
+            (function() {
+                'use strict';
 
-                // ── KJ list ──────────────────────────────────────────────
-                let allKJ = Array.from(document.querySelectorAll('.kj-group'))
-                let kjPage = 1
+                // ─── INITIALIZATION ──────────────────────────────────────────
+                const init = () => {
+                    document.querySelectorAll('.formal-tab').forEach(tab => {
+                        tab.addEventListener('click', function() {
+                            document.querySelectorAll('.formal-tab').forEach(t => t.classList.remove(
+                                'active'));
+                            document.querySelectorAll('.formal-panel').forEach(p => p.classList.remove(
+                                'active'));
+                            this.classList.add('active');
+                            const targetPanel = document.getElementById('panel-' + this.dataset.tab);
+                            if (targetPanel) targetPanel.classList.add('active');
+                        });
+                    });
 
-                function filteredKJ() {
-                    const q = (document.getElementById('kj-search')?.value || '').toLowerCase().trim()
-                    return allKJ.filter(el =>
-                        !q ||
-                        el.dataset.kj.includes(q) ||
-                        el.dataset.buyer.includes(q) ||
-                        el.dataset.po.includes(q)
-                    )
+                    document.getElementById('btn-formal-filter')?.addEventListener('click', loadFormalReport);
+                    document.getElementById('btn-formal-reset')?.addEventListener('click', () => {
+                        const today = new Date().toISOString().split('T')[0];
+                        const startInput = document.getElementById('formal-date-start');
+                        const endInput = document.getElementById('formal-date-end');
+                        const label = document.getElementById('formal-range-label');
+                        if (startInput) startInput.value = today;
+                        if (endInput) endInput.value = today;
+                        if (label) label.textContent = 'Hari ini';
+                        loadFormalReport();
+                    });
+
+                    loadFormalReport();
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
                 }
 
-                function renderKJPage(page) {
-                    const list = filteredKJ()
-                    const total = list.length
-                    const tp = Math.ceil(total / KJ_PAGE) || 1
-                    if (page > tp) page = tp
-                    kjPage = page
+                // ─── CORE DATA LOADER ────────────────────────────────────────
+                async function loadFormalReport() {
+                    const start = document.getElementById('formal-date-start')?.value || '';
+                    const end = document.getElementById('formal-date-end')?.value || '';
+                    const nikeContent = document.getElementById('nike-report-content');
+                    const nonNikeContent = document.getElementById('non-nike-report-content');
+                    const label = document.getElementById('formal-range-label');
 
-                    const start = (page - 1) * KJ_PAGE
-                    const visible = new Set(list.slice(start, start + KJ_PAGE))
-                    allKJ.forEach(el => el.classList.toggle('rpt-hidden', !visible.has(el)))
-
-                    const s = document.getElementById('kj-showing')
-                    if (s) s.textContent = total === 0 ? '0' :
-                        `${start + 1}–${Math.min(start + KJ_PAGE, total)} dari ${total}`
-
-                    renderKJPag(page, tp)
-                }
-
-                function renderKJPag(cur, total) {
-                    const el = document.getElementById('kj-pagination')
-                    if (!el || total <= 1) {
-                        if (el) el.innerHTML = '';
-                        return
-                    }
-                    let h = `<nav><ul class="pagination pagination-sm mb-0">`
-                    h += pagBtn(cur - 1, '‹', cur === 1)
-                    for (let p = 1; p <= total; p++) {
-                        if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1)
-                            h += pagBtn(p, p, false, p === cur)
-                        else if (p === cur - 2 || p === cur + 2)
-                            h += `<li class="page-item disabled"><span class="page-link">…</span></li>`
-                    }
-                    h += pagBtn(cur + 1, '›', cur === total)
-                    h += `</ul></nav>`
-                    el.innerHTML = h
-                    el.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
-                        e.preventDefault()
-                        renderKJPage(parseInt(b.dataset.p))
-                    }))
-                }
-
-                function pagBtn(p, label, disabled, active = false) {
-                    return `<li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
-            <a class="page-link" href="#" data-p="${p}">${label}</a></li>`
-                }
-
-                // Search
-                document.getElementById('kj-search')?.addEventListener('input', () => renderKJPage(1))
-
-                // Expand / collapse all
-                document.getElementById('btn-expand-all')?.addEventListener('click', () => {
-                    document.querySelectorAll('.kj-body,.po-body,.style-body').forEach(b => b.classList.add(
-                        'show'))
-                    document.querySelectorAll('.kj-chevron,.po-chevron,.style-chevron').forEach(c => c.style
-                        .transform = 'rotate(90deg)')
-                    // Init semua carton grid
-                    document.querySelectorAll('.carton-grid').forEach(g => {
-                        const lineId = g.id.replace('-grid', '')
-                        initLineGrid(lineId)
-                    })
-                })
-                document.getElementById('btn-collapse-all')?.addEventListener('click', () => {
-                    document.querySelectorAll('.kj-body,.po-body,.style-body').forEach(b => b.classList.remove(
-                        'show'))
-                    document.querySelectorAll('.kj-chevron,.po-chevron,.style-chevron').forEach(c => c.style
-                        .transform = 'rotate(0deg)')
-                })
-
-                // Toggle KJ
-                document.querySelectorAll('.kj-toggle').forEach(h => h.addEventListener('click', function() {
-                    toggle(this.dataset.target, 'kj-chevron', 'kj-body')
-                }))
-
-                // Toggle PO
-                document.querySelectorAll('.po-toggle').forEach(h => h.addEventListener('click', function() {
-                    toggle(this.dataset.target, 'po-chevron', 'po-body')
-                }))
-
-                // Toggle Style
-                document.querySelectorAll('.style-toggle').forEach(h => h.addEventListener('click', function() {
-                    const id = this.dataset.target
-                    const body = document.getElementById(`${id}-body`)
-                    const chevron = document.getElementById(`${id}-chevron`)
-                    if (!body) return
-                    const open = body.classList.toggle('show')
-                    if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)'
-                    // Init carton grids saat style dibuka
-                    if (open && !body.dataset.init) {
-                        body.dataset.init = '1'
-                        body.querySelectorAll('.carton-grid').forEach(g => {
-                            initLineGrid(g.id.replace('-grid', ''))
-                        })
-                    }
-                }))
-
-                function toggle(targetId, chevronClass, bodyClass) {
-                    const body = document.getElementById(`${targetId}-body`)
-                    const chevron = document.getElementById(`${targetId}-chevron`)
-                    if (!body) return
-                    const open = body.classList.toggle('show')
-                    if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)'
-                }
-
-                // ── Carton grid per line ──────────────────────────────────
-                const lineState = {} // { lineId: { page } }
-
-                function initLineGrid(lineId) {
-                    if (!lineState[lineId]) lineState[lineId] = {
-                        page: 1
-                    }
-                    renderLineGrid(lineId, 1)
-                }
-
-                function renderLineGrid(lineId, page) {
-                    const search = (document.querySelector(`.line-search[data-line-id="${lineId}"]`)?.value || '')
-                        .toLowerCase().trim()
-                    const sort = document.querySelector(`.line-sort[data-line-id="${lineId}"]`)?.value || 'asc'
-
-                    let items = Array.from(document.querySelectorAll(`.carton-item[data-line-id="${lineId}"]`))
-
-                    // Filter
-                    let filtered = items.filter(el =>
-                        !search || el.dataset.noBox.includes(search)
-                    )
-
-                    // Sort
-                    filtered.sort((a, b) => {
-                        if (sort === 'asc') return parseInt(a.dataset.idx) - parseInt(b.dataset.idx)
-                        if (sort === 'desc') return parseInt(b.dataset.idx) - parseInt(a.dataset.idx)
-                        if (sort === 'berat-desc') return parseFloat(b.dataset.berat) - parseFloat(a.dataset
-                            .berat)
-                        if (sort === 'berat-asc') return parseFloat(a.dataset.berat) - parseFloat(b.dataset
-                            .berat)
-                        return 0
-                    })
-
-                    const total = filtered.length
-                    const tp = Math.ceil(total / CARTON_PAGE) || 1
-                    if (page > tp) page = tp
-
-                    const start = (page - 1) * CARTON_PAGE
-                    const pageSet = new Set(filtered.slice(start, start + CARTON_PAGE))
-
-                    const grid = document.getElementById(`${lineId}-grid`)
-                    if (grid) filtered.forEach(el => grid.appendChild(el))
-
-                    items.forEach(el => el.classList.toggle('rpt-hidden', !pageSet.has(el)))
-
-                    const show = document.getElementById(`${lineId}-showing`)
-                    if (show) {
-                        const from = total === 0 ? 0 : start + 1
-                        const to = Math.min(start + CARTON_PAGE, total)
-                        show.textContent = total === 0 ? '0 carton' : `${from}–${to} / ${total}`
+                    if (label) {
+                        const today = new Date().toISOString().split('T')[0];
+                        label.textContent = (start === today && end === today) ? 'Hari ini' : (start + ' s/d ' + end);
                     }
 
-                    renderLinePag(lineId, page, tp)
+                    if (nikeContent) nikeContent.innerHTML = loadingHTML();
+                    if (nonNikeContent) nonNikeContent.innerHTML = loadingHTML();
+
+                    try {
+                        const params = new URLSearchParams();
+                        if (start) params.append('start', start);
+                        if (end) params.append('end', end);
+
+                        const res = await fetch('/user/order/formal-report?' + params, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        const json = await res.json();
+                        if (!json.success) throw new Error(json.message || 'Gagal memuat data dari server.');
+
+                        renderNike(json.nike || []);
+                        renderNonNike(json.non_nike || []);
+                    } catch (err) {
+                        const errHTML = '<div class="formal-empty" style="color:#ef5350;padding:20px;">' +
+                            '<i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>' +
+                            '<b>Error:</b> ' + err.message + '</div>';
+                        if (nikeContent) nikeContent.innerHTML = errHTML;
+                        if (nonNikeContent) nonNikeContent.innerHTML = errHTML;
+                    }
                 }
 
-                function renderLinePag(lineId, cur, total) {
-                    const el = document.getElementById(`${lineId}-pagination`)
-                    if (!el || total <= 1) {
-                        if (el) el.innerHTML = '';
-                        return
-                    }
-                    let h = `<nav><ul class="pagination pagination-sm mb-0 flex-wrap">`
-                    h += pagBtn(cur - 1, '‹', cur === 1)
-                    for (let p = 1; p <= total; p++) {
-                        if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1)
-                            h += pagBtn(p, p, false, p === cur)
-                        else if (p === cur - 2 || p === cur + 2)
-                            h += `<li class="page-item disabled"><span class="page-link">…</span></li>`
-                    }
-                    h += pagBtn(cur + 1, '›', cur === total)
-                    h += `</ul></nav>`
-                    el.innerHTML = h
-                    el.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
-                        e.preventDefault()
-                        const p = parseInt(b.dataset.p)
-                        renderLineGrid(lineId, p)
-                        document.getElementById(`${lineId}-grid`)?.closest('.line-section')
-                            ?.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            })
-                    }))
+                function loadingHTML() {
+                    return '<div class="formal-empty" style="padding:40px;">' +
+                        '<div class="spinner-border text-primary" style="width:24px;height:24px;" role="status"></div>' +
+                        '<div style="margin-top:8px;font-size:12px;color:#666;">Menghubungkan ke server...</div>' +
+                        '</div>';
                 }
 
-                // Event: search & sort per line
-                document.addEventListener('input', e => {
-                    if (e.target.classList.contains('line-search'))
-                        renderLineGrid(e.target.dataset.lineId, 1)
-                })
-                document.addEventListener('change', e => {
-                    if (e.target.classList.contains('line-sort'))
-                        renderLineGrid(e.target.dataset.lineId, 1)
-                })
+                // ─── RENDER NIKE ─────────────────────────────────────────────
+                function renderNike(rows) {
+                    const el = document.getElementById('nike-report-content');
+                    const badge = document.getElementById('nike-count-badge');
+                    const COLS = 25;
+                    const ROWS_PER_PAGE = 24;
 
-                // Initial render
-                renderKJPage(1)
-            })
+                    if (!el) return;
+
+                    if (!rows.length) {
+                        if (badge) badge.textContent = '0';
+                        el.innerHTML = '<div class="formal-empty">Tidak ada data NIKE pada rentang tanggal ini</div>';
+                        return;
+                    }
+
+                    if (badge) badge.textContent = rows.length;
+
+                    const dates = [...new Set(rows.map(r => r.tanggal))].join(', ');
+                    const totalCarton = rows.reduce((s, r) => s + r.timbangans.length, 0);
+
+                    const allRows = [];
+                    rows.forEach(r => {
+                        const chunks = chunkArray(r.timbangans, COLS);
+                        const rowspan = chunks.length;
+                        chunks.forEach((chunk, chunkIdx) => {
+                            const padded = [...chunk, ...Array(COLS - chunk.length).fill(null)];
+                            const chunkLen = chunk.length;
+                            let tdBerats = '';
+                            padded.forEach(t => {
+                                tdBerats += t ?
+                                    '<td class="td-berat">' + parseFloat(t.berat).toFixed(2) +
+                                    '</td>' :
+                                    '<td class="td-empty">-</td>';
+                            });
+                            allRows.push({
+                                order: r,
+                                chunkIdx,
+                                rowspan,
+                                chunkLen,
+                                tdBerats
+                            });
+                        });
+                    });
+
+                    const pages = chunkArray(allRows, ROWS_PER_PAGE);
+                    let currentPage = 1;
+
+                    function buildTableHTML(pageRows) {
+                        let thNums = '';
+                        for (let i = 1; i <= COLS; i++) {
+                            thNums += '<th style="min-width:36px;font-size:10px;">' + i + '</th>';
+                        }
+
+                        let tbody = '';
+                        pageRows.forEach(row => {
+                            const r = row.order;
+                            const infoTds = row.chunkIdx === 0 ?
+                                '<td class="td-order" rowspan="' + row.rowspan +
+                                '" style="text-align:left;font-size:10px;word-break:break-all;max-width:100px;">' +
+                                r.kj + '</td>' +
+                                '<td rowspan="' + row.rowspan + '" style="font-size:11px;">' + (r.style || '-') +
+                                '</td>' +
+                                '<td rowspan="' + row.rowspan + '">' + (r.color || '-') + '</td>' +
+                                '<td rowspan="' + row.rowspan + '">' + (r.pcs || '-') + '</td>' +
+                                '<td rowspan="' + row.rowspan + '">' + (r.qty_order || '-') + '</td>' +
+                                '<td rowspan="' + row.rowspan + '" style="font-size:10px;">' + (r.gac_date || '-') +
+                                '</td>' +
+                                '<td rowspan="' + row.rowspan + '" style="font-size:10px;max-width:80px;">' + (r
+                                    .destination || '-') + '</td>' +
+                                '<td rowspan="' + row.rowspan + '">' + (r.line || '-') + '</td>' +
+                                '<td rowspan="' + row.rowspan + '">' + (r.carton_weight_std || '-') + '</td>' :
+                                '';
+
+                            tbody += '<tr>' + infoTds + row.tdBerats +
+                                '<td class="td-total">' + row.chunkLen + '</td>' +
+                                '<td></td></tr>';
+                        });
+
+                        // ── TAMBAHAN: isi baris kosong sampai 24 baris ──────────────────────
+                        const emptyRowsNeeded = ROWS_PER_PAGE - pageRows.length;
+                        if (emptyRowsNeeded > 0) {
+                            const emptyStyle = 'style="border:1px solid #dee2e6;color:#ccc;font-size:10px;"';
+
+                            // 9 kolom info tetap (Order No, Style, CLR, Isi, Qty, GAC, Dest, Line, Std)
+                            let emptyInfoTds = '';
+                            for (let i = 0; i < 9; i++) {
+                                emptyInfoTds += '<td ' + emptyStyle + '>-</td>';
+                            }
+                            // 25 kolom berat
+                            let emptyBeratTds = '';
+                            for (let i = 0; i < COLS; i++) {
+                                emptyBeratTds += '<td ' + emptyStyle + '>-</td>';
+                            }
+                            // 2 kolom Total + Ket
+                            for (let r = 0; r < emptyRowsNeeded; r++) {
+                                tbody += '<tr>' + emptyInfoTds + emptyBeratTds +
+                                    '<td ' + emptyStyle + '>-</td>' +
+                                    '<td ' + emptyStyle + '></td></tr>';
+                            }
+                        }
+                        // ───────────────────────────────────────────────────────────────────
+
+                        return '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+                            '<table class="nike-table"><thead>' +
+                            '<tr>' +
+                            '<th rowspan="2" style="min-width:100px;">Order No.</th>' +
+                            '<th rowspan="2" style="min-width:90px;">Style</th>' +
+                            '<th rowspan="2">CLR</th>' +
+                            '<th rowspan="2">Isi Karton</th>' +
+                            '<th rowspan="2">Qty Order</th>' +
+                            '<th rowspan="2">GAC</th>' +
+                            '<th rowspan="2" style="min-width:70px;">Destination</th>' +
+                            '<th rowspan="2">Dari Line</th>' +
+                            '<th rowspan="2">Standar Berat</th>' +
+                            '<th colspan="' + COLS + '" style="background:#2d4fad;">Actual Berat Karton</th>' +
+                            '<th rowspan="2">Total Karton</th>' +
+                            '<th rowspan="2" style="min-width:50px;">Ket</th>' +
+                            '</tr>' +
+                            '<tr>' + thNums + '</tr>' +
+                            '</thead><tbody>' + tbody + '</tbody></table></div>';
+                    }
+
+                    function buildPaginationHTML(cur, total) {
+                        if (total <= 1) return '';
+                        let html = '<div class="rpt-pagination" style="margin-top:10px;">';
+                        html += '<button class="rpt-page-btn nike-page-btn" data-page="' + (cur - 1) + '" ' + (cur === 1 ?
+                            'disabled' : '') + '>‹</button>';
+                        for (let p = 1; p <= total; p++) {
+                            if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1) {
+                                html += '<button class="rpt-page-btn nike-page-btn' + (p === cur ? ' active' : '') +
+                                    '" data-page="' + p + '">' + p + '</button>';
+                            } else if (p === cur - 2 || p === cur + 2) {
+                                html += '<span class="rpt-page-btn" style="cursor:default;">…</span>';
+                            }
+                        }
+                        html += '<button class="rpt-page-btn nike-page-btn" data-page="' + (cur + 1) + '" ' + (cur ===
+                            total ? 'disabled' : '') + '>›</button>';
+                        html += '</div>';
+                        return html;
+                    }
+
+                    function render(page) {
+                        currentPage = page;
+                        const totalPages = pages.length;
+                        const pageRows = pages[page - 1] || [];
+                        const start = (page - 1) * ROWS_PER_PAGE + 1;
+                        const end = Math.min(page * ROWS_PER_PAGE, allRows.length);
+
+                        el.innerHTML = '<div class="nike-report-block">' +
+                            '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">' +
+                            '<div class="nike-report-meta" style="margin-bottom:0;">' +
+                            '<div class="nike-meta-item">Tanggal: <span>' + dates + '</span></div>' +
+                            '<div class="nike-meta-item">Total Order: <span>' + rows.length + '</span></div>' +
+                            '<div class="nike-meta-item">Total Carton: <span>' + totalCarton + '</span></div>' +
+                            '<div class="nike-meta-item">Halaman: <span>' + page + ' / ' + totalPages +
+                            '</span> &nbsp;(baris ' + start + '–' + end + ')</div>' +
+                            '</div>' +
+                            '<button class="btn-print-formal" id="btn-print-nike-page">' +
+                            '<i class="bi bi-printer"></i> Print Lembar ' + page +
+                            '</button>' +
+                            '</div>' +
+                            buildTableHTML(pageRows) +
+                            buildPaginationHTML(page, totalPages) +
+                            '</div>';
+
+                        el.querySelectorAll('.nike-page-btn').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const p = parseInt(this.dataset.page);
+                                if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                                    render(p);
+                                    el.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
+                                }
+                            });
+                        });
+
+                        document.getElementById('btn-print-nike-page')?.addEventListener('click', () => {
+                            printNikePage(page, pageRows, dates);
+                        });
+                    }
+
+                    render(1);
+                }
+
+                // ── Print Nike ───────────────────────────────────────────────
+                function printNikePage(pageNum, pageRows, dates) {
+
+                    const ROWS_PER_PAGE = 24;
+                    const COLS = 25;
+                    const start = document.getElementById('formal-date-start')?.value || '';
+                    const end = document.getElementById('formal-date-end')?.value || '';
+
+                    let thNums = '';
+                    for (let i = 1; i <= COLS; i++) {
+                        thNums += '<th style="min-width:28px;font-size:9px;">' + i + '</th>';
+                    }
+
+                    let tbody = '';
+                    pageRows.forEach(row => {
+                        const r = row.order;
+                        const infoTds = row.chunkIdx === 0 ?
+                            '<td rowspan="' + row.rowspan +
+                            '" style="text-align:left;font-size:8px;word-break:break-all;">' + (r.kj || r
+                                .order_code) + '</td>' +
+                            '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.style || '-') +
+                            '</td>' +
+                            '<td rowspan="' + row.rowspan + '">' + (r.color || '-') + '</td>' +
+                            '<td rowspan="' + row.rowspan + '">' + (r.pcs || '-') + '</td>' +
+                            '<td rowspan="' + row.rowspan + '">' + (r.qty_order || '-') + '</td>' +
+                            '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.gac_date || '-') +
+                            '</td>' +
+                            '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.destination || '-') +
+                            '</td>' +
+                            '<td rowspan="' + row.rowspan + '">' + (r.line || '-') + '</td>' +
+                            '<td rowspan="' + row.rowspan + '">' + (r.carton_weight_std || '-') + '</td>' :
+                            '';
+                        tbody += '<tr>' + infoTds + row.tdBerats +
+                            '<td style="font-weight:700;border:1px solid #ccc;">' + row.chunkLen + '</td>' +
+                            '<td style="border:1px solid #ccc;"></td></tr>';
+                    });
+
+                    // Baris kosong pengisi sampai 24
+                    const emptyNeeded = ROWS_PER_PAGE - pageRows.length;
+                    if (emptyNeeded > 0) {
+                        const es = 'style="border:1px solid #ccc;"';
+                        let ei = '',
+                            eb = '';
+                        for (let i = 0; i < 9; i++) ei += '<td ' + es + '>-</td>';
+                        for (let i = 0; i < COLS; i++) eb += '<td ' + es + '>-</td>';
+                        for (let r = 0; r < emptyNeeded; r++) {
+                            tbody += '<tr>' + ei + eb + '<td ' + es + '>-</td><td ' + es + '></td></tr>';
+                        }
+                    }
+
+                    const dateLabel = start + (start !== end ? ' s/d ' + end : '');
+                    const printed = new Date().toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    const hariTanggal = start ?
+                        new Date(start).toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                        }) :
+                        '-';
+
+                    // Ambil nama TTD dari row pertama
+                    const firstOrder = pageRows.length > 0 ? pageRows[0].order : null;
+                    const optQc = firstOrder?.opt_qc && firstOrder.opt_qc !== '-' ? firstOrder.opt_qc : '';
+                    const spvQc = firstOrder?.spv_qc && firstOrder.spv_qc !== '-' ? firstOrder.spv_qc : '';
+                    const chief = firstOrder?.chief && firstOrder.chief !== '-' ? firstOrder.chief : '';
+
+                    const css =
+                        '@page{size:A4 landscape;margin:6mm 8mm;}' +
+                        '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                        'table{border-spacing:0;}' +
+                        'body{font-family:"Segoe UI",Arial,sans-serif;font-size:8px;color:#000;margin:0;padding:0;}' +
+
+                        /* ── Form Header (logo + judul + doc info) ── */
+                        '.form-header{display:flex;align-items:stretch;border:1.5px solid #333;border-bottom:none;margin-bottom:0;}' +
+
+                        '.logo-area{width:110px;min-width:110px;border-right:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;gap:3px;}' +
+                        '.logo-box{width:42px;height:42px;border:2.5px solid #1a3a7a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#1a3a7a;}' +
+                        '.company-name{font-size:6.5px;font-weight:700;text-align:center;color:#1a3a7a;line-height:1.4;}' +
+
+                        '.title-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-right:1px solid #333;}' +
+                        '.title-area h4{margin:0;font-size:13px;font-weight:700;text-align:center;text-transform:uppercase;}' +
+                        '.title-area p{margin:2px 0 0;font-size:10px;text-align:center;}' +
+
+                        '.doc-area{width:175px;min-width:175px;}' +
+                        '.doc-area table{width:100%;border-collapse:collapse;height:100%;}' +
+                        '.doc-area td{border:1px solid #ddd;padding:2px 4px;vertical-align:middle;font-size:7px;}' +
+                        '.doc-area td:first-child{font-weight:600;white-space:nowrap;background:#f5f5f5;width:52%;}' +
+
+                        /* ── Baris bawah header: Hari & Tanggal + TTD ── */
+                        '.sub-header{display:flex;align-items:stretch;border:1.5px solid #333;margin-bottom:4px;}' +
+
+                        '.hari-tanggal-area{flex:1;display:flex;align-items:center;padding:4px 8px;font-size:9px;font-weight:600;border-right:1px solid #333;}' +
+
+                        /* ── Tanda Tangan 3 Kolom ── */
+                        '.sign-area-3{width:430px;min-width:430px;display:flex;align-items:stretch;}' +
+                        '.sign-tbl-3{width:100%;height:100%;border-collapse:collapse;font-size:7px;text-align:center;}' +
+                        '.sign-tbl-3 th{background:#f0f0f0!important;border:1px solid #999!important;padding:2px 3px;font-weight:700;font-size:6.5px;vertical-align:middle;color:#000!important;}' +
+                        '.sign-tbl-3 td.sign-td{border:1px solid #999;height:50px;vertical-align:bottom;padding:2px 6px;font-weight:700;font-size:7px;min-width:130px;}' +
+
+                        /* ── Main Table ── */
+                        'table.main-tbl{width:100%;border-collapse:collapse;font-size:7.5px;}' +
+                        'table.main-tbl th{background:#435ebe!important;color:#fff!important;padding:2px 3px;border:1px solid #3551b0;text-align:center;}' +
+                        'table.main-tbl td{padding:2px 3px;border:1px solid #ccc!important;text-align:center;vertical-align:middle;}' +
+                        '.bg-blue{background:#2d4fad!important;}';
+
+                    const html =
+                        '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
+                        '<title>Carton Weight Report NIKE — Lembar ' + pageNum + '</title>' +
+                        '<style>' + css + '</style>' +
+                        '</head><body>' +
+
+                        /* ══ BARIS 1: Logo + Judul + Info Dokumen ══ */
+                        '<div class="form-header">' +
+
+                        /* Logo */
+                        '<div class="logo-area">' +
+                        (LOGO_BASE64 ?
+                            '<img src="' + LOGO_BASE64 +
+                            '" style="width:60px;height:auto;max-height:50px;object-fit:contain;" />' :
+                            '<div class="logo-box">M</div>'
+                        ) +
+                        '</div>' +
+
+                        /* Judul */
+                        '<div class="title-area">' +
+                        '<h4>PT. Kanindo Makmur Jaya</h4>' +
+                        '<p><strong>CARTON WEIGHT REPORT</strong></p>' +
+                        '<p style="font-size:9px;color:#555;">Nike &nbsp;·&nbsp; Lembar ' + pageNum + '</p>' +
+                        '</div>' +
+
+                        /* Info Dokumen */
+                        '<div class="doc-area">' +
+                        '<table>' +
+                        '<tr><td>No. Dokumen</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Tgl. Terbit</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Revisi</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Tgl. Efektif</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Departemen</td><td>&nbsp;</td></tr>' +
+                        '</table>' +
+                        '</div>' +
+
+                        '</div>' + /* end form-header baris 1 */
+
+                        /* ══ BARIS 2: Hari & Tanggal + TTD 3 Kolom ══ */
+                        '<div class="sub-header">' +
+
+                        /* Hari & Tanggal */
+                        '<div class="hari-tanggal-area">' +
+                        'HARI &amp; TANGGAL : ' + hariTanggal +
+                        '<br><span style="font-size:7.5px;font-weight:400;color:#555;">' +
+                        'Periode: ' + dateLabel +
+                        ' &nbsp;·&nbsp; Dicetak: ' + printed +
+                        '</span>' +
+                        '</div>' +
+
+                        /* TTD 3 Kolom */
+                        '<div class="sign-area-3">' +
+                        '<table class="sign-tbl-3">' +
+                        '<thead>' +
+                        '<tr>' +
+                        '<th>OPT QC TIMBANGAN</th>' +
+                        '<th>SPV QC</th>' +
+                        '<th>CHIEF FINISH GOOD</th>' +
+                        '</tr>' +
+                        '</thead>' +
+                        '<tbody>' +
+                        '<tr>' +
+                        '<td class="sign-td">' + optQc + '</td>' +
+                        '<td class="sign-td">' + spvQc + '</td>' +
+                        '<td class="sign-td">' + chief + '</td>' +
+                        '</tr>' +
+                        '</tbody>' +
+                        '</table>' +
+                        '</div>' +
+
+                        '</div>' + /* end sub-header baris 2 */
+
+                        /* ══ TABEL UTAMA ══ */
+                        '<table class="main-tbl">' +
+                        '<thead>' +
+                        '<tr>' +
+                        '<th rowspan="2" style="min-width:80px;">Order No.</th>' +
+                        '<th rowspan="2">Style</th>' +
+                        '<th rowspan="2">CLR</th>' +
+                        '<th rowspan="2">Isi<br>Karton</th>' +
+                        '<th rowspan="2">Qty<br>Order</th>' +
+                        '<th rowspan="2">GAC</th>' +
+                        '<th rowspan="2">Destination</th>' +
+                        '<th rowspan="2">Dari<br>Line</th>' +
+                        '<th rowspan="2">Standar<br>Berat</th>' +
+                        '<th colspan="' + COLS + '" class="bg-blue">Actual Berat Karton</th>' +
+                        '<th rowspan="2">Total<br>Karton</th>' +
+                        '<th rowspan="2">Ket</th>' +
+                        '</tr>' +
+                        '<tr>' + thNums + '</tr>' +
+                        '</thead>' +
+                        '<tbody>' + tbody + '</tbody>' +
+                        '</table>' +
+
+                        '<script>window.onload=()=>{window.print();}<\/script>' +
+                        '</body></html>';
+
+                    const win = window.open('', '_blank');
+                    win.document.write(html);
+                    win.document.close();
+                }
+
+                // ─── RENDER NON-NIKE ─────────────────────────────────────────
+                function renderNonNike(orders) {
+                    const el = document.getElementById('non-nike-report-content');
+                    const badge = document.getElementById('non-nike-count-badge');
+
+                    const COLS_PER_BLOCK = 10;
+                    const ROWS_PER_BLOCK = 5;
+                    const CARTON_PER_BLOCK = COLS_PER_BLOCK * ROWS_PER_BLOCK;
+                    const BLOCKS_PER_PAGE = 4;
+
+                    if (!el) return;
+
+                    if (!orders.length) {
+                        if (badge) badge.textContent = '0';
+                        el.innerHTML = '<div class="formal-empty">Tidak ada data Non-Nike pada rentang tanggal ini</div>';
+                        return;
+                    }
+
+                    if (badge) badge.textContent = orders.length;
+
+                    const allBlocks = [];
+                    orders.forEach(order => {
+                        (order.by_line || []).forEach(lineGroup => {
+                            const timbangans = lineGroup.timbangans || [];
+                            const cartonChunks = chunkArray(timbangans, CARTON_PER_BLOCK);
+                            cartonChunks.forEach((chunk, blockIdx) => {
+                                allBlocks.push({
+                                    buyer: order.buyer || '-',
+                                    kj: order.kj || order.order_code || '-',
+                                    order_code: order.order_code || '-',
+                                    po: order.po || '-',
+                                    style: order.style || '-',
+                                    color: order.color || '-',
+                                    qty_order: order.qty_order || 0,
+                                    carton_weight_std: order.carton_weight_std,
+                                    pcs_weight_std: order.pcs_weight_std,
+                                    gac_date: order.gac_date || '-',
+                                    destination: order.destination || '-',
+                                    inspector: order.inspector || '-',
+                                    opt_qc: order.opt_qc || '-',
+                                    spv_qc: order.spv_qc || '-',
+                                    chief: order.chief || '-',
+                                    line: lineGroup.line,
+                                    pcs_default: order.pcs_default || '-',
+                                    timbangans: chunk,
+                                    blockIdx,
+                                    totalCartonInLine: timbangans.length,
+                                    startNo: blockIdx * CARTON_PER_BLOCK + 1,
+                                });
+                            });
+                        });
+                    });
+
+                    const pages = chunkArray(allBlocks, BLOCKS_PER_PAGE);
+                    const totalPages = pages.length;
+                    let currentPage = 1;
+
+                    function buildBlockHTML(block) {
+                        const isContinued = block.blockIdx > 0;
+                        const startNo = block.startNo;
+                        const cartons = block.timbangans;
+                        let tbodyRows = '';
+
+                        for (let row = 0; row < ROWS_PER_BLOCK; row++) {
+                            const startIdx = row * COLS_PER_BLOCK;
+                            const rowCartons = cartons.slice(startIdx, startIdx + COLS_PER_BLOCK);
+                            const padded = [...rowCartons, ...Array(COLS_PER_BLOCK - rowCartons.length).fill(null)];
+                            const rowTotalBerat = rowCartons.reduce((s, t) => s + parseFloat(t?.berat || 0), 0);
+                            const hasData = rowCartons.length > 0;
+
+                            let tdBoxes = '';
+                            padded.forEach((t, colIdx) => {
+                                const no = startNo + startIdx + colIdx;
+                                tdBoxes += t ?
+                                    '<td class="td-box" style="font-weight:600;font-size:10px;">' + (t.no_box ||
+                                        no) + '</td>' :
+                                    '<td class="td-empty" style="color:#ddd;">-</td>';
+                            });
+
+                            let tdWeights = '';
+                            padded.forEach(t => {
+                                if (t) {
+                                    const bv = parseFloat(t.berat);
+                                    const mn = parseFloat(t.rasio_batas_beban_min || 0);
+                                    const mx = parseFloat(t.rasio_batas_beban_max || 0);
+                                    let cls = 'w-ok';
+                                    if (mn > 0 && mx > 0) {
+                                        if (bv < mn) cls = 'w-kurang';
+                                        else if (bv > mx) cls = 'w-lebih';
+                                    }
+                                    tdWeights += '<td class="td-w ' + cls +
+                                        '" style="font-weight:700;font-size:11px;">' + bv.toFixed(2) + '</td>';
+                                } else {
+                                    tdWeights += '<td class="td-empty" style="color:#ddd;">-</td>';
+                                }
+                            });
+
+                            const rowDate = rowCartons[0]?.waktu_timbang ?
+                                rowCartons[0].waktu_timbang.substring(0, 10) :
+                                '-';
+
+                            tbodyRows += '<tr>' +
+                                '<td class="td-date" rowspan="2" style="font-size:10px;color:#666;vertical-align:middle;white-space:nowrap;">' +
+                                rowDate + '</td>' +
+                                tdBoxes +
+                                '<td class="td-total" rowspan="2" style="font-weight:700;color:#2dce89;vertical-align:middle;">' +
+                                (hasData ? rowTotalBerat.toFixed(2) : '-') + '</td>' +
+                                '<td rowspan="2"></td>' +
+                                '</tr>' +
+                                '<tr>' + tdWeights + '</tr>';
+                        }
+
+                        const continuedBadge = isContinued ?
+                            '<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;margin-left:8px;">Lanjutan</span>' :
+                            '';
+
+                        const thHeaders = Array.from({
+                                length: COLS_PER_BLOCK
+                            }, (_, i) =>
+                            '<th style="min-width:50px;">#' + (i + 1) + '</th>'
+                        ).join('');
+
+                        const totalBerat = block.timbangans.reduce((s, t) => s + parseFloat(t?.berat || 0), 0).toFixed(2);
+
+                        return '<div class="non-nike-block" style="margin-bottom:12px;">' +
+                            '<div class="nn-info-wrap">'
+
+                            +
+                            '<div class="nn-info-left">' +
+                            '<table class="nn-info-table">' +
+                            '<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">CARTON WEIGHT REPORT ' +
+                            continuedBadge + '</th></tr>' +
+                            '<tr><th>BUYER</th><td><strong>' + block.buyer + '</strong></td></tr>' +
+                            '<tr><th>Order No. (KJ)</th><td><strong>' + block.kj + '</strong></td></tr>' +
+                            '<tr><th>PO#</th><td>' + block.po + '</td></tr>' +
+                            '<tr><th>Style</th><td>' + block.style + '</td></tr>' +
+                            '<tr><th>Color</th><td>' + block.color + '</td></tr>' +
+                            '<tr><th>Qty Order</th><td>' + parseInt(block.qty_order || 0).toLocaleString() + ' pcs' +
+                            ' <span style="font-size:10px;color:#666;">L = ' + block.line + ' &nbsp;·&nbsp; M = ' + block
+                            .pcs_default + '</span></td></tr>' +
+                            '<tr><th>Carton Weight Std.</th><td>' + (block.carton_weight_std ? parseFloat(block
+                                .carton_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
+                            '<tr><th>Pcs Weight Std.</th><td>' + (block.pcs_weight_std ? parseFloat(block.pcs_weight_std)
+                                .toFixed(2) + ' kg' : '-') + '</td></tr>' +
+                            '</table>' +
+                            '</div>'
+
+                            +
+                            '<div class="nn-info-right">' +
+                            '<table class="nn-info-table">' +
+                            '<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">&nbsp; ' +
+                            continuedBadge + '</th></tr>' +
+                            '<tr><th>GAC Date</th><td>' + block.gac_date + '</td></tr>' +
+                            '<tr><th>Destination</th><td>' + block.destination + '</td></tr>' +
+                            '<tr><th>Inspector</th><td>' + block.inspector + '</td></tr>' +
+                            '<tr><th>Total Carton</th><td><strong>' + block.timbangans.length + '</strong> / ' + block
+                            .totalCartonInLine + '</td></tr>' +
+                            '<tr><th>Total Berat</th><td><strong>' + totalBerat + ' kg</strong></td></tr>' +
+                            '</table>' +
+                            '<div class="nn-sign-wrap" style="margin-top:6px;">' +
+                            '<table class="nn-sign-table">' +
+                            '<thead><tr><th>OPT QC TIMBANGAN</th><th>SPV QC</th><th>CHIEF FINISH GOOD</th></tr></thead>' +
+                            '<tbody><tr>' +
+                            '<td style="height:45px;vertical-align:bottom;font-weight:700;">' + (block.opt_qc !== '-' ?
+                                block.opt_qc : '') + '</td>' +
+                            '<td style="height:45px;vertical-align:bottom;font-weight:700;">' + (block.spv_qc !== '-' ?
+                                block.spv_qc : '') + '</td>' +
+                            '<td style="height:45px;vertical-align:bottom;font-weight:700;">' + (block.chief !== '-' ? block
+                                .chief : '') + '</td>' +
+                            '</tr></tbody>' +
+                            '</table>' +
+                            '</div>' +
+                            '</div>' +
+                            '</div>'
+
+                            +
+                            '<div class="nn-carton-wrap">' +
+                            '<table class="nn-carton-table">' +
+                            '<thead>' +
+                            '<tr>' +
+                            '<th rowspan="2" style="min-width:50px;">Date</th>' +
+                            '<th colspan="' + COLS_PER_BLOCK + '">Ctn. No &amp; Weight (kg)</th>' +
+                            '<th rowspan="2" style="min-width:50px;">Total (kg)</th>' +
+                            '<th rowspan="2" style="min-width:45px;">Remark</th>' +
+                            '</tr>' +
+                            '<tr>' + thHeaders + '</tr>' +
+                            '</thead>' +
+                            '<tbody>' + tbodyRows + '</tbody>' +
+                            '</table>' +
+                            '</div>' +
+                            '</div>';
+                    }
+
+                    function render(page) {
+                        currentPage = page;
+                        const pageBlocks = pages[page - 1] || [];
+
+                        let blocksHTML = '';
+                        pageBlocks.forEach(block => {
+                            blocksHTML += buildBlockHTML(block);
+                        });
+
+                        let pagHTML = '';
+                        if (totalPages > 1) {
+                            pagHTML = '<div class="rpt-pagination" style="margin-top:12px;">';
+                            pagHTML += '<button class="rpt-page-btn nn-page-btn" data-page="' + (page - 1) + '" ' + (
+                                page === 1 ? 'disabled' : '') + '>‹</button>';
+                            for (let p = 1; p <= totalPages; p++) {
+                                if (totalPages <= 7 || p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
+                                    pagHTML += '<button class="rpt-page-btn nn-page-btn' + (p === page ? ' active' : '') +
+                                        '" data-page="' + p + '">' + p + '</button>';
+                                } else if (p === page - 2 || p === page + 2) {
+                                    pagHTML += '<span class="rpt-page-btn" style="cursor:default;">…</span>';
+                                }
+                            }
+                            pagHTML += '<button class="rpt-page-btn nn-page-btn" data-page="' + (page + 1) + '" ' + (
+                                page === totalPages ? 'disabled' : '') + '>›</button>';
+                            pagHTML += '</div>';
+                        }
+
+                        el.innerHTML = '<div>' +
+                            '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;">' +
+                            '<div style="font-size:12px;color:#666;">Lembar <strong>' + page + ' / ' + totalPages +
+                            '</strong> &nbsp;·&nbsp; Total blok: <strong>' + allBlocks.length + '</strong></div>' +
+                            '<button class="btn-print-formal" id="btn-print-nn-page"><i class="bi bi-printer"></i> Print Lembar ' +
+                            page + '</button>' +
+                            '</div>' +
+                            blocksHTML +
+                            pagHTML +
+                            '</div>';
+
+                        el.querySelectorAll('.nn-page-btn').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const p = parseInt(this.dataset.page);
+                                if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                                    render(p);
+                                    el.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
+                                }
+                            });
+                        });
+
+                        document.getElementById('btn-print-nn-page')?.addEventListener('click', () => {
+                            printNonNikePage(page, pageBlocks);
+                        });
+                    }
+
+                    render(1);
+                }
+
+                // ── Print Non-Nike — 4 blok per lembar seperti form fisik ───
+                function printNonNikePage(pageNum, pageBlocks) {
+                    const start = document.getElementById('formal-date-start')?.value || '';
+                    const end = document.getElementById('formal-date-end')?.value || '';
+                    const COLS = 10;
+                    const ROWS = 5;
+
+                    let blocksHTML = '';
+
+                    pageBlocks.forEach(block => {
+                        const isContinued = block.blockIdx > 0;
+                        const cartons = block.timbangans;
+                        let tbodyRows = '';
+
+                        for (let row = 0; row < ROWS; row++) {
+                            const startIdx = row * COLS;
+                            const rowCartons = cartons.slice(startIdx, startIdx + COLS);
+                            const padded = [...rowCartons, ...Array(COLS - rowCartons.length).fill(null)];
+                            const rowTotal = rowCartons.reduce((s, t) => s + parseFloat(t?.berat || 0), 0);
+                            const hasData = rowCartons.length > 0;
+                            const rowDate = rowCartons[0]?.waktu_timbang?.substring(0, 10) || '-';
+
+                            let tdBoxes = '',
+                                tdWeights = '';
+                            padded.forEach((t, ci) => {
+                                const no = block.startNo + startIdx + ci;
+                                tdBoxes += t ?
+                                    '<td>' + (t.no_box || no) + '</td>' :
+                                    '<td style="color:#ddd;">-</td>';
+
+                                if (t) {
+                                    const bv = parseFloat(t.berat);
+                                    const mn = parseFloat(t.rasio_batas_beban_min || 0);
+                                    const mx = parseFloat(t.rasio_batas_beban_max || 0);
+                                    let style = '';
+                                    if (mn > 0 && mx > 0) {
+                                        if (bv < mn) style = 'color:red;font-weight:bold;';
+                                        else if (bv > mx) style = 'color:orange;font-weight:bold;';
+                                    }
+                                    tdWeights += '<td style="' + style + '">' + bv.toFixed(2) + '</td>';
+                                } else {
+                                    tdWeights += '<td style="color:#ddd;">-</td>';
+                                }
+                            });
+
+                            tbodyRows += '<tr>' +
+                                '<td rowspan="2" style="font-size:7px;color:#555;vertical-align:middle;white-space:nowrap;">' +
+                                rowDate + '</td>' +
+                                tdBoxes +
+                                '<td rowspan="2" style="font-weight:700;vertical-align:middle;">' + (hasData ?
+                                    rowTotal.toFixed(2) : '-') + '</td>' +
+                                '<td rowspan="2"></td>' +
+                                '</tr>' +
+                                '<tr>' + tdWeights + '</tr>';
+                        }
+
+                        const thCols = Array.from({
+                                length: COLS
+                            }, (_, i) =>
+                            '<th>#' + (i + 1) + '</th>'
+                        ).join('');
+
+                        const totalBerat = block.timbangans.reduce((s, t) => s + parseFloat(t?.berat || 0), 0)
+                            .toFixed(2);
+
+                        // Setiap blok = 1 form seperti di foto fisik
+                        blocksHTML += '<div class="block-wrap">'
+
+                            // Header biru title
+                            +
+                            '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +
+                            (isContinued ?
+                                ' <span style="background:#fff3cd;color:#856404;padding:1px 6px;border-radius:3px;font-size:8px;">Lanjutan</span>' :
+                                '') +
+                            '</div>'
+
+                            // Info section: kiri + kanan
+                            +
+                            '<div class="block-info">'
+
+                            // Kiri
+                            +
+                            '<div class="block-info-left">' +
+                            '<table class="info-tbl">' +
+                            '<tr><td>BUYER</td><td><strong>' + block.buyer + '</strong></td></tr>' +
+                            '<tr><td>Order No.</td><td><strong>' + block.kj + '</strong></td></tr>' +
+                            '<tr><td>PO#</td><td>' + block.po + '</td></tr>' +
+                            '<tr><td>Style</td><td>' + block.style + '</td></tr>' +
+                            '<tr><td>Qty Order</td><td>' + parseInt(block.qty_order || 0).toLocaleString() +
+                            ' pcs</td></tr>' +
+                            '<tr><td>Ctn / Less Ctn</td><td>' + block.timbangans.length + ' / -</td></tr>' +
+                            '<tr><td>Carton Wgt Std.</td><td>' + (block.carton_weight_std ? parseFloat(block
+                                .carton_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
+                            '<tr><td>Pcs Wgt Std.</td><td>' + (block.pcs_weight_std ? parseFloat(block
+                                .pcs_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
+                            '<tr><td colspan="2" style="padding-top:2px;">' +
+                            '<span style="font-size:8px;">L = <strong>' + block.line +
+                            '</strong> &nbsp;&nbsp; M = <strong>' + block.pcs_default +
+                            '</strong> &nbsp;&nbsp; Pcs Less Ctn = -</span>' +
+                            '</td></tr>' +
+                            '</table>' +
+                            '</div>'
+
+                            // Kanan
+                            +
+                            '<div class="block-info-right">' +
+                            '<table class="info-tbl">' +
+                            '<tr><td>GAC date</td><td>' + block.gac_date + '</td></tr>' +
+                            '<tr><td>Destination</td><td>' + block.destination + '</td></tr>' +
+                            '<tr><td>Inspector</td><td>' + block.inspector + '</td></tr>' +
+                            '</table>'
+                            // Tanda tangan
+                            +
+                            '<table class="sign-tbl">' +
+                            '<tr><th>OPT QC TIMBANGAN</th><th>SPV QC</th><th>CHIEF FINISH GOOD</th></tr>' +
+                            '<tr>' +
+                            '<td style="height:20px;vertical-align:bottom;">' + (block.opt_qc !== '-' ? block
+                                .opt_qc : '') + '</td>' +
+                            '<td style="height:20px;vertical-align:bottom;">' + (block.spv_qc !== '-' ? block
+                                .spv_qc : '') + '</td>' +
+                            '<td style="height:20px;vertical-align:bottom;">' + (block.chief !== '-' ? block.chief :
+                                '') + '</td>' +
+                            '</tr>' +
+                            '</table>' +
+                            '</div>'
+
+                            +
+                            '</div>' // end block-info
+
+                            // Carton table
+                            +
+                            '<table class="carton-tbl">' +
+                            '<thead>' +
+                            '<tr>' +
+                            '<th rowspan="2">Date</th>' +
+                            '<th colspan="' + COLS + '">Ctn. No &amp; Weight (Kg)</th>' +
+                            '<th rowspan="2">Total (kg)</th>' +
+                            '<th rowspan="2">Remark</th>' +
+                            '</tr>' +
+                            '<tr>' + thCols + '</tr>' +
+                            '</thead>' +
+                            '<tbody>' + tbodyRows + '</tbody>' +
+                            '</table>'
+
+                            +
+                            '</div>'; // end block-wrap
+                    });
+
+                    const dateLabel = start + (start !== end ? ' s/d ' + end : '');
+                    const printed = new Date().toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+
+                    // CSS: 4 blok per halaman F4 landscape, mirip form fisik
+                    const css = '<style>' +
+                        '@page{size:210mm 330mm;margin:4mm 6mm;}' /* F4 portrait */ +
+                        '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                        'body{font-family:"Segoe UI",Arial,sans-serif;font-size:7px;color:#000;margin:0;padding:0;}' +
+                        '.print-header{text-align:center;border-bottom:1.5px solid #333;margin-bottom:3px;padding-bottom:2px;}' +
+                        '.print-header h4{margin:0;font-size:9px;font-weight:700;}' +
+                        '.print-header p{margin:1px 0 0;font-size:7px;color:#555;}'
+                        /* 1 kolom 4 baris */
+                        +
+                        '.page-grid{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(4,1fr);gap:1mm;height:calc(310mm - 22mm);}' +
+                        '.block-wrap{border:1px solid #999;border-radius:2px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}' +
+                        '.block-title{background:#435ebe!important;color:#fff!important;text-align:center;font-size:7px;font-weight:700;padding:1px 3px;}' +
+                        '.block-info{display:flex;border-bottom:1px solid #ccc;}' +
+                        '.block-info-left{width:55%;padding:1px 3px;border-right:1px solid #ccc;}' +
+                        '.block-info-right{width:45%;padding:1px 3px;display:flex;flex-direction:column;}' +
+                        '.info-tbl{width:100%;border-collapse:collapse;font-size:6.5px;}' +
+                        '.info-tbl td{padding:0 2px;border:none;line-height:1.3;}' +
+                        '.info-tbl td:first-child{color:#555;width:38%;font-weight:600;white-space:nowrap;}' +
+                        '.info-tbl td:last-child{font-weight:600;}' +
+                        '.sign-tbl{width:100%;border-collapse:collapse;font-size:6px;text-align:center;margin-top:2px;}' +
+                        '.sign-tbl th{background:#f0f0f0!important;border:1px solid #999!important;padding:1px;font-weight:700;font-size:6px;}' +
+                        '.sign-tbl td{border:1px solid #999!important;height:28px!important;vertical-align:bottom!important;padding:2px!important;font-weight:700;font-size:6.5px;line-height:normal!important;}' +
+                        '.carton-tbl{width:100%;border-collapse:collapse;font-size:6px;flex:1;}' +
+                        '.carton-tbl th{background:#435ebe!important;color:#fff!important;border:1px solid #000!important;padding:1px 0!important;text-align:center;font-weight:700;line-height:1.1;}' +
+                        '.carton-tbl td{border:1px solid #ccc!important;padding:0px 0!important;text-align:center;vertical-align:middle;line-height:0;font-size:7px;}' +
+                        '.carton-tbl tbody tr{height:auto!important;}' +
+                        '</style>';
+
+                    const hariTanggal = start ?
+                        new Date(start).toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                        }) :
+                        '-';
+
+                    const html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
+                        '<title>Carton Weight Report NON-NIKE — Hal. ' + pageNum + '</title>' +
+                        css +
+
+                        /* Tambah CSS header form (sama dengan Nike) */
+                        '<style>' +
+                        '.form-header{display:flex;align-items:stretch;border:1.5px solid #333;margin-bottom:5px;}' +
+                        '.logo-area{width:110px;min-width:110px;border-right:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;gap:3px;}' +
+                        '.logo-box{width:42px;height:42px;border:2.5px solid #1a3a7a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#1a3a7a;}' +
+                        '.company-name{font-size:6.5px;font-weight:700;text-align:center;color:#1a3a7a;line-height:1.4;}' +
+                        '.title-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-right:1px solid #333;}' +
+                        '.title-area h4{margin:0;font-size:13px;font-weight:700;text-align:center;text-transform:uppercase;}' +
+                        '.title-area p{margin:2px 0 0;font-size:10px;text-align:center;}' +
+                        '.doc-area{width:175px;min-width:175px;border-right:1px solid #333;}' +
+                        '.doc-area table{width:100%;border-collapse:collapse;height:100%;}' +
+                        '.doc-area td{border:1px solid #ddd;padding:2px 4px;vertical-align:middle;font-size:7px;}' +
+                        '.doc-area td:first-child{font-weight:600;white-space:nowrap;background:#f5f5f5;width:52%;}' +
+                        '.sign-area-3{width:230px;min-width:230px;display:flex;align-items:stretch;}' +
+                        '.sign-tbl-3{width:100%;height:100%;border-collapse:collapse;font-size:7px;text-align:center;}' +
+                        '.sign-tbl-3 th{background:#f0f0f0!important;border:1px solid #999!important;padding:2px 3px;font-weight:700;font-size:6.5px;vertical-align:middle;color:#000!important;}' +
+                        '.sign-tbl-3 td.sign-td{border:1px solid #999;height:55px;vertical-align:bottom;padding:2px 4px;font-weight:700;font-size:7px;min-width:72px;}' +
+                        '.hari-tanggal{font-size:9px;margin-bottom:4px;font-weight:600;padding:1px 0;}' +
+                        '</style>' +
+
+                        '</head><body>' +
+
+                        /* ══ HEADER FORM ══ */
+                        '<div class="form-header">' +
+
+                        /* Logo */
+                        '<div class="logo-area">' +
+                        (typeof LOGO_BASE64 !== "undefined" && LOGO_BASE64 ?
+                            '<img src="' + LOGO_BASE64 +
+                            '" style="width:60px;height:auto;max-height:50px;object-fit:contain;" />' :
+                            '<div class="logo-box">M</div>'
+                        ) +
+                        // '<div class="company-name">PT. KANINDO<br>MAKMUR JAYA</div>' +
+                        '</div>' +
+
+                        /* Judul */
+                        '<div class="title-area">' +
+                        '<h4>PT. Kanindo Makmur Jaya</h4>' +
+                        '<p><strong>CARTON WEIGHT REPORT</strong></p>' +
+                        '<p style="font-size:9px;color:#555;">Non-Nike &nbsp;·&nbsp; Lembar ' + pageNum + '</p>' +
+                        '</div>' +
+
+                        /* Info Dokumen (kosong / template) */
+                        '<div class="doc-area">' +
+                        '<table>' +
+                        '<tr><td>No. Dokumen</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Tgl. Terbit</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Revisi</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Tgl. Efektif</td><td>&nbsp;</td></tr>' +
+                        '<tr><td>Departemen</td><td>&nbsp;</td></tr>' +
+                        '</table>' +
+                        '</div>' +
+
+                        // /* Tanda Tangan 3 Kolom (kosong di header, nama ada di tiap block) */
+                        // '<div class="sign-area-3">' +
+                        // '<table class="sign-tbl-3">' +
+                        // '<thead>' +
+                        // '<tr>' +
+                        // '<th>OPT QC TIMBANGAN</th>' +
+                        // '<th>SPV QC</th>' +
+                        // '<th>CHIEF FINISH GOOD</th>' +
+                        // '</tr>' +
+                        // '</thead>' +
+                        // '<tbody>' +
+                        // '<tr>' +
+                        // '<td class="sign-td"></td>' +
+                        // '<td class="sign-td"></td>' +
+                        // '<td class="sign-td"></td>' +
+                        // '</tr>' +
+                        // '</tbody>' +
+                        // '</table>' +
+                        // '</div>' +
+
+                        '</div>' + /* end form-header */
+
+                        // /* ══ HARI & TANGGAL ══ */
+                        // '<div class="hari-tanggal">' +
+                        // 'HARI &amp; TANGGAL : ' + hariTanggal +
+                        // ' &nbsp;&nbsp;|&nbsp;&nbsp; Periode: ' + dateLabel +
+                        // ' &nbsp;&nbsp;|&nbsp;&nbsp; Dicetak: ' + printed +
+                        // '</div>' +
+
+                        /* ══ GRID BLOK ══ */
+                        '<div class="page-grid">' +
+                        blocksHTML +
+                        '</div>' +
+
+                        '<script>window.onload=()=>{window.print();}<\/script>' +
+                        '</body></html>';
+
+                    const win = window.open('', '_blank');
+                    win.document.write(html);
+                    win.document.close();
+                }
+
+                // ── Print Laporan (button paling atas) ───────────────────────
+                window.printFormalReport = function() {
+                    const activeTab = document.querySelector('.formal-tab.active')?.dataset.tab || 'nike';
+                    const start = document.getElementById('formal-date-start')?.value || '';
+                    const end = document.getElementById('formal-date-end')?.value || '';
+                    const label = activeTab.toUpperCase();
+                    const content = document.getElementById(activeTab + '-report-content')?.innerHTML || '';
+                    const printed = new Date().toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    const dateLabel = start + (start !== end ? ' s/d ' + end : '');
+
+                    // Ambil semua CSS dari halaman yang sudah ada
+                    let pageCSS = '';
+                    Array.from(document.styleSheets).forEach(sheet => {
+                        try {
+                            Array.from(sheet.cssRules || []).forEach(rule => {
+                                pageCSS += rule.cssText + '\n';
+                            });
+                        } catch (e) {}
+                    });
+
+                    const extraCSS = '<style>' +
+                        pageCSS +
+                        '@page{size:A4 landscape;margin:10mm;}' +
+                        'body{font-family:"Segoe UI",Arial,sans-serif;font-size:9px;color:#000;margin:0;}' +
+                        '.btn-print-formal,.rpt-pagination,.nn-page-btn,.nike-page-btn{display:none!important;}' +
+                        '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                        '</style>';
+
+                    const html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
+                        '<title>Report ' + label + ' — ' + dateLabel + '</title>' +
+                        extraCSS +
+                        '</head><body>' +
+                        '<div class="print-header" style="text-align:center;border-bottom:2px solid #000;margin-bottom:15px;padding-bottom:5px;">' +
+                        '<h3 style="margin:0;">PT. KANINDO MAKMUR JAYA</h3>' +
+                        '<p style="margin:0;">CARTON WEIGHT REPORT — ' + label + ' (' + dateLabel + ')</p>' +
+                        '<p style="margin:0;font-size:9px;color:#555;">Dicetak: ' + printed + '</p>' +
+                        '</div>' +
+                        content +
+                        '<script>window.onload=()=>{window.print();window.close();}<\/script>' +
+                        '</body></html>';
+
+                    const win = window.open('', '_blank');
+                    win.document.write(html);
+                    win.document.close();
+                };
+
+                // ─── UTILS ───────────────────────────────────────────────────
+                function chunkArray(arr, size) {
+                    const chunks = [];
+                    for (let i = 0; i < arr.length; i += size) {
+                        chunks.push(arr.slice(i, i + size));
+                    }
+                    return chunks;
+                }
+
+            })();
         </script>
     @endpush
 
