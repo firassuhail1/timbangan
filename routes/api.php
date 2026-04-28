@@ -8,9 +8,7 @@ use App\Http\Controllers\Ordersheet\PackageController;
 use App\Http\Controllers\Update\Admin\DeviceController;
 use App\Http\Controllers\Update\User\OtaUpdateController;
 use App\Http\Controllers\Update\User\WifiController;
-// use App\Models\Update\Device;
 use Illuminate\Http\Request;
-// use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {

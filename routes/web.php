@@ -18,6 +18,11 @@ use App\Http\Controllers\Update\User\SettingController;
 use App\Http\Controllers\Update\User\SwitchController;
 use App\Http\Controllers\Update\User\UpdateController;
 use App\Http\Controllers\Update\User\WifiController;
+use App\Models\Update\Device;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index']);
@@ -139,4 +144,31 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
 
     // User OTA trigger
     Route::post('/firmware/ota', [OtaUpdateController::class, 'ota'])->name('firmware.ota');
+
+
+    Route::post('/weight-cache', function (Request $request) {
+        $device = Device::where('user_id', Auth::id())
+            ->where('status', 'in_use')
+            ->first();
+
+        if (!$device) return response()->json(['success' => false], 403);
+
+        $berat     = (float) $request->input('berat', 0);
+        $currentId = $request->input('order_id');
+
+        Cache::put("timbangan_live_{$device->esp_id}", $berat, now()->addMinutes(7));
+
+        if ($currentId) {
+            Cache::put(
+                "weight_preview_{$device->esp_id}_{$currentId}",
+                $berat,
+                now()->addSeconds(30)
+            );
+        }
+
+        $berat = Cache::get("weight_preview_{$device->esp_id}_{$currentId}", 0);
+        Log::info('berat : ' . $berat);
+
+        return response()->json(['success' => true]);
+    });
 });

@@ -554,11 +554,28 @@ function startListening(espId) {
     window._currentEspId = espId;
 
     window.Echo.channel(`timbangan.${espId}`)
-        .listen('.berat.updated', (data) => {
+        .listen('.client-berat.updated', (data) => {
             console.log("[WS] Data Berat Masuk:", data); // Tambahkan ini buat debug
             
+            const berat = parseFloat(data.berat) || 0;
+
+            // Tulis cache via server
+                fetch('/user/weight-cache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        berat:    berat,
+                        order_id: currentId  // variabel yang sudah ada
+                    })
+                });
+
             if (typeof updateBeratUI === 'function') {
                 updateBeratUI(data.berat);
+
+                
             } else {
                 // Jika fungsi tidak ketemu, coba update manual ke elemen id
                 const el = document.getElementById('displayBerat');

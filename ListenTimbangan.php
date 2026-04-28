@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Events\BeratUpdated;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use App\Events\BeratUpdated;
+use Illuminate\Support\Facades\Log;
 use Ratchet\Client\Connector;
 use Ratchet\Client\WebSocket;
 use React\EventLoop\Loop;
@@ -41,8 +42,8 @@ class ListenTimbangan extends Command
                     ]));
                     $this->info('[Worker] Subscribe: timbangan-global');
 
-                    $conn->on('message', function ($msg) {
-                        $this->handleMessage((string) $msg);
+                    $conn->on('message', function ($msg) use ($conn) {
+                        $this->handleMessage((string) $msg, $conn);
                     });
 
                     $conn->on('close', function ($code, $reason) use (&$connect, $loop) {
@@ -61,8 +62,9 @@ class ListenTimbangan extends Command
         $loop->run();
     }
 
-    private function handleMessage(string $raw): void
+    private function handleMessage(string $raw, WebSocket $conn): void
     {
+        Log::info('kesinief');
         $decoded = json_decode($raw, true);
         if (!$decoded) return;
 
@@ -87,7 +89,6 @@ class ListenTimbangan extends Command
 
             $espId = $data['esp_id'] ?? null;
             $berat = floatval($data['berat'] ?? 0);
-
             if (!$espId) return;
 
             $this->info(sprintf(
@@ -97,9 +98,7 @@ class ListenTimbangan extends Command
                 ($data['is_stable'] ?? false) ? 'ya' : 'tidak'
             ));
 
-            // Update Cache
-            Cache::put("timbangan_live_{$espId}", $berat, now()->addMinutes(7));
-
+            // 1. Update cache — langsung, tanpa HTTP
             $currentId = Cache::get("current_id_{$espId}");
             if ($currentId) {
                 Cache::put(
@@ -109,9 +108,17 @@ class ListenTimbangan extends Command
                 );
             }
 
-            // Broadcast ke browser
-            broadcast(new BeratUpdated($espId, $berat));
-            $this->info('[Worker] Broadcast ke browser ✓');
+            // 2. Forward ke browser — via WebSocket, ZERO cURL
+            $conn->send(json_encode([
+                'event'   => 'client-berat.updated',
+                'channel' => "timbangan.{$espId}",
+                'data'    => json_encode([
+                    'espId' => $espId,
+                    'berat' => $berat,
+                ]),
+            ]));
+
+            $this->info('[Worker] Cache + forward ✓');
         }
 
         // Log heartbeat
