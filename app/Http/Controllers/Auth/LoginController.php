@@ -66,17 +66,128 @@ class LoginController extends Controller
         ));
     }
 
+    // public function store(Request $request)
+    // {
+    //     Log::info('Proses Login Dimulai', $request->only('username', 'esp_id'));
+
+    //     // =========================
+    //     // 1. VALIDASI
+    //     // =========================
+    //     $request->validate([
+    //         'username' => 'required|string',
+    //         'password' => 'required|string',
+    //         'esp_id'   => 'required|string|exists:devices,esp_id',
+    //     ]);
+
+    //     // =========================
+    //     // 2. AUTH USER
+    //     // =========================
+    //     if (!Auth::attempt(
+    //         $request->only('username', 'password'),
+    //         $request->boolean('remember')
+    //     )) {
+    //         return back()->withErrors([
+    //             'password' => 'Username atau password salah!',
+    //         ])->withInput();
+    //     }
+
+    //     $user = Auth::user();
+
+    //     // =========================
+    //     // 3. KHUSUS ADMIN
+    //     // =========================
+    //     if ($user->role === 'admin') {
+    //         $request->session()->regenerate();
+    //         return redirect()->route('admin.view');
+    //     }
+
+    //     // =========================
+    //     // 4. PENCARIAN & RESET DEVICE
+    //     // =========================
+
+    //     // Cari device berdasarkan esp_id yang dipilih di form
+    //     $device = Device::where('esp_id', $request->esp_id)->first();
+
+    //     if ($device) {
+    //         // Cek apakah device sedang "nyangkut" di user lain tapi sudah tidak aktif > 5 menit
+    //         if (
+    //             $device->status === 'in_use' &&
+    //             $device->last_seen_at &&
+    //             $device->last_seen_at->lt(now()->subMinutes(5))
+    //         ) {
+    //             Log::info("Resetting device {$device->esp_id} karena timeout 5 menit.");
+    //             $device->update([
+    //                 'user_id' => null,
+    //                 'status'  => 'online',
+    //             ]);
+    //             $device->refresh();
+    //         }
+
+    //         // Cek validasi kepemilikan setelah potensi reset di atas
+    //         if ($device->user_id !== null && $device->user_id !== $user->id) {
+    //             Auth::logout();
+    //             return back()->withErrors([
+    //                 'esp_id' => 'Timbangan ini sedang digunakan oleh user lain.',
+    //             ])->withInput();
+    //         }
+    //     } else {
+    //         Auth::logout();
+    //         return back()->withErrors([
+    //             'esp_id' => 'Timbangan tidak ditemukan di database.',
+    //         ])->withInput();
+    //     }
+
+    //     // =========================
+    //     // 5. KUNCI DEVICE UNTUK USER INI
+    //     // =========================
+    //     $device->update([
+    //         'user_id'              => $user->id,
+    //         'status'               => 'in_use',
+    //         'api_key'              => bin2hex(random_bytes(32)),
+    //         'api_key_generated_at' => now(),
+    //         'last_online_at'       => now(),
+    //         'last_seen_at'         => now(),
+    //     ]);
+
+    //     // =========================
+    //     // 6. SETUP SESSION
+    //     // =========================
+    //     session([
+    //         'selected_device' => $device->id,
+    //         'selected_esp_id' => $device->esp_id,
+    //         'device_api_key'  => $device->api_key,
+    //     ]);
+
+    //     $request->session()->regenerate();
+    //     Log::info("User {$user->username} berhasil login menggunakan {$device->esp_id}");
+
+    //     // =========================
+    //     // 7. REDIRECT BERDASARKAN TIPE TIMBANGAN
+    //     // =========================
+    //     if ($user->role === 'user') {
+    //         // Cek apakah Timbangan Order (O) atau Package (P)
+    //         if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $m)) {
+    //             return $m[1] === 'O'
+    //                 ? redirect()->route('order.view')
+    //                 : redirect()->route('package.view');
+    //         }
+    //     }
+
+    //     // Fallback jika role/device tidak dikenali
+    //     Auth::logout();
+    //     return redirect()->route('login')->with('error', 'Role atau tipe device tidak dikenali.');
+    // }
+
     public function store(Request $request)
     {
         Log::info('Proses Login Dimulai', $request->only('username', 'esp_id'));
 
         // =========================
-        // 1. VALIDASI
+        // 1. VALIDASI DASAR (tanpa esp_id dulu)
         // =========================
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
-            'esp_id'   => 'required|string|exists:devices,esp_id',
         ]);
 
         // =========================
@@ -94,7 +205,7 @@ class LoginController extends Controller
         $user = Auth::user();
 
         // =========================
-        // 3. KHUSUS ADMIN
+        // 3. KHUSUS ADMIN (tidak butuh esp_id)
         // =========================
         if ($user->role === 'admin') {
             $request->session()->regenerate();
@@ -102,14 +213,18 @@ class LoginController extends Controller
         }
 
         // =========================
-        // 4. PENCARIAN & RESET DEVICE
+        // 4. VALIDASI esp_id HANYA UNTUK NON-ADMIN
         // =========================
+        $request->validate([
+            'esp_id' => 'required|string|exists:devices,esp_id',
+        ]);
 
-        // Cari device berdasarkan esp_id yang dipilih di form
+        // =========================
+        // 5. PENCARIAN & RESET DEVICE
+        // =========================
         $device = Device::where('esp_id', $request->esp_id)->first();
 
         if ($device) {
-            // Cek apakah device sedang "nyangkut" di user lain tapi sudah tidak aktif > 5 menit
             if (
                 $device->status === 'in_use' &&
                 $device->last_seen_at &&
@@ -123,7 +238,6 @@ class LoginController extends Controller
                 $device->refresh();
             }
 
-            // Cek validasi kepemilikan setelah potensi reset di atas
             if ($device->user_id !== null && $device->user_id !== $user->id) {
                 Auth::logout();
                 return back()->withErrors([
@@ -138,7 +252,7 @@ class LoginController extends Controller
         }
 
         // =========================
-        // 5. KUNCI DEVICE UNTUK USER INI
+        // 6. KUNCI DEVICE UNTUK USER INI
         // =========================
         $device->update([
             'user_id'              => $user->id,
@@ -150,7 +264,7 @@ class LoginController extends Controller
         ]);
 
         // =========================
-        // 6. SETUP SESSION
+        // 7. SETUP SESSION
         // =========================
         session([
             'selected_device' => $device->id,
@@ -162,10 +276,9 @@ class LoginController extends Controller
         Log::info("User {$user->username} berhasil login menggunakan {$device->esp_id}");
 
         // =========================
-        // 7. REDIRECT BERDASARKAN TIPE TIMBANGAN
+        // 8. REDIRECT BERDASARKAN TIPE TIMBANGAN
         // =========================
         if ($user->role === 'user') {
-            // Cek apakah Timbangan Order (O) atau Package (P)
             if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $m)) {
                 return $m[1] === 'O'
                     ? redirect()->route('order.view')
@@ -173,7 +286,6 @@ class LoginController extends Controller
             }
         }
 
-        // Fallback jika role/device tidak dikenali
         Auth::logout();
         return redirect()->route('login')->with('error', 'Role atau tipe device tidak dikenali.');
     }

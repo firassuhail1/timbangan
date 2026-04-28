@@ -463,30 +463,22 @@ function fillModalFields(item) {
         info_style: 'ProductName',
         info_color_description: 'ColorDescription',
         info_qty_order: 'Qty',
-        info_pcs: 'Pcs',
-        // info_ctn: 'Ctn',
-        info_less_ctn: 'Less_ctn',
-        info_pcs_less_ctn: 'Pcs_less_ctn',
-        info_carton_weight: 'Carton_weight_std',
-        info_pcs_weight: 'Pcs_weight_std',
         info_GAC: 'GAC',
-        info_FinalDestination: 'FinalDestination'
+        info_FinalDestination: 'FinalDestination',
     }
 
+    // Field yang SELALU di-overwrite dari API (identitas order)
     Object.keys(fields).forEach((id) => {
         const el = document.getElementById(id)
         if (!el) return
-
-        const key = fields[id]
-        let value = item[key] ?? ''
-
+        let value = item[fields[id]] ?? ''
         if (id === 'info_GAC' && value) {
             value = formatDateForInput(value)
         }
         el.value = value
     })
 
-    // ← TAMBAHKAN DI SINI, setelah forEach tutup
+    // Style gabungan ProductCode + ProductName
     const productCode = item.ProductCode ?? ''
     const productName = item.ProductName ?? ''
     const styleEl = document.getElementById('info_style')
@@ -496,11 +488,34 @@ function fillModalFields(item) {
             : productCode || productName || ''
     }
 
-    // Rasio & lost weight
-    document.getElementById('rasio_batas_beban_min').value =
-        item.rasio_min ?? ''
-    document.getElementById('rasio_batas_beban_max').value =
-        item.rasio_max ?? ''
+    // ✅ Field manual — HANYA isi jika masih kosong (tidak timpa input user)
+    const manualFields = {
+        info_line:         '',
+        info_pcs:          '',
+        info_carton_weight:'',
+        info_pcs_weight:   '',
+        info_ctn:          '1',
+    }
+
+    Object.keys(manualFields).forEach((id) => {
+        const el = document.getElementById(id)
+        if (!el) return
+        if (!el.value || el.value.trim() === '') {
+            el.value = manualFields[id] // isi default jika kosong
+        }
+        // Jika sudah ada nilai → biarkan
+    })
+
+    // Rasio tetap dari item API jika ada, kalau tidak jangan timpa
+    const minEl = document.getElementById('rasio_batas_beban_min')
+    const maxEl = document.getElementById('rasio_batas_beban_max')
+    if (minEl && (!minEl.value || minEl.value.trim() === '')) {
+        minEl.value = item.rasio_min ?? ''
+    }
+    if (maxEl && (!maxEl.value || maxEl.value.trim() === '')) {
+        maxEl.value = item.rasio_max ?? ''
+    }
+
     document.getElementById('lost_weight').value = ''
 }
 

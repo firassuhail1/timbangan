@@ -44,10 +44,12 @@ class DeviceController extends Controller
 
     public function heartbeat(Request $request)
     {
+        Log::info('masuk');
         $request->merge([
             'device_type' => $request->device_type ?: 'timbangan'
         ]);
-
+        
+        Log::info('masuk ke validate');
         $request->validate([
             'esp_id'      => 'required|string',
             'mac_esp'     => 'required|string',
@@ -70,6 +72,7 @@ class DeviceController extends Controller
         );
 
         // Update informasi umum
+        $device->mac_esp = $request->mac_esp;  // ← selalu update mac_esp
         $device->ip_address     = $request->ip();
         $device->last_seen_at   = now();
         $device->last_online_at = now();
@@ -104,11 +107,12 @@ class DeviceController extends Controller
 
         $device->save();
 
-        return response()->json([
-            'status'  => 'ok',
-            'device'  => $device,
-            'message' => 'Device heartbeat updated.'
-        ]);
+        return response()->json(['status' => 'ok']);
+        // return response()->json([
+        //     'status'  => 'ok',
+        //     'device'  => $device,
+        //     'message' => 'Device heartbeat updated.'
+        // ]);
     }
 
     public function handleOtaStatus($espId, $payload)
