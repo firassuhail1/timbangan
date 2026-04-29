@@ -94,6 +94,10 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
     Route::get('/order/formal-report', [OrderSheetController::class, 'formalReport'])
         ->name('order.formal-report');
 
+    Route::get('/order/my-report', [OrderSheetController::class, 'myReport'])
+        ->name('order.my-report');
+
+
     // tambah data ordersheet
     Route::get('/ordersheet-view/create', [OrderSheetController::class, 'create'])->name('ordersheet.create');
     Route::post('/ordersheet/store', [OrderSheetController::class, 'store'])->name('ordersheet.store');

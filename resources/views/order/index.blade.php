@@ -164,16 +164,88 @@
                         <h5 class="fw-bold text-center mb-3">Carton Weight Report - <span>Laporan Timbangan
                                 Karton</span>
                         </h5>
-                        <div class="d-flex justify-content-center">
+                        {{-- <div class="d-flex justify-content-center">
                             <a href="{{ route('order.print') }}" target="_blank" class="btn btn-primary">
-                                <i class="fa-solid fa-print"></i> Print Laporan
+                                <i class="fa-solid fa-print"></i> Print Laporann
                             </a>
-                        </div>
+                        </div> --}}
                     </div>
                     <hr>
 
+                    {{-- MY REPORT (per user login) --}}
+                    <div class="formal-report-wrap" id="my-report-wrap" style="margin-bottom: 24px;">
+
+                        <div class="formal-report-header">
+                            <div>
+                                <div class="formal-report-title">
+                                    👤 Laporan Saya
+                                    <small>Hanya timbangan yang Anda kerjakan sendiri</small>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="btn-print-formal" onclick="printMyReport()">
+                                    <i class="bi bi-printer"></i> Print Laporan Saya
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="formal-filter-bar">
+                            <div>
+                                <label>Tanggal Mulai</label>
+                                <input type="date" id="my-date-start" value="{{ now()->format('Y-m-d') }}">
+                            </div>
+                            <div>
+                                <label>Tanggal Akhir</label>
+                                <input type="date" id="my-date-end" value="{{ now()->format('Y-m-d') }}">
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:flex-end;">
+                                <button class="btn-filter" id="btn-my-filter">
+                                    <i class="fas fa-search" style="font-size:10px;"></i> Tampilkan
+                                </button>
+                                <button class="btn-reset-filter" id="btn-my-reset">Reset</button>
+                            </div>
+                            <div style="margin-left:auto; font-size:11px; color:var(--muted); align-self:flex-end;">
+                                Menampilkan: <strong id="my-range-label">Hari ini</strong>
+                            </div>
+                        </div>
+
+                        <div class="formal-tabs">
+                            <div class="formal-tab active" data-my-tab="nike">
+                                <i class="fas fa-check-circle" style="font-size:11px;"></i>
+                                NIKE
+                                <span class="tab-badge" id="my-nike-count-badge">0</span>
+                            </div>
+                            <div class="formal-tab" data-my-tab="non-nike">
+                                <i class="fas fa-layer-group" style="font-size:11px;"></i>
+                                NON-NIKE
+                                <span class="tab-badge" id="my-non-nike-count-badge">0</span>
+                            </div>
+                        </div>
+
+                        <div class="formal-panel active" id="my-panel-nike">
+                            <div id="my-nike-report-content">
+                                <div class="formal-empty">
+                                    <i class="fas fa-search"
+                                        style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
+                                    Klik "Tampilkan" untuk memuat laporan Anda
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="formal-panel" id="my-panel-non-nike">
+                            <div id="my-non-nike-report-content">
+                                <div class="formal-empty">
+                                    <i class="fas fa-search"
+                                        style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
+                                    Klik "Tampilkan" untuk memuat laporan Anda
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- END MY REPORT --}}
+
                     {{-- REPORT FORMAL ASLI --}}
-                    <div class="formal-report-wrap">
+                    <div class="formal-report-wrap" id="formal-report-wrap">
 
                         {{-- HEADER --}}
                         <div class="formal-report-header">
@@ -183,11 +255,11 @@
                                     <small>Laporan Timbangan Karton — PT. Kanindo Makmur Jaya</small>
                                 </div>
                             </div>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            {{-- <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn-print-formal" onclick="printFormalReport()">
                                     <i class="bi bi-printer"></i> Print Laporan
                                 </button>
-                            </div>
+                            </div> --}}
                         </div>
 
                         {{-- FILTER BAR --}}
@@ -877,12 +949,13 @@
 
                 // ─── INITIALIZATION ──────────────────────────────────────────
                 const init = () => {
-                    document.querySelectorAll('.formal-tab').forEach(tab => {
+                    // ✅ Scope ke dalam #formal-report-wrap saja
+                    document.querySelectorAll('#formal-report-wrap .formal-tab').forEach(tab => {
                         tab.addEventListener('click', function() {
-                            document.querySelectorAll('.formal-tab').forEach(t => t.classList.remove(
-                                'active'));
-                            document.querySelectorAll('.formal-panel').forEach(p => p.classList.remove(
-                                'active'));
+                            document.querySelectorAll('#formal-report-wrap .formal-tab').forEach(t => t
+                                .classList.remove('active'));
+                            document.querySelectorAll('#formal-report-wrap .formal-panel').forEach(p =>
+                                p.classList.remove('active'));
                             this.classList.add('active');
                             const targetPanel = document.getElementById('panel-' + this.dataset.tab);
                             if (targetPanel) targetPanel.classList.add('active');
@@ -892,12 +965,9 @@
                     document.getElementById('btn-formal-filter')?.addEventListener('click', loadFormalReport);
                     document.getElementById('btn-formal-reset')?.addEventListener('click', () => {
                         const today = new Date().toISOString().split('T')[0];
-                        const startInput = document.getElementById('formal-date-start');
-                        const endInput = document.getElementById('formal-date-end');
-                        const label = document.getElementById('formal-range-label');
-                        if (startInput) startInput.value = today;
-                        if (endInput) endInput.value = today;
-                        if (label) label.textContent = 'Hari ini';
+                        document.getElementById('formal-date-start').value = today;
+                        document.getElementById('formal-date-end').value = today;
+                        document.getElementById('formal-range-label').textContent = 'Hari ini';
                         loadFormalReport();
                     });
 
@@ -1488,8 +1558,14 @@
                             +
                             '<div class="nn-info-left">' +
                             '<table class="nn-info-table">' +
-                            '<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">CARTON WEIGHT REPORT ' +
-                            continuedBadge + '</th></tr>' +
+                            '<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">' +
+                            'CARTON WEIGHT REPORT ' + continuedBadge +
+                            '<button class="btn-print-block" onclick="printSingleBlock(this)" ' +
+                            'style="float:right;background:#fff;color:#435ebe;border:none;border-radius:3px;padding:1px 6px;font-size:10px;cursor:pointer;font-weight:700;" ' +
+                            'data-block=\'' + JSON.stringify(block).replace(/'/g, "&#39;") + '\'>' +
+                            '<i class="bi bi-printer"></i> Print Block' +
+                            '</button>' +
+                            '</th></tr>' +
                             '<tr><th>BUYER</th><td><strong>' + block.buyer + '</strong></td></tr>' +
                             '<tr><th>Order No. (KJ)</th><td><strong>' + block.kj + '</strong></td></tr>' +
                             '<tr><th>PO#</th><td>' + block.po + '</td></tr>' +
@@ -1904,7 +1980,8 @@
 
                 // ── Print Laporan (button paling atas) ───────────────────────
                 window.printFormalReport = function() {
-                    const activeTab = document.querySelector('.formal-tab.active')?.dataset.tab || 'nike';
+                    const activeTab = document.querySelector('#formal-report-wrap .formal-tab.active')?.dataset.tab ||
+                        'nike';
                     const start = document.getElementById('formal-date-start')?.value || '';
                     const end = document.getElementById('formal-date-end')?.value || '';
                     const label = activeTab.toUpperCase();
@@ -1946,6 +2023,362 @@
                         content +
                         '<script>window.onload=()=>{window.print();window.close();}<\/script>' +
                         '</body></html>';
+
+                    const win = window.open('', '_blank');
+                    win.document.write(html);
+                    win.document.close();
+                };
+
+                // UNTUK MY REPORT PER USER
+                // ─── MY REPORT INIT ──────────────────────────────────────────
+                const initMyReport = () => {
+                    // Tab switching khusus my-report
+                    document.querySelectorAll('[data-my-tab]').forEach(tab => {
+                        tab.addEventListener('click', function() {
+                            document.querySelectorAll('[data-my-tab]').forEach(t => t.classList.remove(
+                                'active'));
+                            document.querySelectorAll('#my-report-wrap .formal-panel').forEach(p => p
+                                .classList.remove('active'));
+                            this.classList.add('active');
+                            const targetPanel = document.getElementById('my-panel-' + this.dataset
+                                .myTab);
+                            if (targetPanel) targetPanel.classList.add('active');
+                        });
+                    });
+
+                    document.getElementById('btn-my-filter')?.addEventListener('click', loadMyReport);
+                    document.getElementById('btn-my-reset')?.addEventListener('click', () => {
+                        const today = new Date().toISOString().split('T')[0];
+                        document.getElementById('my-date-start').value = today;
+                        document.getElementById('my-date-end').value = today;
+                        document.getElementById('my-range-label').textContent = 'Hari ini';
+                        loadMyReport();
+                    });
+
+                    loadMyReport();
+                };
+
+                async function loadMyReport() {
+                    const start = document.getElementById('my-date-start')?.value || '';
+                    const end = document.getElementById('my-date-end')?.value || '';
+                    const nikeEl = document.getElementById('my-nike-report-content');
+                    const nonNikeEl = document.getElementById('my-non-nike-report-content');
+                    const label = document.getElementById('my-range-label');
+
+                    if (label) {
+                        const today = new Date().toISOString().split('T')[0];
+                        label.textContent = (start === today && end === today) ? 'Hari ini' : (start + ' s/d ' + end);
+                    }
+                    if (nikeEl) nikeEl.innerHTML = loadingHTML();
+                    if (nonNikeEl) nonNikeEl.innerHTML = loadingHTML();
+
+                    try {
+                        const params = new URLSearchParams();
+                        if (start) params.append('start', start);
+                        if (end) params.append('end', end);
+
+                        const res = await fetch('/user/order/my-report?' + params, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        const json = await res.json();
+                        if (!json.success) throw new Error(json.message || 'Gagal memuat data.');
+
+                        renderMyNike(json.nike || []);
+                        renderMyNonNike(json.non_nike || []);
+                    } catch (err) {
+                        const errHTML = '<div class="formal-empty" style="color:#ef5350;padding:20px;">' +
+                            '<i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>' +
+                            '<b>Error:</b> ' + err.message + '</div>';
+                        if (nikeEl) nikeEl.innerHTML = errHTML;
+                        if (nonNikeEl) nonNikeEl.innerHTML = errHTML;
+                    }
+                }
+
+                // Reuse fungsi renderNike & renderNonNike yang sudah ada,
+                // tapi arahkan ke elemen "my-"
+                function renderMyNike(rows) {
+                    // Sementara tukar target elemennya, lalu panggil ulang logic render
+                    const origNike = document.getElementById('nike-report-content');
+                    const origBadge = document.getElementById('nike-count-badge');
+                    const myNike = document.getElementById('my-nike-report-content');
+                    const myBadge = document.getElementById('my-nike-count-badge');
+
+                    // Swap
+                    myNike.id = 'nike-report-content';
+                    myBadge.id = 'nike-count-badge';
+                    if (origNike) origNike.id = '__orig_nike';
+                    if (origBadge) origBadge.id = '__orig_badge';
+
+                    renderNike(rows); // fungsi yg sudah ada
+
+                    // Swap balik
+                    myNike.id = 'my-nike-report-content';
+                    myBadge.id = 'my-nike-count-badge';
+                    if (origNike) origNike.id = 'nike-report-content';
+                    if (origBadge) origBadge.id = 'nike-count-badge';
+                }
+
+                function renderMyNonNike(orders) {
+                    const origEl = document.getElementById('non-nike-report-content');
+                    const origBadge = document.getElementById('non-nike-count-badge');
+                    const myEl = document.getElementById('my-non-nike-report-content');
+                    const myBadge = document.getElementById('my-non-nike-count-badge');
+
+                    myEl.id = 'non-nike-report-content';
+                    myBadge.id = 'non-nike-count-badge';
+                    if (origEl) origEl.id = '__orig_nn';
+                    if (origBadge) origBadge.id = '__orig_nn_badge';
+
+                    renderNonNike(orders); // fungsi yg sudah ada
+
+                    myEl.id = 'my-non-nike-report-content';
+                    myBadge.id = 'my-non-nike-count-badge';
+                    if (origEl) origEl.id = 'non-nike-report-content';
+                    if (origBadge) origBadge.id = 'non-nike-count-badge';
+                }
+
+                window.printMyReport = function() {
+                    const activeTab = document.querySelector('#my-report-wrap [data-my-tab].active')?.dataset.myTab ||
+                        'nike';
+                    const start = document.getElementById('my-date-start')?.value || '';
+                    const end = document.getElementById('my-date-end')?.value || '';
+                    const label = activeTab.toUpperCase();
+                    const content = document.getElementById('my-' + activeTab.replace('-', '') + '-report-content')
+                        ?.innerHTML ||
+                        document.getElementById('my-' + activeTab + '-report-content')?.innerHTML || '';
+                    const printed = new Date().toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    const dateLabel = start + (start !== end ? ' s/d ' + end : '');
+
+                    let pageCSS = '';
+                    Array.from(document.styleSheets).forEach(sheet => {
+                        try {
+                            Array.from(sheet.cssRules || []).forEach(r => {
+                                pageCSS += r.cssText + '\n';
+                            });
+                        } catch (e) {}
+                    });
+
+                    const html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
+                        '<title>Laporan Saya — ' + label + ' — ' + dateLabel + '</title>' +
+                        '<style>' + pageCSS +
+                        '@page{size:A4 landscape;margin:10mm;}' +
+                        'body{font-family:"Segoe UI",Arial,sans-serif;font-size:9px;color:#000;margin:0;}' +
+                        '.btn-print-formal,.rpt-pagination,.nn-page-btn,.nike-page-btn{display:none!important;}' +
+                        '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                        '</style></head><body>' +
+                        '<div style="text-align:center;border-bottom:2px solid #000;margin-bottom:15px;padding-bottom:5px;">' +
+                        '<h3 style="margin:0;">PT. KANINDO MAKMUR JAYA</h3>' +
+                        '<p style="margin:0;">LAPORAN SAYA — ' + label + ' (' + dateLabel + ')</p>' +
+                        '<p style="margin:0;font-size:9px;color:#555;">Dicetak: ' + printed + '</p>' +
+                        '</div>' + content +
+                        '<script>window.onload=()=>{window.print();window.close();}<\/script>' +
+                        '</body></html>';
+
+                    const win = window.open('', '_blank');
+                    win.document.write(html);
+                    win.document.close();
+                };
+
+                // Panggil initMyReport setelah DOM ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initMyReport);
+                } else {
+                    initMyReport();
+                }
+                // END MY REPORT PER USER
+
+                // ── Print Single Block Non-Nike ──────────────────────────────
+                window.printSingleBlock = function(btn) {
+                    const block = JSON.parse(btn.dataset.block);
+                    const COLS = 10;
+                    const ROWS = 5;
+
+                    const isContinued = block.blockIdx > 0;
+                    const cartons = block.timbangans;
+                    let tbodyRows = '';
+
+                    for (let row = 0; row < ROWS; row++) {
+                        const startIdx = row * COLS;
+                        const rowCartons = cartons.slice(startIdx, startIdx + COLS);
+                        const padded = [...rowCartons, ...Array(COLS - rowCartons.length).fill(null)];
+                        const rowTotal = rowCartons.reduce((s, t) => s + parseFloat(t?.berat || 0), 0);
+                        const hasData = rowCartons.length > 0;
+                        const rowDate = rowCartons[0]?.waktu_timbang?.substring(0, 10) || '-';
+
+                        let tdBoxes = '',
+                            tdWeights = '';
+                        padded.forEach((t, ci) => {
+                            const no = block.startNo + startIdx + ci;
+                            tdBoxes += t ?
+                                '<td>' + (t.no_box || no) + '</td>' :
+                                '<td style="color:#ddd;">-</td>';
+
+                            if (t) {
+                                const bv = parseFloat(t.berat);
+                                const mn = parseFloat(t.rasio_batas_beban_min || 0);
+                                const mx = parseFloat(t.rasio_batas_beban_max || 0);
+                                let style = '';
+                                if (mn > 0 && mx > 0) {
+                                    if (bv < mn) style = 'color:red;font-weight:bold;';
+                                    else if (bv > mx) style = 'color:orange;font-weight:bold;';
+                                }
+                                tdWeights += '<td style="' + style + '">' + bv.toFixed(2) + '</td>';
+                            } else {
+                                tdWeights += '<td style="color:#ddd;">-</td>';
+                            }
+                        });
+
+                        tbodyRows += '<tr>' +
+                            '<td rowspan="2" style="font-size:7px;color:#555;vertical-align:middle;white-space:nowrap;">' +
+                            rowDate + '</td>' +
+                            tdBoxes +
+                            '<td rowspan="2" style="font-weight:700;vertical-align:middle;">' + (hasData ? rowTotal
+                                .toFixed(2) : '-') + '</td>' +
+                            '<td rowspan="2"></td>' +
+                            '</tr>' +
+                            '<tr>' + tdWeights + '</tr>';
+                    }
+
+                    const thCols = Array.from({
+                        length: COLS
+                    }, (_, i) => '<th>#' + (i + 1) + '</th>').join('');
+                    const totalBerat = cartons.reduce((s, t) => s + parseFloat(t?.berat || 0), 0).toFixed(2);
+                    const printed = new Date().toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+
+                    const css = `
+                        @page { size: 210mm 140mm; margin: 4mm 6mm; }
+                        * { box-sizing:border-box; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
+                        body { font-family:"Segoe UI",Arial,sans-serif; font-size:7px; color:#000; margin:0; padding:0; }
+
+                        .form-header { display:flex; align-items:stretch; border:1.5px solid #333; margin-bottom:3px; }
+                        .logo-area { width:90px; min-width:90px; border-right:1px solid #333; display:flex; align-items:center; justify-content:center; padding:3px; }
+                        .title-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3px 6px; border-right:1px solid #333; }
+                        .title-area h4 { margin:0; font-size:10px; font-weight:700; text-align:center; text-transform:uppercase; }
+                        .title-area p  { margin:1px 0 0; font-size:8px; text-align:center; }
+                        .doc-area { width:150px; min-width:150px; }
+                        .doc-area table { width:100%; border-collapse:collapse; height:100%; }
+                        .doc-area td { border:1px solid #ddd; padding:1px 3px; vertical-align:middle; font-size:6.5px; }
+                        .doc-area td:first-child { font-weight:600; white-space:nowrap; background:#f5f5f5; width:52%; }
+
+                        .block-wrap  { border:1px solid #999; border-radius:2px; overflow:hidden; }
+                        .block-title { background:#435ebe!important; color:#fff!important; text-align:center; font-size:8px; font-weight:700; padding:2px 4px; }
+                        .block-info  { display:flex; border-bottom:1px solid #ccc; }
+                        .block-info-left  { width:55%; padding:2px 4px; border-right:1px solid #ccc; }
+                        .block-info-right { width:45%; padding:2px 4px; display:flex; flex-direction:column; }
+
+                        .info-tbl { width:100%; border-collapse:collapse; font-size:7px; }
+                        .info-tbl td { padding:0 2px; border:none; line-height:1.4; }
+                        .info-tbl td:first-child { color:#555; width:38%; font-weight:600; white-space:nowrap; }
+                        .info-tbl td:last-child  { font-weight:600; }
+
+                        .sign-tbl { width:100%; border-collapse:collapse; font-size:7px; text-align:center; margin-top:3px; }
+                        .sign-tbl th { background:#f0f0f0!important; border:1px solid #999!important; padding:1px; font-weight:700; font-size:7px; }
+                        .sign-tbl td { border:1px solid #999!important; height:30px!important; vertical-align:bottom!important; padding:2px!important; font-weight:700; font-size:7px; }
+
+                        .carton-tbl { width:100%; border-collapse:collapse; font-size:7px; }
+                        .carton-tbl th { background:#435ebe!important; color:#fff!important; border:1px solid #000!important; padding:1px 0!important; text-align:center; font-weight:700; }
+                        .carton-tbl td { border:1px solid #ccc!important; padding:1px 0!important; text-align:center; vertical-align:middle; font-size:7px; }
+                    `;
+
+                    const html = `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+                        <title>Block — ${block.kj} / ${block.line}</title>
+                        <style>${css}</style>
+                        </head><body>
+
+                        <!-- HEADER FORM -->
+                        <div class="form-header">
+                            <div class="logo-area">
+                                ${(typeof LOGO_BASE64 !== 'undefined' && LOGO_BASE64)
+                                    ? '<img src="' + LOGO_BASE64 + '" style="width:55px;height:auto;max-height:40px;object-fit:contain;" />'
+                                    : '<div style="font-size:18px;font-weight:900;color:#1a3a7a;">M</div>'}
+                            </div>
+                            <div class="title-area">
+                                <h4>PT. Kanindo Makmur Jaya</h4>
+                                <p><strong>CARTON WEIGHT REPORT</strong></p>
+                                <p style="font-size:7px;color:#555;">Non-Nike &nbsp;·&nbsp; Dicetak: ${printed}</p>
+                            </div>
+                            <div class="doc-area">
+                                <table>
+                                    <tr><td>No. Dokumen</td><td>&nbsp;</td></tr>
+                                    <tr><td>Tgl. Terbit</td><td>&nbsp;</td></tr>
+                                    <tr><td>Revisi</td><td>&nbsp;</td></tr>
+                                    <tr><td>Tgl. Efektif</td><td>&nbsp;</td></tr>
+                                    <tr><td>Departemen</td><td>&nbsp;</td></tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- BLOCK -->
+                        <div class="block-wrap">
+                            <div class="block-title">
+                                CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton
+                                ${isContinued ? '<span style="background:#fff3cd;color:#856404;padding:1px 6px;border-radius:3px;font-size:7px;">Lanjutan</span>' : ''}
+                            </div>
+
+                            <div class="block-info">
+                                <div class="block-info-left">
+                                    <table class="info-tbl">
+                                        <tr><td>BUYER</td><td><strong>${block.buyer}</strong></td></tr>
+                                        <tr><td>Order No.</td><td><strong>${block.kj}</strong></td></tr>
+                                        <tr><td>PO#</td><td>${block.po}</td></tr>
+                                        <tr><td>Style</td><td>${block.style}</td></tr>
+                                        <tr><td>Color</td><td>${block.color}</td></tr>
+                                        <tr><td>Qty Order</td><td>${parseInt(block.qty_order || 0).toLocaleString()} pcs</td></tr>
+                                        <tr><td>Ctn / Less Ctn</td><td>${cartons.length} / -</td></tr>
+                                        <tr><td>Carton Wgt Std.</td><td>${block.carton_weight_std ? parseFloat(block.carton_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>
+                                        <tr><td>Pcs Wgt Std.</td><td>${block.pcs_weight_std ? parseFloat(block.pcs_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>
+                                        <tr><td colspan="2"><span style="font-size:7px;">L = <strong>${block.line}</strong> &nbsp; M = <strong>${block.pcs_default}</strong> &nbsp; Total Berat = <strong>${totalBerat} kg</strong></span></td></tr>
+                                    </table>
+                                </div>
+                                <div class="block-info-right">
+                                    <table class="info-tbl">
+                                        <tr><td>GAC date</td><td>${block.gac_date}</td></tr>
+                                        <tr><td>Destination</td><td>${block.destination}</td></tr>
+                                        <tr><td>Inspector</td><td>${block.inspector}</td></tr>
+                                        <tr><td>Total Carton</td><td><strong>${cartons.length}</strong> / ${block.totalCartonInLine}</td></tr>
+                                    </table>
+                                    <table class="sign-tbl">
+                                        <tr>
+                                            <th>OPT QC TIMBANGAN</th>
+                                            <th>SPV QC</th>
+                                            <th>CHIEF FINISH GOOD</th>
+                                        </tr>
+                                        <tr>
+                                            <td style="height:35px;vertical-align:bottom;">${block.opt_qc !== '-' ? block.opt_qc : ''}</td>
+                                            <td style="height:35px;vertical-align:bottom;">${block.spv_qc !== '-' ? block.spv_qc : ''}</td>
+                                            <td style="height:35px;vertical-align:bottom;">${block.chief !== '-' ? block.chief : ''}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <table class="carton-tbl">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">Date</th>
+                                        <th colspan="${COLS}">Ctn. No &amp; Weight (Kg)</th>
+                                        <th rowspan="2">Total (kg)</th>
+                                        <th rowspan="2">Remark</th>
+                                    </tr>
+                                    <tr>${thCols}</tr>
+                                </thead>
+                                <tbody>${tbodyRows}</tbody>
+                            </table>
+                        </div>
+
+                        <script>window.onload=()=>{window.print();};<\/script>
+                        </body></html>`;
 
                     const win = window.open('', '_blank');
                     win.document.write(html);

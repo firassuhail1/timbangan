@@ -467,6 +467,157 @@ class OrderSheetController extends Controller
         ]);
     }
 
+    public function myReport(Request $request)
+    {
+        $userId = Auth::id();
+        $start  = $request->get('start', now()->format('Y-m-d'));
+        $end    = $request->get('end',   now()->format('Y-m-d'));
+
+        $orders = Ordersheet::with([
+            'timbangans' => function ($q) use ($start, $end, $userId) {
+                $q->select(
+                    'id',
+                    'id_ordersheet',
+                    'id_user',
+                    'no_box',
+                    'berat',
+                    'pcs',
+                    'rasio_batas_beban_min',
+                    'rasio_batas_beban_max',
+                    'waktu_timbang'
+                )
+                    ->where('id_user', $userId)
+                    ->whereDate('waktu_timbang', '>=', $start)
+                    ->whereDate('waktu_timbang', '<=', $end)
+                    ->orderBy('waktu_timbang');
+            }
+        ])
+            ->where('status', 'Success')
+            ->whereHas('timbangans', function ($q) use ($start, $end, $userId) {
+                $q->where('id_user', $userId)
+                    ->whereDate('waktu_timbang', '>=', $start)
+                    ->whereDate('waktu_timbang', '<=', $end);
+            })
+            ->select(
+                'id',
+                'Order_code',
+                'KJ',
+                'Buyer',
+                'PO',
+                'Style',
+                'ColorDescription',
+                'Line',
+                'Qty_order',
+                'PCS',
+                'Ctn',
+                'Less_Ctn',
+                'Pcs_Less_Ctn',
+                'Carton_weight_std',
+                'Pcs_weight_std',
+                'Gac_date',
+                'Destination',
+                'Inspector',
+                'OPT_QC_TIMBANGAN',
+                'SPV_QC',
+                'CHIEF_FINISH_GOOD',
+                'status',
+                'created_at'
+            )
+            ->get()
+            ->filter(fn($o) => $o->timbangans->isNotEmpty());
+
+        // Pisah Nike vs Non-Nike
+        $nike    = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) === 'nike');
+        $nonNike = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) !== 'nike');
+
+        // Format Nike (sama dengan formalReport)
+        $nikeRows = $nike->map(function ($o) {
+            $firstDate = optional($o->timbangans->first())->waktu_timbang;
+            return [
+                'order_code'        => $o->Order_code,
+                'kj'                => trim($o->KJ ?? '-'),
+                'buyer'             => $o->Buyer,
+                'style'             => $o->Style,
+                'color'             => $o->ColorDescription,
+                'pcs'               => $o->PCS,
+                'qty_order'         => $o->Qty_order,
+                'gac_date'          => $o->Gac_date
+                    ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
+                'destination'       => $o->Destination,
+                'line'              => $o->Line,
+                'carton_weight_std' => $o->Carton_weight_std,
+                'tanggal'           => $firstDate
+                    ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y') : '-',
+                'timbangans'        => $o->timbangans->map(fn($t) => [
+                    'berat' => $t->berat,
+                    'waktu' => $t->waktu_timbang
+                        ? \Carbon\Carbon::parse($t->waktu_timbang)->format('H:i') : '-',
+                ])->values()->toArray(),
+            ];
+        })->values()->toArray();
+
+        // Format Non-Nike
+        $nonNikeBlocks = $nonNike->groupBy('Order_code')->map(function ($orderGroup) {
+            $first      = $orderGroup->first();
+            $allTimbang = $orderGroup->flatMap(fn($o) => $o->timbangans)
+                ->sortBy('waktu_timbang')->values();
+
+            $byLine = $orderGroup->groupBy('Line')->sortKeys()->map(function ($lineOrders, $line) {
+                $timbangans = $lineOrders->flatMap(fn($o) => $o->timbangans)
+                    ->sortBy('waktu_timbang')->values();
+                return [
+                    'line'         => $line,
+                    'timbangans'   => $timbangans->map(fn($t) => [
+                        'no_box'                => $t->no_box,
+                        'berat'                 => $t->berat,
+                        'pcs'                   => $t->pcs,
+                        'waktu_timbang'         => optional($t->waktu_timbang instanceof \Carbon\Carbon
+                            ? $t->waktu_timbang
+                            : \Carbon\Carbon::parse($t->waktu_timbang))->format('Y-m-d H:i:s'),
+                        'rasio_batas_beban_min' => $t->rasio_batas_beban_min,
+                        'rasio_batas_beban_max' => $t->rasio_batas_beban_max,
+                    ])->values()->toArray(),
+                    'total_carton' => $timbangans->count(),
+                    'total_berat'  => $timbangans->sum('berat'),
+                    'qty_sudah'    => $timbangans->sum('pcs'),
+                ];
+            })->values()->toArray();
+
+            return [
+                'order_code'        => $first->Order_code,
+                'kj'                => trim($first->KJ ?? '-'),
+                'buyer'             => $first->Buyer,
+                'po'                => $first->PO,
+                'style'             => $first->Style,
+                'color'             => $first->ColorDescription,
+                'line_list'         => $orderGroup->pluck('Line')->unique()->sort()->values()->toArray(),
+                'pcs_default'       => $first->PCS,
+                'qty_order'         => $first->Qty_order,
+                'less_ctn'          => $first->Less_Ctn,
+                'pcs_less_ctn'      => $first->Pcs_Less_Ctn,
+                'carton_weight_std' => $first->Carton_weight_std,
+                'pcs_weight_std'    => $first->Pcs_weight_std,
+                'gac_date'          => $first->Gac_date
+                    ? \Carbon\Carbon::parse($first->Gac_date)->format('d/m/Y') : '-',
+                'destination'       => $first->Destination,
+                'inspector'         => $first->Inspector,
+                'opt_qc'            => $first->OPT_QC_TIMBANGAN,
+                'spv_qc'            => $first->SPV_QC,
+                'chief'             => $first->CHIEF_FINISH_GOOD,
+                'total_carton'      => $allTimbang->count(),
+                'total_berat'       => $allTimbang->sum('berat'),
+                'qty_sudah'         => $allTimbang->sum('pcs'),
+                'by_line'           => $byLine,
+            ];
+        })->values()->toArray();
+
+        return response()->json([
+            'success'  => true,
+            'nike'     => $nikeRows,
+            'non_nike' => $nonNikeBlocks,
+        ]);
+    }
+
     public function reportData()
     {
         $today = Carbon::today();
