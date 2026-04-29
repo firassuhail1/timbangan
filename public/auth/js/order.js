@@ -120,7 +120,7 @@ function initSearch() {
             // Tidak perlu filter weighedIds di sini karena row tidak hilang
             allFilteredData = json.data
 
-            renderTable(allFilteredData, apiCurrentPage)
+            renderTable(allFilteredData, apiCurrentPage, allFilteredData.length === 0)
             renderPagination(apiCurrentPage, apiLastPage)
 
         } catch (err) {
@@ -129,12 +129,20 @@ function initSearch() {
         }
     }
 
-    function renderTable(data, currentPage) {
+    function renderTable(data, currentPage, notFound = false) {
         // ✅ Tidak perlu filter lagi — data sudah bersih dari renderPage
         if (data.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="9" class="text-success text-center py-4">
-                Semua data sudah ditimbang ✔
-            </td></tr>`
+            if (notFound) {
+                tableBody.innerHTML = `<tr><td colspan="9" class="text-muted text-center py-4">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Tidak ada data yang cocok dengan pencarian.
+                </td></tr>`
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="9" class="text-success text-center py-4">
+                    <i class="fa-solid fa-circle-check me-1"></i>
+                    Semua ordersheet pada rentang ini sudah ditimbang ✔
+                </td></tr>`
+            }
             pagination.innerHTML = ''
             return
         }
@@ -274,27 +282,20 @@ function initSearch() {
 
     renderPage = function (page) {
         const weighedIds = getWeighedIds()
-
-        // ✅ Filter DULU dari allFilteredData (sebelum slice)
         const visibleData = allFilteredData.filter(
             (item) => !weighedIds.includes(item.id)
         )
 
-        console.log('Total allFilteredData:', allFilteredData.length)
-        console.log('Total visibleData (setelah filter weighed):', visibleData.length)
-        console.log('PAGE_SIZE:', PAGE_SIZE)
-        console.log('Total page:', Math.ceil(visibleData.length / PAGE_SIZE))
-
         const totalData = visibleData.length
         const totalPage = Math.ceil(totalData / PAGE_SIZE) || 1
-
-        // Koreksi page jika melebihi batas
         if (page > totalPage) page = totalPage
-
         const start = (page - 1) * PAGE_SIZE
         const pageData = visibleData.slice(start, start + PAGE_SIZE)
 
-        renderTable(pageData, page)
+        // ✅ Bedakan: tidak ditemukan vs sudah semua ditimbang
+        const notFound = allFilteredData.length === 0
+
+        renderTable(pageData, page, notFound)
         renderPagination(page, totalPage)
     }
 
