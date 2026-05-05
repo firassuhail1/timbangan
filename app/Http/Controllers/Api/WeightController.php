@@ -544,7 +544,10 @@ class WeightController extends Controller
 
         $messages = [
             'Order_code.required'            => 'Kode Order belum diisi.',
-            'Line.required'                  => 'Line belum diisi.',
+            'Tipe_Asal.required'             => 'Tipe Asal (Sewing/Subcon) belum dipilih.',
+            'Tipe_Asal.in'                   => 'Tipe Asal tidak valid.',
+            'Line.required_if'               => 'Nomor Line wajib diisi jika tipe Sewing.',
+            'Subcon.required_if'             => 'Kode Subcon wajib diisi jika tipe Subcon.',
             'Buyer.required'                 => 'Nama Pembeli jangan dikosongkan.',
             'berat.required'                 => 'Timbangan belum stabil atau berat belum masuk.',
             'berat.numeric'                  => 'Data berat harus berupa angka.',
@@ -555,7 +558,9 @@ class WeightController extends Controller
 
         $validator = Validator::make($request->all(), [
             'Order_code'            => 'required|string',
-            'Line'                  => 'required|string',
+            'Tipe_Asal'             => 'required|in:sewing,subcon',
+            'Line'                  => 'required_if:Tipe_Asal,sewing|nullable|string',
+            'Subcon'                => 'required_if:Tipe_Asal,subcon|nullable|string',
             'Buyer'                 => 'required|string',
             'berat'                 => 'required|numeric|min:0.01',
             'no_box'                => 'required',
@@ -593,35 +598,37 @@ class WeightController extends Controller
             // ✅ updateOrCreate: 1 Order_code = 1 record Ordersheet
             // Setiap timbang carton baru TIDAK membuat Ordersheet baru
             $ordersheet = Ordersheet::updateOrCreate(
-                [
-                    'Order_code' => $request->Order_code,
-                    'Line'       => $request->Line,  // ← tambah line sebagai key
-                ],
-                [
-                    'id_user'           => Auth::id(),
-                    'id_device'         => $device->id,
-                    'KJ'                => $request->KJ,
-                    'Buyer'             => $request->Buyer,
-                    'PO'                => $request->PO,
-                    'Style'             => $request->Style,
-                    'ColorDescription'  => $request->ColorDescription,
-                    'Qty_order'         => $request->Qty_order,
-                    'Line'              => $request->Line,
-                    'Carton_weight_std' => $request->Carton_weight_std,
-                    'Pcs_weight_std'    => $request->Pcs_weight_std,
-                    'PCS'               => $request->PCS,
-                    'Ctn'               => $request->Ctn,
-                    'Less_Ctn'          => $request->Less_Ctn,
-                    'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
-                    'Gac_date'          => $request->Gac_date,
-                    'Destination'       => $request->Destination,
-                    'Inspector'         => $request->Inspector,
-                    'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
-                    'SPV_QC'            => $request->SPV_QC,
-                    'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
-                    'status'            => 'Success',
-                ]
-            );
+            [
+                'Order_code' => $request->Order_code,
+                'Line'       => $request->Tipe_Asal === 'sewing' ? $request->Line : null,
+                'Subcon'     => $request->Tipe_Asal === 'subcon' ? $request->Subcon : null,
+            ],
+            [
+                'id_user'           => Auth::id(),
+                'id_device'         => $device->id,
+                'KJ'                => $request->KJ,
+                'Buyer'             => $request->Buyer,
+                'PO'                => $request->PO,
+                'Style'             => $request->Style,
+                'ColorDescription'  => $request->ColorDescription,
+                'Qty_order'         => $request->Qty_order,
+                'Line'              => $request->Tipe_Asal === 'sewing' ? $request->Line : null,
+                'Subcon'            => $request->Tipe_Asal === 'subcon' ? $request->Subcon : null,
+                'Carton_weight_std' => $request->Carton_weight_std,
+                'Pcs_weight_std'    => $request->Pcs_weight_std,
+                'PCS'               => $request->PCS,
+                'Ctn'               => $request->Ctn,
+                'Less_Ctn'          => $request->Less_Ctn,
+                'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
+                'Gac_date'          => $request->Gac_date,
+                'Destination'       => $request->Destination,
+                'Inspector'         => $request->Inspector,
+                'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
+                'SPV_QC'            => $request->SPV_QC,
+                'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
+                'status'            => 'Success',
+            ]
+        );
 
             $berat = floatval($request->berat);
 

@@ -50,38 +50,53 @@ class OtaUpdateController extends Controller
 
     public function checkOta(Request $request)
     {
-        $apiKey = $request->header('X-API-KEY');
-        if (!$apiKey) {
-            return response()->json(['error' => 'API Key diperlukan'], 401);
-        }
+        $deviceType     = $request->query('device_type');
+        $currentVersion = $request->query('version', '0.0.0');
 
-        $device = Device::where('api_key', $apiKey)->firstOrFail();
-
-        if (!$device->pending_firmware_id) {
+        if (!$deviceType) {
             return response()->json(['has_ota' => false]);
         }
 
-        $firmware = Firmwares::findOrFail($device->pending_firmware_id);
+        $firmware = Firmwares::where('device_type', $deviceType)
+                            ->where('status', 'published')
+                            ->latest('released_at')
+                            ->first();
 
-        // Generate secure token
+        // // Tidak ada firmware published, atau versi sama
+        // if (!$firmware || $firmware->version === $currentVersion) {
+        //     return response()->json(['has_ota' => false]);
+        // }
+
+        // Tidak ada firmware published sama sekali
+        if (!$firmware) {
+            return response()->json([
+                'has_ota'  => false,
+                'reason'   => 'no_published_firmware'  // ← tambah ini
+            ]);
+        }
+
+        // Versi sama
+        if ($firmware->version === $currentVersion) {
+            return response()->json([
+                'has_ota'  => false,
+                'reason'   => 'up_to_date'  // ← tambah ini
+            ]);
+        }
+
         $token = Str::random(32);
         Cache::put("ota_token_{$token}", $firmware->id, 600);
 
-        Log::info('OTA Token Generated', [
-            'token' => $token,
-            'firmware_id' => $firmware->id,
-            'cache_key' => "ota_token_{$token}",
-            'expires_in_seconds' => 600,
-            'cache_driver' => config('cache.default'),
+        Log::info('OTA check', [
+            'device_type'     => $deviceType,
+            'current_version' => $currentVersion,
+            'new_version'     => $firmware->version,
         ]);
 
-        $downloadUrl = url("api/update/firmware/download/{$firmware->id}?token={$token}");
-
         return response()->json([
-            'has_ota'  => true,
-            'url'      => $downloadUrl,
-            'sha256'   => $firmware->checksum,   // ← ubah dari 'md5' jadi 'sha256'
-            'version'  => $firmware->version,
+            'has_ota' => true,
+            'version' => $firmware->version,
+            'sha256'  => $firmware->checksum,
+            'url'     => url("api/update/firmware/download/{$firmware->id}?token={$token}"),
         ]);
     }
 
@@ -89,10 +104,18 @@ class OtaUpdateController extends Controller
     {
         $firmware = Firmwares::findOrFail($id);
         $token = $request->query('token');
+        
+        $cached = Cache::get("ota_token_{$token}");
+        
+        Log::info('OTA Download debug', [
+            'token'       => $token,
+            'cached'      => $cached,
+            'firmware_id' => (int)$firmware->id,
+            'match'       => $cached === (int)$firmware->id,
+            'cache_driver'=> config('cache.default'),
+        ]);
 
-        // Validasi token
-        if (!$token || Cache::get("ota_token_{$token}") !== (int)$firmware->id) { // Cast ke int jika id integer
-            Log::error('OTA Download: Token invalid', ['id' => $id, 'token' => $token]);
+        if (!$token || $cached !== (int)$firmware->id) {
             abort(403, 'Token invalid atau expired');
         }
 
@@ -102,7 +125,9 @@ class OtaUpdateController extends Controller
             abort(404, 'File tidak ditemukan');
         }
 
-        Cache::forget("ota_token_{$token}");
+        // ← Hapus Cache::forget, biarkan token expire sendiri
+        // Cache::forget("ota_token_{$token}");
+
         Log::info('OTA Download: Sukses', ['id' => $id, 'file' => $firmware->file_name]);
 
         return response()->download($path, $firmware->file_name, [
@@ -113,23 +138,22 @@ class OtaUpdateController extends Controller
     public function otaComplete(Request $request)
     {
         $validated = $request->validate([
-            'esp_id' => 'required|string',
+            'esp_id'      => 'required|string',
             'new_version' => 'required|string',
         ]);
 
-        $device = Device::where('esp_id', $validated['esp_id'])->firstOrFail();
-
-        // Validasi API key jika perlu
-        if ($request->header('X-API-KEY') !== $device->api_key) {
-            return response()->json(['error' => 'Autentikasi gagal'], 401);
-        }
+        $device = Device::where('esp_id', $validated['esp_id'])
+                        ->firstOrFail();
 
         $device->current_firmware_version = $validated['new_version'];
-        $device->pending_firmware_id = null;
-        $device->ota_started_at = null;
+        $device->pending_firmware_id      = null;
+        $device->ota_started_at           = null;
         $device->save();
 
-        Log::info('OTA selesai', ['esp_id' => $device->esp_id, 'new_version' => $validated['new_version']]);
+        Log::info('OTA selesai', [
+            'esp_id'      => $device->esp_id,
+            'new_version' => $validated['new_version']
+        ]);
 
         return response()->json(['success' => true]);
     }

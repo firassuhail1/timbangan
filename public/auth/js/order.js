@@ -109,7 +109,7 @@ function initSearch() {
             spinner.style.display = 'none'
 
             if (!json.success) {
-                tableBody.innerHTML = `<tr><td colspan="10" class="text-danger text-center">Gagal memuat data dari server, coba gunakan rentang waktu lebih singkat</td></tr>`
+                tableBody.innerHTML = `<tr><td colspan="11" class="text-danger text-center">Gagal memuat data dari server, coba gunakan rentang waktu lebih singkat</td></tr>`
                 return
             }
 
@@ -125,7 +125,7 @@ function initSearch() {
 
         } catch (err) {
             spinner.style.display = 'none'
-            tableBody.innerHTML = `<tr><td colspan="10" class="text-danger text-center">Error: ${err.message}</td></tr>`
+            tableBody.innerHTML = `<tr><td colspan="11" class="text-danger text-center">Error: ${err.message}</td></tr>`
         }
     }
 
@@ -133,12 +133,12 @@ function initSearch() {
         // ✅ Tidak perlu filter lagi — data sudah bersih dari renderPage
         if (data.length === 0) {
             if (notFound) {
-                tableBody.innerHTML = `<tr><td colspan="9" class="text-muted text-center py-4">
+                tableBody.innerHTML = `<tr><td colspan="10" class="text-muted text-center py-4">
                     <i class="fa-solid fa-circle-info me-1"></i>
                     Tidak ada data yang cocok dengan pencarian.
                 </td></tr>`
             } else {
-                tableBody.innerHTML = `<tr><td colspan="9" class="text-success text-center py-4">
+                tableBody.innerHTML = `<tr><td colspan="10" class="text-success text-center py-4">
                     <i class="fa-solid fa-circle-check me-1"></i>
                     Semua ordersheet pada rentang ini sudah ditimbang ✔
                 </td></tr>`
@@ -315,7 +315,7 @@ function initSearch() {
             // reset tabel
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-muted text-center py-4">
+                    <td colspan="10" class="text-muted text-center py-4">
                         Silakan cari data untuk memulai timbangan.
                     </td>
                 </tr>
@@ -394,6 +394,7 @@ let pollingInterval = null
 let latestPreview = null
 let currentDeviceId = null
 let isManualMode = false
+let hasPlayedStableBeepForThisItem = false  // ← tambah ini
 
 function openModalForItem(item) {
     const modalElement = document.getElementById('timbangModal')
@@ -406,7 +407,22 @@ function openModalForItem(item) {
 
     const modal = new bootstrap.Modal(modalElement)
 
-    modalElement.onhidden = stopPolling
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        stopPolling()
+        stopListening()
+        document.getElementById('manualWeight').value = ''  // ← reset saat close
+        
+        // Kembalikan mode manual ke off jika aktif
+        const toggle = document.getElementById('manualMode')
+        const input  = document.getElementById('manualWeight')
+        if (toggle && toggle.checked) {
+            toggle.checked   = false
+            input.disabled   = true
+            isManualMode     = false
+            resetPreviewUI()
+            startListening(window.APP?.espId)
+        }
+    }, { once: true })
 
     modalElement.addEventListener(
         'shown.bs.modal',
@@ -490,8 +506,8 @@ function fillModalFields(item) {
     }
 
     // ✅ Field manual — HANYA isi jika masih kosong (tidak timpa input user)
+    // ✅ Field manual — HANYA isi jika masih kosong (tidak timpa input user)
     const manualFields = {
-        info_line:         '',
         info_pcs:          '',
         info_carton_weight:'',
         info_pcs_weight:   '',
@@ -502,10 +518,22 @@ function fillModalFields(item) {
         const el = document.getElementById(id)
         if (!el) return
         if (!el.value || el.value.trim() === '') {
-            el.value = manualFields[id] // isi default jika kosong
+            el.value = manualFields[id]
         }
-        // Jika sudah ada nilai → biarkan
     })
+
+    // ✅ Pertahankan tipe asal, line, dan subcon jika sudah diisi
+    const tipeEl    = document.getElementById('tipe_asal')
+    const hiddenEl  = document.getElementById('hidden_tipe_asal')
+    const lineEl    = document.getElementById('info_line')
+    const subconEl  = document.getElementById('info_subcon')
+
+    if (!tipeEl.value || tipeEl.value === '') {
+        // Belum dipilih → biarkan kosong, jangan timpa
+    } else {
+        // Sudah ada pilihan → pertahankan, jalankan toggle agar row tampil benar
+        toggleAsalInput(tipeEl.value)
+    }
 
     // Rasio tetap dari item API jika ada, kalau tidak jangan timpa
     const minEl = document.getElementById('rasio_batas_beban_min')
@@ -534,6 +562,7 @@ function resetPreviewUI() {
     document.getElementById('lost_weight').value = ''
     document.getElementById('btnSimpanTimbang').disabled = true
     latestPreview = null
+    hasPlayedStableBeepForThisItem = false  // ← tambah ini
 }
 
 // Polling
@@ -1125,6 +1154,7 @@ function initSaveButton() {
                 // Field info ordersheet (Buyer, Style, dll) TETAP terisi
                 document.getElementById('no_box').value       = ''
                 document.getElementById('lost_weight').value  = ''
+                document.getElementById('manualWeight').value = '' 
  
                 // Reset field Ctn (nomor carton) — user isi lagi untuk carton berikutnya
                 // const ctnEl = document.getElementById('info_ctn')

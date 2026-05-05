@@ -23,14 +23,10 @@ class UpdateController extends Controller
             return view('user.firmware.index', ['noDevice' => true]);
         }
 
-        // dd($device);
-
         $firmware = Firmwares::where('device_type', $device->device_type)
             ->where('status', 'published')
             ->latest('released_at')
             ->first();
-
-        dd($firmware);
 
         return view('user.firmware.index', [
             'device' => $device,

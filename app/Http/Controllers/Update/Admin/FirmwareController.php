@@ -10,33 +10,53 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 // use Illuminate\Support\Facades\Notification;
+use App\Models\Update\Device;
 
 class FirmwareController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        $search  = $request->input('search');
         $entries = $request->input('entries', 10);
 
         $query = Firmwares::orderBy('id', 'desc');
-
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('version', 'LIKE', "%{$search}%")
-                    ->orWhere('device_type', 'LIKE', "%{$search}%")
-                    ->orWhere('file_name', 'LIKE', "%{$search}%")
-                    ->orWhere('file_path', 'LIKE', "%{$search}%")
-                    ->orWhere('notes', 'LIKE', "%{$search}%")
-                    ->orWhere('status', 'LIKE', "%{$search}%");
+                ->orWhere('device_type', 'LIKE', "%{$search}%")
+                ->orWhere('file_name', 'LIKE', "%{$search}%")
+                ->orWhere('file_path', 'LIKE', "%{$search}%")
+                ->orWhere('notes', 'LIKE', "%{$search}%")
+                ->orWhere('status', 'LIKE', "%{$search}%");
             });
         }
 
         $firmware = $query->paginate($entries);
         $firmware->appends($request->query());
 
-        // dd($firmware);
+        // Ambil firmware published per device_type
+        $publishedFirmwares = Firmwares::where('status', 'published')
+            ->get()
+            ->keyBy('device_type');
 
-        return view('admin.master.view', compact('firmware', 'search', 'entries'));
+        // Ambil semua device beserta status versinya
+        $devices = Device::orderBy('device_type')
+            ->orderBy('esp_id')
+            ->get()
+            ->map(function ($device) use ($publishedFirmwares) {
+                $published = $publishedFirmwares->get($device->device_type);
+
+                $device->published_version = $published?->version;
+                $device->is_updated = $published
+                    ? $device->current_firmware_version === $published->version
+                    : null;
+
+                return $device;
+            });
+
+        return view('admin.master.view', compact(
+            'firmware', 'search', 'entries', 'devices', 'publishedFirmwares'
+        ));
     }
 
     public function upload(Request $request)

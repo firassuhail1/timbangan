@@ -145,6 +145,145 @@
                 </div>
             </div>
         </section>
+
+        {{-- Section Device Tracking --}}
+        <section class="row mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="title d-flex justify-content-between mb-2">
+                        <h5>Status Firmware Per Device</h5>
+                        <small class="text-muted align-self-center">
+                            Update otomatis setiap device kirim data
+                        </small>
+                    </div>
+                    <hr>
+
+                    @if($devices->isEmpty())
+                        <p class="text-muted text-center">Belum ada device terdaftar.</p>
+                    @else
+                        {{-- Group by device_type --}}
+                        @foreach($devices->groupBy('device_type') as $type => $group)
+                            @php
+                                $published = $publishedFirmwares->get($type);
+                                $totalUpdated = $group->where('is_updated', true)->count();
+                                $totalDevice  = $group->count();
+                            @endphp
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold mb-0">
+                                        @if($type === 'O')
+                                            <span class="badge bg-secondary me-1">O</span> Timbangan Ordersheet
+                                        @elseif($type === 'P')
+                                            <span class="badge bg-primary me-1">P</span> Timbangan Package
+                                        @else
+                                            <span class="badge bg-dark me-1">{{ $type }}</span>
+                                        @endif
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-3">
+                                        @if($published)
+                                            <small class="text-muted">
+                                                Versi published: 
+                                                <span class="badge bg-success">{{ $published->version }}</span>
+                                            </small>
+                                        @else
+                                            <small class="text-muted">
+                                                <span class="badge bg-warning text-dark">Tidak ada firmware published</span>
+                                            </small>
+                                        @endif
+                                        <small class="text-muted">
+                                            {{ $totalUpdated }}/{{ $totalDevice }} device sudah update
+                                        </small>
+                                    </div>
+                                </div>
+
+                                {{-- Progress bar --}}
+                                @if($published && $totalDevice > 0)
+                                    @php $percent = round(($totalUpdated / $totalDevice) * 100) @endphp
+                                    <div class="progress mb-3" style="height: 6px;">
+                                        <div class="progress-bar bg-success" style="width: {{ $percent }}%"></div>
+                                    </div>
+                                @endif
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered text-center" style="white-space: nowrap">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>ESP ID</th>
+                                                <th>Nama</th>
+                                                <th>Versi Saat Ini</th>
+                                                <th>Status Update</th>
+                                                <th>Status Device</th>
+                                                <th>Terakhir Online</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($group as $i => $device)
+                                                <tr>
+                                                    <td>{{ $i + 1 }}</td>
+                                                    <td>
+                                                        <code>{{ $device->esp_id }}</code>
+                                                    </td>
+                                                    <td>{{ $device->name ?? '-' }}</td>
+                                                    <td>
+                                                        @if($device->current_firmware_version)
+                                                            <span class="badge bg-secondary">
+                                                                {{ $device->current_firmware_version }}
+                                                            </span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if(is_null($device->is_updated))
+                                                            <span class="badge bg-secondary">Tidak diketahui</span>
+                                                        @elseif($device->is_updated)
+                                                            <span class="badge bg-success">
+                                                                <i class="fa-solid fa-check me-1"></i>Terbaru
+                                                            </span>
+                                                        @else
+                                                            <span class="badge bg-warning text-dark">
+                                                                <i class="fa-solid fa-arrow-up me-1"></i>Perlu Update
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @php
+                                                            $badgeStatus = match($device->status) {
+                                                                'online'  => 'success',
+                                                                'in_use'  => 'primary',
+                                                                'offline' => 'danger',
+                                                                default   => 'secondary',
+                                                            };
+                                                        @endphp
+                                                        <span class="badge bg-{{ $badgeStatus }}">
+                                                            {{ ucfirst($device->status) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        @if($device->last_seen_at)
+                                                            <small>
+                                                                {{ \Carbon\Carbon::parse($device->last_seen_at)
+                                                                    ->timezone('Asia/Jakarta')
+                                                                    ->format('d M Y H:i:s') }}
+                                                            </small>
+                                                        @else
+                                                            <small class="text-muted">Belum pernah online</small>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+
+                </div>
+            </div>
+        </section>
     </div>
 
     @include('admin.master.device.create')

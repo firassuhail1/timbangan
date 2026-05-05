@@ -145,7 +145,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="9" class="text-muted text-center py-4">
+                                    <td colspan="10" class="text-muted text-center py-4">
                                         Silakan cari data untuk memulai timbangan.
                                     </td>
                                 </tr>
@@ -413,9 +413,32 @@
                                                                 class="form-control form-control-sm"></td>
                                                     </tr>
                                                     <tr>
+                                                        <th>Tipe Asal <span class="text-danger">*</span></th>
+                                                        <td>
+                                                            <select id="tipe_asal" name="Tipe_Asal" class="form-select form-select-sm"
+                                                                onchange="toggleAsalInput(this.value)">
+                                                                <option value="">-- Pilih Tipe --</option>
+                                                                <option value="sewing">Sewing</option>
+                                                                <option value="subcon">Subcon</option>
+                                                            </select>
+                                                            <input type="hidden" id="hidden_tipe_asal" name="Tipe_Asal" value="">
+                                                        </td>
+                                                    </tr>
+                                                    <tr id="row_line">
                                                         <th>Asal Line <span class="text-danger">*</span></th>
-                                                        <td><input type="text" id="info_line" name="Line"
-                                                                class="form-control form-control-sm"></td>
+                                                        <td>
+                                                            <input type="text" id="info_line" name="Line"
+                                                                class="form-control form-control-sm"
+                                                                placeholder="Masukkan nomor line">
+                                                        </td>
+                                                    </tr>
+                                                    <tr id="row_subcon" style="display: none;">
+                                                        <th>Kode Subcon <span class="text-danger">*</span></th>
+                                                        <td>
+                                                            <input type="text" id="info_subcon" name="Subcon"
+                                                                class="form-control form-control-sm"
+                                                                placeholder="Masukkan kode subcon">
+                                                        </td>
                                                     </tr>
                                                     {{-- <tr>
                                                         <th>Order No.</th>
@@ -766,6 +789,44 @@
                 if (document.activeElement.type === "number") {
                     document.activeElement.blur(); // Paksa lepas focus agar scroll halaman tetap jalan
                 }
+            });
+        </script>
+
+        <script>
+            function toggleAsalInput(value) {
+                const rowLine   = document.getElementById('row_line');
+                const rowSubcon = document.getElementById('row_subcon');
+                const inputLine   = document.getElementById('info_line');
+                const inputSubcon = document.getElementById('info_subcon');
+                const hiddenTipe  = document.getElementById('hidden_tipe_asal'); // ← tambah ini
+
+                if (value === 'sewing') {
+                    rowLine.style.display   = '';
+                    rowSubcon.style.display = 'none';
+                    inputLine.required   = true;
+                    inputSubcon.required = false;
+                    inputSubcon.value    = '';
+                    hiddenTipe.value     = 'sewing'; // ← set value
+                } else if (value === 'subcon') {
+                    rowLine.style.display   = 'none';
+                    rowSubcon.style.display = '';
+                    inputLine.required   = false;
+                    inputSubcon.required = true;
+                    inputLine.value      = '';
+                    hiddenTipe.value     = 'subcon'; // ← set value
+                } else {
+                    rowLine.style.display   = 'none';
+                    rowSubcon.style.display = 'none';
+                    inputLine.required   = false;
+                    inputSubcon.required = false;
+                    hiddenTipe.value     = ''; // ← kosongkan
+                }
+            }
+
+            // Jalankan saat awal load jika ada value default
+            document.addEventListener('DOMContentLoaded', function () {
+                const tipeAsal = document.getElementById('tipe_asal');
+                if (tipeAsal) toggleAsalInput(tipeAsal.value);
             });
         </script>
 
@@ -1243,7 +1304,7 @@
                             '</td>' +
                             '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.destination || '-') +
                             '</td>' +
-                            '<td rowspan="' + row.rowspan + '">' + (r.line || '-') + '</td>' +
+                            '<td rowspan="' + row.rowspan + '">' + (r.subcon ? 'S:' + r.subcon : 'L:' + (r.line || '-')) + '</td>' +
                             '<td rowspan="' + row.rowspan + '">' + (r.carton_weight_std || '-') + '</td>' :
                             '';
                         tbody += '<tr>' + infoTds + row.tdBerats +
@@ -1455,28 +1516,29 @@
                             const cartonChunks = chunkArray(timbangans, CARTON_PER_BLOCK);
                             cartonChunks.forEach((chunk, blockIdx) => {
                                 allBlocks.push({
-                                    buyer: order.buyer || '-',
-                                    kj: order.kj || order.order_code || '-',
-                                    order_code: order.order_code || '-',
-                                    po: order.po || '-',
-                                    style: order.style || '-',
-                                    color: order.color || '-',
-                                    qty_order: order.qty_order || 0,
-                                    carton_weight_std: order.carton_weight_std,
-                                    pcs_weight_std: order.pcs_weight_std,
-                                    gac_date: order.gac_date || '-',
-                                    destination: order.destination || '-',
-                                    inspector: order.inspector || '-',
-                                    opt_qc: order.opt_qc || '-',
-                                    spv_qc: order.spv_qc || '-',
-                                    chief: order.chief || '-',
-                                    line: lineGroup.line,
-                                    pcs_default: order.pcs_default || '-',
-                                    timbangans: chunk,
-                                    blockIdx,
-                                    totalCartonInLine: timbangans.length,
-                                    startNo: blockIdx * CARTON_PER_BLOCK + 1,
-                                });
+                                buyer: order.buyer || '-',
+                                kj: order.kj || order.order_code || '-',
+                                order_code: order.order_code || '-',
+                                po: order.po || '-',
+                                style: order.style || '-',
+                                color: order.color || '-',
+                                qty_order: order.qty_order || 0,
+                                carton_weight_std: order.carton_weight_std,
+                                pcs_weight_std: order.pcs_weight_std,
+                                gac_date: order.gac_date || '-',
+                                destination: order.destination || '-',
+                                inspector: order.inspector || '-',
+                                opt_qc: order.opt_qc || '-',
+                                spv_qc: order.spv_qc || '-',
+                                chief: order.chief || '-',
+                                line: lineGroup.line,
+                                subcon: order.subcon || null,  // ← tambah ini
+                                pcs_default: order.pcs_default || '-',
+                                timbangans: chunk,
+                                blockIdx,
+                                totalCartonInLine: timbangans.length,
+                                startNo: blockIdx * CARTON_PER_BLOCK + 1,
+                            });
                             });
                         });
                     });
@@ -1572,8 +1634,10 @@
                             '<tr><th>Style</th><td>' + block.style + '</td></tr>' +
                             '<tr><th>Color</th><td>' + block.color + '</td></tr>' +
                             '<tr><th>Qty Order</th><td>' + parseInt(block.qty_order || 0).toLocaleString() + ' pcs' +
-                            ' <span style="font-size:10px;color:#666;">L = ' + block.line + ' &nbsp;·&nbsp; M = ' + block
-                            .pcs_default + '</span></td></tr>' +
+                            ' <span style="font-size:10px;color:#666;">' +
+                            (block.subcon ? 'S = ' + block.subcon : 'L = ' + (block.line || '-')) +
+                            ' &nbsp;·&nbsp; M = ' + block.pcs_default +
+                            '</span></td></tr>' +
                             '<tr><th>Carton Weight Std.</th><td>' + (block.carton_weight_std ? parseFloat(block
                                 .carton_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
                             '<tr><th>Pcs Weight Std.</th><td>' + (block.pcs_weight_std ? parseFloat(block.pcs_weight_std)
@@ -1782,8 +1846,12 @@
                             '<tr><td>Pcs Wgt Std.</td><td>' + (block.pcs_weight_std ? parseFloat(block
                                 .pcs_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
                             '<tr><td colspan="2" style="padding-top:2px;">' +
-                            '<span style="font-size:8px;">L = <strong>' + block.line +
-                            '</strong> &nbsp;&nbsp; M = <strong>' + block.pcs_default +
+                            '<span style="font-size:8px;">' +
+                            (block.subcon
+                                ? 'S = <strong>' + block.subcon + '</strong>'
+                                : 'L = <strong>' + (block.line || '-') + '</strong>'
+                            ) +
+                            ' &nbsp;&nbsp; M = <strong>' + block.pcs_default +
                             '</strong> &nbsp;&nbsp; Pcs Less Ctn = -</span>' +
                             '</td></tr>' +
                             '</table>' +
@@ -2338,7 +2406,7 @@
                                         <tr><td>Ctn / Less Ctn</td><td>${cartons.length} / -</td></tr>
                                         <tr><td>Carton Wgt Std.</td><td>${block.carton_weight_std ? parseFloat(block.carton_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>
                                         <tr><td>Pcs Wgt Std.</td><td>${block.pcs_weight_std ? parseFloat(block.pcs_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>
-                                        <tr><td colspan="2"><span style="font-size:7px;">L = <strong>${block.line}</strong> &nbsp; M = <strong>${block.pcs_default}</strong> &nbsp; Total Berat = <strong>${totalBerat} kg</strong></span></td></tr>
+                                        <tr><td colspan="2"><span style="font-size:7px;">${block.subcon ? 'S = <strong>' + block.subcon + '</strong>' : 'L = <strong>' + (block.line || '-') + '</strong>'} &nbsp; M = <strong>${block.pcs_default}</strong></span></td></tr>
                                     </table>
                                 </div>
                                 <div class="block-info-right">

@@ -344,6 +344,7 @@ class OrderSheetController extends Controller
                 'Style',
                 'ColorDescription',
                 'Line',
+                'Subcon',
                 'Qty_order',
                 'PCS',
                 'Ctn',
@@ -385,6 +386,7 @@ class OrderSheetController extends Controller
                     : '-',
                 'destination'       => $o->Destination,
                 'line'              => $o->Line,
+                'subcon' => $o->Subcon, // ← tambah ini
                 'carton_weight_std' => $o->Carton_weight_std,
                 'tanggal'           => $firstDate
                     ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y')
@@ -439,6 +441,8 @@ class OrderSheetController extends Controller
                 'style'             => $first->Style,
                 'color'             => $first->ColorDescription,
                 'line_list'         => $orderGroup->pluck('Line')->unique()->sort()->values()->toArray(),
+                'line'              => $first->Line,    // ← tambah ini
+                'subcon'            => $first->Subcon, // ← tambah ini
                 'pcs_default'       => $first->PCS,   // M = MOC
                 'qty_order'         => $first->Qty_order,
                 'less_ctn'          => $first->Less_Ctn,
@@ -507,6 +511,7 @@ class OrderSheetController extends Controller
                 'Style',
                 'ColorDescription',
                 'Line',
+                'Subcon',
                 'Qty_order',
                 'PCS',
                 'Ctn',
@@ -545,6 +550,7 @@ class OrderSheetController extends Controller
                     ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
                 'destination'       => $o->Destination,
                 'line'              => $o->Line,
+                'subcon' => $o->Subcon, // ← tambah ini
                 'carton_weight_std' => $o->Carton_weight_std,
                 'tanggal'           => $firstDate
                     ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y') : '-',
@@ -591,6 +597,8 @@ class OrderSheetController extends Controller
                 'style'             => $first->Style,
                 'color'             => $first->ColorDescription,
                 'line_list'         => $orderGroup->pluck('Line')->unique()->sort()->values()->toArray(),
+                'line'              => $first->Line,    // ← tambah ini
+                'subcon'            => $first->Subcon, // ← tambah ini
                 'pcs_default'       => $first->PCS,
                 'qty_order'         => $first->Qty_order,
                 'less_ctn'          => $first->Less_Ctn,

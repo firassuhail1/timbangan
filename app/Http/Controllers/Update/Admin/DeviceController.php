@@ -44,7 +44,6 @@ class DeviceController extends Controller
 
     public function heartbeat(Request $request)
     {
-        Log::info('masuk');
         $request->merge([
             'device_type' => $request->device_type ?: 'timbangan'
         ]);
@@ -62,17 +61,49 @@ class DeviceController extends Controller
 
         Log::info('selesai');
         // Ambil atau buat device baru berdasarkan ESP ID
+        // $device = Device::firstOrNew(
+        //     ['esp_id' => $request->esp_id],
+        //     [
+        //         'device_type' => $request->device_type,
+        //         'name'        => $request->name,
+        //         'mac_esp'        => $request->mac_esp
+        //     ]
+        // );
+
+        // Ambil atau buat device baru berdasarkan ESP ID
         $device = Device::firstOrNew(
             ['esp_id' => $request->esp_id],
             [
                 'device_type' => $request->device_type,
                 'name'        => $request->name,
-                'mac_esp'        => $request->mac_esp
+                'mac_esp'     => $request->mac_esp
             ]
         );
 
+        // Cek apakah MAC ini sudah dipakai device LAIN
+        $macConflict = Device::where('mac_esp', $request->mac_esp)
+            ->where('esp_id', '!=', $request->esp_id)
+            ->first();
+
+        if ($macConflict) {
+            // MAC konflik — hapus device lama yang duplikat
+            // (terjadi saat development ganti esp_id tapi hardware sama)
+            $macConflict->delete();
+            Log::warning('Device duplikat MAC dihapus: ' . $macConflict->esp_id);
+        }
+
+        // --- LOGIKA UPDATE DATA BARU ---
+        $device->mac_esp = $request->mac_esp;
+        $device->device_type = $request->device_type; // Update tipe jika ada perubahan config
+        
+        Log::info('current firmware version : ' . $request->version);
+        // Simpan versi firmware yang dikirim dari alat
+        if ($request->filled('version')) {
+            $device->current_firmware_version = $request->version; // ← SIMPAN KE SINI
+        }
+
         // Update informasi umum
-        $device->mac_esp = $request->mac_esp;  // ← selalu update mac_esp
+        // $device->mac_esp = $request->mac_esp;  // ← selalu update mac_esp
         $device->ip_address     = $request->ip();
         $device->last_seen_at   = now();
         $device->last_online_at = now();
