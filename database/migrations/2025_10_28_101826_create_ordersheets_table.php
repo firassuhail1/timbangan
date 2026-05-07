@@ -36,6 +36,7 @@ return new class extends Migration
             $table->string('SPV_QC')->nullable();
             $table->string('CHIEF_FINISH_GOOD')->nullable();
             $table->string('status')->nullable();
+            $table->text('keterangan')->nullable();
             $table->integer('checking_ke')->default(1);
             $table->timestamps();
         });

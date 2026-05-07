@@ -430,6 +430,7 @@ function openModalForItem(item) {
         } catch {}
 
         await loadPreview()
+        await loadKeteranganForOrdersheet()
         hitungLossWeight()
 
         const espId = window.APP?.espId
@@ -532,6 +533,7 @@ async function checkAndPromptChecking(item) {
 
         if (result.isConfirmed) {
             document.getElementById('info_checking_ke').value = result.value;
+            await loadKeteranganForOrdersheet()
         }
 
     } catch (err) {
@@ -639,9 +641,13 @@ function fillModalFields(item) {
     const optionalMark = document.getElementById('no_box_optional_mark')
     const noBoxInput   = document.getElementById('no_box')
 
+    
     if (requiredMark) requiredMark.style.display = isNike ? 'none' : ''
     if (optionalMark) optionalMark.style.display = isNike ? '' : 'none'
     if (noBoxInput)   noBoxInput.placeholder = isNike ? 'Opsional untuk Nike' : 'A001'
+
+    const ketEl = document.getElementById('info_keterangan')
+    if (ketEl) ketEl.value = ''
 }
 
 function formatDateForInput(dateStr) {
@@ -910,6 +916,32 @@ async function loadPreview() {
         document.getElementById('previewStatus').className =
             'text-danger fw-bold'
     }
+}
+
+async function loadKeteranganForOrdersheet() {
+    const tipeEl     = document.getElementById('tipe_asal')
+    const lineEl     = document.getElementById('info_line')
+    const subconEl   = document.getElementById('info_subcon')
+    const ketEl      = document.getElementById('info_keterangan')
+    const checkingEl = document.getElementById('info_checking_ke')
+    if (!ketEl || !currentId) return
+
+    const params = new URLSearchParams({
+        order_code:  currentId,
+        checking_ke: checkingEl?.value || 1,
+    })
+    if (tipeEl.value === 'sewing' && lineEl.value)   params.append('line',   lineEl.value)
+    if (tipeEl.value === 'subcon' && subconEl.value) params.append('subcon', subconEl.value)
+
+    try {
+        const res  = await fetch('/user/order/get-keterangan?' + params)
+        const json = await res.json()
+        if (json.success) {
+            ketEl.value = json.keterangan || ''
+            // Simpan ordersheet_id di dataset untuk keperluan inline edit laporan
+            ketEl.dataset.ordersheetId = json.ordersheet_id || ''
+        }
+    } catch {}
 }
 
 // ============== FUNGSI BEEP PANJANG ==============

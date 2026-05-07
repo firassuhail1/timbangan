@@ -245,7 +245,7 @@
                     {{-- END MY REPORT --}}
 
                     {{-- REPORT FORMAL ASLI --}}
-                    <div class="formal-report-wrap" id="formal-report-wrap">
+                    <!-- <div class="formal-report-wrap" id="formal-report-wrap">
 
                         {{-- HEADER --}}
                         <div class="formal-report-header">
@@ -319,7 +319,7 @@
                             </div>
                         </div>
 
-                    </div>
+                    </div> -->
 
                     {{-- ═══════════════════════════════════════════════════════
      PRINT TEMPLATE (hidden, hanya saat print)
@@ -363,7 +363,7 @@
 
                 <!-- Tambahkan ini di dalam modal, sebelum </div> modal-content -->
                 <div id="wifiLoading"
-                    class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-90 d-none flex-column justify-content-center align-items-center"
+                    class="position-absolute top-0 inset-s-0 w-100 h-100 bg-white bg-opacity-90 d-none flex-column justify-content-center align-items-center"
                     style="z-index: 9999;">
                     <div class="spinner-border text-primary mb-4" style="width: 4rem; height: 4rem;"></div>
                     <h5 id="wifiLoadingText" class="text-center">Mengirim konfigurasi...</h5>
@@ -415,13 +415,15 @@
                                                     <tr>
                                                         <th>Tipe Asal <span class="text-danger">*</span></th>
                                                         <td>
-                                                            <select id="tipe_asal" name="Tipe_Asal" class="form-select form-select-sm"
+                                                            <select id="tipe_asal" name="Tipe_Asal"
+                                                                class="form-select form-select-sm"
                                                                 onchange="toggleAsalInput(this.value)">
                                                                 <option value="">-- Pilih Tipe --</option>
                                                                 <option value="sewing">Sewing</option>
                                                                 <option value="subcon">Subcon</option>
                                                             </select>
-                                                            <input type="hidden" id="hidden_tipe_asal" name="Tipe_Asal" value="">
+                                                            <input type="hidden" id="hidden_tipe_asal"
+                                                                name="Tipe_Asal" value="">
                                                         </td>
                                                     </tr>
                                                     <tr id="row_line">
@@ -448,7 +450,8 @@
                                                     </tr> --}}
                                                     <input type="hidden" id="info_order_code" name="Order_code"
                                                         class="form-control form-control-sm" readonly>
-                                                    <input type="hidden" id="info_checking_ke" name="checking_ke" value="1">
+                                                    <input type="hidden" id="info_checking_ke" name="checking_ke"
+                                                        value="1">
                                                     <tr>
                                                         <th>KJ.</th>
                                                         <td><input type="text" id="info_kj" name="KJ"
@@ -551,6 +554,15 @@
                                             <table class="table table-bordered table-sm align-middle mb-0">
                                                 <tbody>
                                                     <tr>
+                                                        <th width="40%">Keterangan</th>
+                                                        <td>
+                                                            <textarea id="info_keterangan" name="keterangan" 
+                                                                class="form-control form-control-sm" 
+                                                                rows="2" 
+                                                                placeholder="Tulis keterangan (opsional)..."></textarea>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
                                                         <th width="40%">GAC Date</th>
                                                         <td><input type="date" class="form-control form-control-sm"
                                                                 id="info_GAC" name="Gac_date"></td>
@@ -615,10 +627,12 @@
                                             <div class="card-body p-3">
                                                 <!-- No. Carton + Tombol Scan Barcode -->
                                                 <div class="mb-3">
-                                                    <label for="no_box" class="form-label fw-semibold small text-muted">
-                                                        No. Carton 
+                                                    <label for="no_box"
+                                                        class="form-label fw-semibold small text-muted">
+                                                        No. Carton
                                                         <span class="text-danger" id="no_box_required_mark">*</span>
-                                                        <span class="text-muted" id="no_box_optional_mark" style="display:none;">(opsional untuk Nike)</span>
+                                                        <span class="text-muted" id="no_box_optional_mark"
+                                                            style="display:none;">(opsional untuk Nike)</span>
                                                     </label>
                                                     <div class="input-group">
                                                         <input type="text" class="form-control form-control-sm"
@@ -795,37 +809,37 @@
 
         <script>
             function toggleAsalInput(value) {
-                const rowLine   = document.getElementById('row_line');
+                const rowLine = document.getElementById('row_line');
                 const rowSubcon = document.getElementById('row_subcon');
-                const inputLine   = document.getElementById('info_line');
+                const inputLine = document.getElementById('info_line');
                 const inputSubcon = document.getElementById('info_subcon');
-                const hiddenTipe  = document.getElementById('hidden_tipe_asal'); // ← tambah ini
+                const hiddenTipe = document.getElementById('hidden_tipe_asal'); // ← tambah ini
 
                 if (value === 'sewing') {
-                    rowLine.style.display   = '';
+                    rowLine.style.display = '';
                     rowSubcon.style.display = 'none';
-                    inputLine.required   = true;
+                    inputLine.required = true;
                     inputSubcon.required = false;
-                    inputSubcon.value    = '';
-                    hiddenTipe.value     = 'sewing'; // ← set value
+                    inputSubcon.value = '';
+                    hiddenTipe.value = 'sewing'; // ← set value
                 } else if (value === 'subcon') {
-                    rowLine.style.display   = 'none';
+                    rowLine.style.display = 'none';
                     rowSubcon.style.display = '';
-                    inputLine.required   = false;
+                    inputLine.required = false;
                     inputSubcon.required = true;
-                    inputLine.value      = '';
-                    hiddenTipe.value     = 'subcon'; // ← set value
+                    inputLine.value = '';
+                    hiddenTipe.value = 'subcon'; // ← set value
                 } else {
-                    rowLine.style.display   = 'none';
+                    rowLine.style.display = 'none';
                     rowSubcon.style.display = 'none';
-                    inputLine.required   = false;
+                    inputLine.required = false;
                     inputSubcon.required = false;
-                    hiddenTipe.value     = ''; // ← kosongkan
+                    hiddenTipe.value = ''; // ← kosongkan
                 }
             }
 
             // Jalankan saat awal load jika ada value default
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 const tipeAsal = document.getElementById('tipe_asal');
                 if (tipeAsal) toggleAsalInput(tipeAsal.value);
             });
@@ -839,7 +853,7 @@
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 const tipeAsal = document.getElementById('tipe_asal');
                 const inputLine = document.getElementById('info_line');
                 const inputSubcon = document.getElementById('info_subcon');
@@ -1133,173 +1147,235 @@
 
                     if (badge) badge.textContent = rows.length;
 
-                    const dates = [...new Set(rows.map(r => r.tanggal))].join(', ');
-                    const totalCarton = rows.reduce((s, r) => s + r.timbangans.length, 0);
+                    // ── Pisah normal vs double check ─────────────────────────────────────────
+                    const rowsNormal = rows.filter(r => (parseInt(r.checking_ke) || 1) === 1);
+                    const rowsDouble = rows.filter(r => (parseInt(r.checking_ke) || 1) >= 2);
 
-                    const allRows = [];
-                    rows.forEach(r => {
-                        const chunks = chunkArray(r.timbangans, COLS);
-                        const rowspan = chunks.length;
-                        chunks.forEach((chunk, chunkIdx) => {
-                            const padded = [...chunk, ...Array(COLS - chunk.length).fill(null)];
-                            const chunkLen = chunk.length;
-                            let tdBerats = '';
-                            padded.forEach(t => {
-                                tdBerats += t ?
-                                    '<td class="td-berat">' + parseFloat(t.berat).toFixed(2) +
-                                    '</td>' :
-                                    '<td class="td-empty">-</td>';
-                            });
-                            allRows.push({
-                                order: r,
-                                chunkIdx,
-                                rowspan,
-                                chunkLen,
-                                tdBerats
+                    // ── Bangun allRows dari satu kumpulan baris ───────────────────────────────
+                    function buildAllRows(rowSet) {
+                        const result = [];
+                        rowSet.forEach(r => {
+                            const chunks = chunkArray(r.timbangans, COLS);
+                            const rowspan = chunks.length;
+                            chunks.forEach((chunk, chunkIdx) => {
+                                const padded = [...chunk, ...Array(COLS - chunk.length).fill(null)];
+                                const chunkLen = chunk.length;
+                                let tdBerats = '';
+                                padded.forEach(t => {
+                                    tdBerats += t ?
+                                        `<td class="td-berat">${parseFloat(t.berat).toFixed(2)}</td>` :
+                                        `<td class="td-empty">-</td>`;
+                                });
+                                result.push({
+                                    order: r,
+                                    chunkIdx,
+                                    rowspan,
+                                    chunkLen,
+                                    tdBerats
+                                });
                             });
                         });
-                    });
-
-                    const pages = chunkArray(allRows, ROWS_PER_PAGE);
-                    let currentPage = 1;
-
-                    function buildTableHTML(pageRows) {
-                        let thNums = '';
-                        for (let i = 1; i <= COLS; i++) {
-                            thNums += '<th style="min-width:36px;font-size:10px;">' + i + '</th>';
-                        }
-
-                        let tbody = '';
-                        pageRows.forEach(row => {
-                            const r = row.order;
-                            const infoTds = row.chunkIdx === 0 ?
-                                '<td class="td-order" rowspan="' + row.rowspan +
-                                '" style="text-align:left;font-size:10px;word-break:break-all;max-width:100px;">' +
-                                r.kj + '</td>' +
-                                '<td rowspan="' + row.rowspan + '" style="font-size:11px;">' + (r.style || '-') +
-                                '</td>' +
-                                '<td rowspan="' + row.rowspan + '">' + (r.color || '-') + '</td>' +
-                                '<td rowspan="' + row.rowspan + '">' + (r.pcs || '-') + '</td>' +
-                                '<td rowspan="' + row.rowspan + '">' + (r.qty_order || '-') + '</td>' +
-                                '<td rowspan="' + row.rowspan + '" style="font-size:10px;">' + (r.gac_date || '-') +
-                                '</td>' +
-                                '<td rowspan="' + row.rowspan + '" style="font-size:10px;max-width:80px;">' + (r
-                                    .destination || '-') + '</td>' +
-                                '<td rowspan="' + row.rowspan + '">' + (r.line || '-') + '</td>' +
-                                '<td rowspan="' + row.rowspan + '">' + (r.carton_weight_std || '-') + '</td>' :
-                                '';
-
-                            tbody += '<tr>' + infoTds + row.tdBerats +
-                                '<td class="td-total">' + row.chunkLen + '</td>' +
-                                '<td></td></tr>';
-                        });
-
-                        // ── TAMBAHAN: isi baris kosong sampai 24 baris ──────────────────────
-                        const emptyRowsNeeded = ROWS_PER_PAGE - pageRows.length;
-                        if (emptyRowsNeeded > 0) {
-                            const emptyStyle = 'style="border:1px solid #dee2e6;color:#ccc;font-size:10px;"';
-
-                            // 9 kolom info tetap (Order No, Style, CLR, Isi, Qty, GAC, Dest, Line, Std)
-                            let emptyInfoTds = '';
-                            for (let i = 0; i < 9; i++) {
-                                emptyInfoTds += '<td ' + emptyStyle + '>-</td>';
-                            }
-                            // 25 kolom berat
-                            let emptyBeratTds = '';
-                            for (let i = 0; i < COLS; i++) {
-                                emptyBeratTds += '<td ' + emptyStyle + '>-</td>';
-                            }
-                            // 2 kolom Total + Ket
-                            for (let r = 0; r < emptyRowsNeeded; r++) {
-                                tbody += '<tr>' + emptyInfoTds + emptyBeratTds +
-                                    '<td ' + emptyStyle + '>-</td>' +
-                                    '<td ' + emptyStyle + '></td></tr>';
-                            }
-                        }
-                        // ───────────────────────────────────────────────────────────────────
-
-                        return '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
-                            '<table class="nike-table"><thead>' +
-                            '<tr>' +
-                            '<th rowspan="2" style="min-width:100px;">Order No.</th>' +
-                            '<th rowspan="2" style="min-width:90px;">Style</th>' +
-                            '<th rowspan="2">CLR</th>' +
-                            '<th rowspan="2">Isi Karton</th>' +
-                            '<th rowspan="2">Qty Order</th>' +
-                            '<th rowspan="2">GAC</th>' +
-                            '<th rowspan="2" style="min-width:70px;">Destination</th>' +
-                            '<th rowspan="2">Dari Line</th>' +
-                            '<th rowspan="2">Standar Berat</th>' +
-                            '<th colspan="' + COLS + '" style="background:#2d4fad;">Actual Berat Karton</th>' +
-                            '<th rowspan="2">Total Karton</th>' +
-                            '<th rowspan="2" style="min-width:50px;">Ket</th>' +
-                            '</tr>' +
-                            '<tr>' + thNums + '</tr>' +
-                            '</thead><tbody>' + tbody + '</tbody></table></div>';
+                        return result;
                     }
 
-                    function buildPaginationHTML(cur, total) {
-                        if (total <= 1) return '';
-                        let html = '<div class="rpt-pagination" style="margin-top:10px;">';
-                        html += '<button class="rpt-page-btn nike-page-btn" data-page="' + (cur - 1) + '" ' + (cur === 1 ?
-                            'disabled' : '') + '>‹</button>';
-                        for (let p = 1; p <= total; p++) {
-                            if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1) {
-                                html += '<button class="rpt-page-btn nike-page-btn' + (p === cur ? ' active' : '') +
-                                    '" data-page="' + p + '">' + p + '</button>';
-                            } else if (p === cur - 2 || p === cur + 2) {
-                                html += '<span class="rpt-page-btn" style="cursor:default;">…</span>';
-                            }
+                    // ── Render satu grup Nike ─────────────────────────────────────────────────
+                    function renderNikeGroup(targetEl, rowSet, groupLabel, groupColor, idPrefix) {
+                        if (!rowSet.length) {
+                            targetEl.innerHTML += `<div class="formal-empty" style="color:#aaa;font-size:11px;margin:8px 0;">
+                <em>Tidak ada data Nike ${groupLabel} pada rentang ini</em></div>`;
+                            return;
                         }
-                        html += '<button class="rpt-page-btn nike-page-btn" data-page="' + (cur + 1) + '" ' + (cur ===
-                            total ? 'disabled' : '') + '>›</button>';
-                        html += '</div>';
-                        return html;
-                    }
 
-                    function render(page) {
-                        currentPage = page;
+                        const allRows = buildAllRows(rowSet);
+                        const pages = chunkArray(allRows, ROWS_PER_PAGE);
                         const totalPages = pages.length;
-                        const pageRows = pages[page - 1] || [];
-                        const start = (page - 1) * ROWS_PER_PAGE + 1;
-                        const end = Math.min(page * ROWS_PER_PAGE, allRows.length);
+                        let curPage = 1;
+                        const wrapperId = `${idPrefix}-wrapper`;
+                        const dates = [...new Set(rowSet.map(r => r.tanggal))].join(', ');
+                        const totalCarton = rowSet.reduce((s, r) => s + r.timbangans.length, 0);
 
-                        el.innerHTML = '<div class="nike-report-block">' +
-                            '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">' +
-                            '<div class="nike-report-meta" style="margin-bottom:0;">' +
-                            '<div class="nike-meta-item">Tanggal: <span>' + dates + '</span></div>' +
-                            '<div class="nike-meta-item">Total Order: <span>' + rows.length + '</span></div>' +
-                            '<div class="nike-meta-item">Total Carton: <span>' + totalCarton + '</span></div>' +
-                            '<div class="nike-meta-item">Halaman: <span>' + page + ' / ' + totalPages +
-                            '</span> &nbsp;(baris ' + start + '–' + end + ')</div>' +
-                            '</div>' +
-                            '<button class="btn-print-formal" id="btn-print-nike-page">' +
-                            '<i class="bi bi-printer"></i> Print Lembar ' + page +
-                            '</button>' +
-                            '</div>' +
-                            buildTableHTML(pageRows) +
-                            buildPaginationHTML(page, totalPages) +
-                            '</div>';
+                        // Buat container
+                        const groupDiv = document.createElement('div');
+                        groupDiv.id = wrapperId;
+                        groupDiv.style.marginBottom = '20px';
+                        groupDiv.innerHTML =
+                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;` +
+                            `gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:6px;` +
+                            `background:${groupColor}18;border-left:4px solid ${groupColor};">` +
+                            `<div style="font-size:12px;font-weight:700;color:${groupColor};">${groupLabel}</div>` +
+                            `<div id="${idPrefix}-meta" style="font-size:11px;color:#666;"></div>` +
+                            `<button class="btn-print-formal" id="${idPrefix}-print-btn">` +
+                            `<i class="bi bi-printer"></i> Print Lembar <span id="${idPrefix}-cur-page">1</span>` +
+                            `</button>` +
+                            `</div>` +
+                            `<div id="${idPrefix}-content"></div>`;
 
-                        el.querySelectorAll('.nike-page-btn').forEach(btn => {
-                            btn.addEventListener('click', function() {
-                                const p = parseInt(this.dataset.page);
-                                if (!isNaN(p) && p >= 1 && p <= totalPages) {
-                                    render(p);
-                                    el.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'start'
-                                    });
-                                }
+                        targetEl.appendChild(groupDiv);
+
+                        function buildTableHTML(pageRows) {
+                            let thNums = '';
+                            for (let i = 1; i <= COLS; i++) {
+                                thNums += `<th style="min-width:36px;font-size:10px;">${i}</th>`;
+                            }
+
+                            let tbody = '';
+                            pageRows.forEach(row => {
+                                const r = row.order;
+                                const infoTds = row.chunkIdx === 0 ?
+                                    `<td class="td-order" rowspan="${row.rowspan}" style="text-align:left;font-size:10px;word-break:break-all;max-width:100px;">${r.kj}</td>` +
+                                    `<td rowspan="${row.rowspan}" style="font-size:11px;">${r.style || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}">${r.color || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}">${r.pcs || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}">${r.qty_order || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}" style="font-size:10px;">${r.gac_date || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}" style="font-size:10px;max-width:80px;">${r.destination || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}">${r.line || '-'}</td>` +
+                                    `<td rowspan="${row.rowspan}">${r.carton_weight_std || '-'}</td>` :
+                                    '';
+
+                                tbody +=
+                                    `<tr>${infoTds}${row.tdBerats}` +
+                                    `<td class="td-total">${row.chunkLen}</td>` +
+                                    (row.chunkIdx === 0
+                                        ? `<td rowspan="${row.rowspan}" style="min-width:90px;vertical-align:top;padding:4px;" class="ket-cell">` +
+                                            `<div class="ket-display" style="font-size:10px;cursor:pointer;min-height:20px;padding:2px;" ` +
+                                                `title="Klik untuk edit" data-ordersheet-id="${row.order.ordersheet_id}">` +
+                                                `${(row.order.keterangan || '<span style="color:#bbb;font-style:italic;">—</span>')}` +
+                                            `</div>` +
+                                            `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;">` +
+                                                `<textarea class="ket-input" data-ordersheet-id="${row.order.ordersheet_id}" rows="2" ` +
+                                                `placeholder="Keterangan..." ` +
+                                                `style="width:100%;font-size:10px;padding:3px;border:1px solid #ced4da;border-radius:3px;resize:vertical;"` +
+                                                `>${(row.order.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
+                                                `<div style="display:flex;gap:3px;">` +
+                                                    `<button class="ket-save-btn" data-ordersheet-id="${row.order.ordersheet_id}" ` +
+                                                    `style="font-size:9px;padding:2px 5px;background:#435ebe;color:#fff;border:none;border-radius:3px;cursor:pointer;">` +
+                                                    `💾</button>` +
+                                                    `<button class="ket-cancel-btn" ` +
+                                                    `style="font-size:9px;padding:2px 5px;background:#6c757d;color:#fff;border:none;border-radius:3px;cursor:pointer;">` +
+                                                    `✕</button>` +
+                                                `</div>` +
+                                                `<span class="ket-status" style="font-size:9px;display:none;"></span>` +
+                                            `</div>` +
+                                            `</td>`
+                                        : '')
                             });
+
+                            // Baris kosong pengisi
+                            const emptyNeeded = ROWS_PER_PAGE - pageRows.length;
+                            if (emptyNeeded > 0) {
+                                const es = `style="border:1px solid #dee2e6;color:#ccc;font-size:10px;"`;
+                                let ei = '',
+                                    eb = '';
+                                for (let i = 0; i < 9; i++) ei += `<td ${es}>-</td>`;
+                                for (let i = 0; i < COLS; i++) eb += `<td ${es}>-</td>`;
+                                for (let r = 0; r < emptyNeeded; r++) {
+                                    tbody += `<tr>${ei}${eb}<td ${es}>-</td><td ${es}></td></tr>`;
+                                }
+                            }
+
+                            return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">` +
+                                `<table class="nike-table"><thead>` +
+                                `<tr>` +
+                                `<th rowspan="2" style="min-width:100px;">Order No.</th>` +
+                                `<th rowspan="2" style="min-width:90px;">Style</th>` +
+                                `<th rowspan="2">CLR</th>` +
+                                `<th rowspan="2">Isi Karton</th>` +
+                                `<th rowspan="2">Qty Order</th>` +
+                                `<th rowspan="2">GAC</th>` +
+                                `<th rowspan="2" style="min-width:70px;">Destination</th>` +
+                                `<th rowspan="2">Dari Line</th>` +
+                                `<th rowspan="2">Standar Berat</th>` +
+                                `<th colspan="${COLS}" style="background:#2d4fad;">Actual Berat Karton</th>` +
+                                `<th rowspan="2">Total Karton</th>` +
+                                `<th rowspan="2" style="min-width:50px;">Ket</th>` +
+                                `</tr>` +
+                                `<tr>${thNums}</tr>` +
+                                `</thead><tbody>${tbody}</tbody></table></div>`;
+                        }
+
+                        function buildPagHTML(cur, total) {
+                            if (total <= 1) return '';
+                            let html = `<div class="rpt-pagination" style="margin-top:10px;">`;
+                            html +=
+                                `<button class="${idPrefix}-pag rpt-page-btn" data-page="${cur-1}" ${cur===1?'disabled':''}>‹</button>`;
+                            for (let p = 1; p <= total; p++) {
+                                if (total <= 7 || p === 1 || p === total || Math.abs(p - cur) <= 1) {
+                                    html +=
+                                        `<button class="${idPrefix}-pag rpt-page-btn${p===cur?' active':''}" data-page="${p}">${p}</button>`;
+                                } else if (p === cur - 2 || p === cur + 2) {
+                                    html += `<span class="rpt-page-btn" style="cursor:default;">…</span>`;
+                                }
+                            }
+                            html +=
+                                `<button class="${idPrefix}-pag rpt-page-btn" data-page="${cur+1}" ${cur===total?'disabled':''}>›</button>`;
+                            html += `</div>`;
+                            return html;
+                        }
+
+                        function render(page) {
+                            curPage = page;
+                            const pageRows = pages[page - 1] || [];
+                            const start = (page - 1) * ROWS_PER_PAGE + 1;
+                            const end = Math.min(page * ROWS_PER_PAGE, allRows.length);
+
+                            const metaEl = document.getElementById(`${idPrefix}-meta`);
+                            if (metaEl) metaEl.textContent =
+                                `Lembar ${page} / ${totalPages} · Total order: ${rowSet.length} · Total carton: ${totalCarton} · Baris ${start}–${end}`;
+
+                            const curPageEl = document.getElementById(`${idPrefix}-cur-page`);
+                            if (curPageEl) curPageEl.textContent = page;
+
+                            const contentEl = document.getElementById(`${idPrefix}-content`);
+                            if (contentEl) {
+                                contentEl.innerHTML = buildTableHTML(pageRows) + buildPagHTML(page, totalPages);
+
+                                contentEl.querySelectorAll(`.${idPrefix}-pag`).forEach(btn => {
+                                    btn.addEventListener('click', function() {
+                                        const p = parseInt(this.dataset.page);
+                                        if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                                            render(p);
+                                            document.getElementById(wrapperId)?.scrollIntoView({
+                                                behavior: 'smooth',
+                                                block: 'start'
+                                            });
+                                        }
+                                    });
+                                });
+                            }
+                        }
+
+                        groupDiv.querySelector(`#${idPrefix}-print-btn`)?.addEventListener('click', () => {
+                            // Panggil fungsi print Nike yang sudah ada
+                            printNikePage(curPage, pages[curPage - 1] || [], dates);
                         });
 
-                        document.getElementById('btn-print-nike-page')?.addEventListener('click', () => {
-                            printNikePage(page, pageRows, dates);
-                        });
+                        render(1);
                     }
 
-                    render(1);
+                    // ── Bersihkan container, render dua grup ─────────────────────────────────
+                    el.innerHTML = '';
+
+                    renderNikeGroup(
+                        el, rowsNormal,
+                        '📋 Timbangan Pertama (Checking #1)',
+                        '#435ebe', 'nike-normal'
+                    );
+
+                    if (rowsDouble.length > 0) {
+                        const sep = document.createElement('div');
+                        sep.style.cssText = 'border-top:2px dashed #ff6b35;margin:16px 0 12px;padding-top:8px;';
+                        sep.innerHTML = `<span style="background:#fff3e0;color:#ff6b35;font-size:11px;font-weight:700;
+            padding:3px 10px;border-radius:12px;border:1.5px solid #ff6b35;">
+            ⚠ Lembar Double Check — Checking #2 dst.</span>`;
+                        el.appendChild(sep);
+
+                        renderNikeGroup(
+                            el, rowsDouble,
+                            '🔁 Double Check (Checking #2+)',
+                            '#ff6b35', 'nike-double'
+                        );
+                    }
                 }
 
                 // ── Print Nike ───────────────────────────────────────────────
@@ -1318,25 +1394,25 @@
                     let tbody = '';
                     pageRows.forEach(row => {
                         const r = row.order;
-                        const infoTds = row.chunkIdx === 0 ?
-                            '<td rowspan="' + row.rowspan +
-                            '" style="text-align:left;font-size:8px;word-break:break-all;">' + (r.kj || r
-                                .order_code) + '</td>' +
-                            '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.style || '-') +
-                            '</td>' +
-                            '<td rowspan="' + row.rowspan + '">' + (r.color || '-') + '</td>' +
-                            '<td rowspan="' + row.rowspan + '">' + (r.pcs || '-') + '</td>' +
-                            '<td rowspan="' + row.rowspan + '">' + (r.qty_order || '-') + '</td>' +
-                            '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.gac_date || '-') +
-                            '</td>' +
-                            '<td rowspan="' + row.rowspan + '" style="font-size:9px;">' + (r.destination || '-') +
-                            '</td>' +
-                            '<td rowspan="' + row.rowspan + '">' + (r.subcon ? 'S:' + r.subcon : 'L:' + (r.line || '-')) + '</td>' +
-                            '<td rowspan="' + row.rowspan + '">' + (r.carton_weight_std || '-') + '</td>' :
-                            '';
-                        tbody += '<tr>' + infoTds + row.tdBerats +
-                            '<td style="font-weight:700;border:1px solid #ccc;">' + row.chunkLen + '</td>' +
-                            '<td style="border:1px solid #ccc;"></td></tr>';
+                        const infoTds = row.chunkIdx === 0
+                            ? `<td class="td-order" rowspan="${row.rowspan}" style="text-align:left;font-size:10px;word-break:break-all;max-width:100px;">${r.kj}</td>` +
+                            `<td rowspan="${row.rowspan}" style="font-size:11px;">${r.style || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}">${r.color || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}">${r.pcs || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}">${r.qty_order || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}" style="font-size:10px;">${r.gac_date || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}" style="font-size:10px;max-width:80px;">${r.destination || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}">${r.line || '-'}</td>` +
+                            `<td rowspan="${row.rowspan}">${r.carton_weight_std || '-'}</td>`
+                            : '';
+
+                        const ketTd = row.chunkIdx === 0
+                            ? `<td rowspan="${row.rowspan}" style="min-width:80px;vertical-align:top;padding:4px;font-size:8px;">` +
+                                `${(r.keterangan || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '-'}` +
+                            `</td>`
+                            : '';
+
+                        tbody += `<tr>${infoTds}${row.tdBerats}<td class="td-total">${row.chunkLen}</td>${ketTd}</tr>`;
                     });
 
                     // Baris kosong pengisi sampai 24
@@ -1412,7 +1488,9 @@
                         'table.main-tbl{width:100%;border-collapse:collapse;font-size:7.5px;}' +
                         'table.main-tbl th{background:#435ebe!important;color:#fff!important;padding:2px 3px;border:1px solid #3551b0;text-align:center;}' +
                         'table.main-tbl td{padding:2px 3px;border:1px solid #ccc!important;text-align:center;vertical-align:middle;}' +
-                        '.bg-blue{background:#2d4fad!important;}';
+                        '.bg-blue{background:#2d4fad!important;}' + 
+                        '.ket-edit{display:none!important;}' +
+                        '.ket-display{font-size:8px!important;}';
 
                     const html =
                         '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
@@ -1518,160 +1596,167 @@
 
                 // ─── RENDER NON-NIKE ─────────────────────────────────────────
                 function renderNonNike(orders) {
-                    const el    = document.getElementById('non-nike-report-content');
+                    const el = document.getElementById('non-nike-report-content');
                     const badge = document.getElementById('non-nike-count-badge');
-                
-                    const COLS_PER_BLOCK   = 10;
-                    const ROWS_PER_BLOCK   = 5;
+
+                    const COLS_PER_BLOCK = 10;
+                    const ROWS_PER_BLOCK = 5;
                     const CARTON_PER_BLOCK = COLS_PER_BLOCK * ROWS_PER_BLOCK;
-                    const BLOCKS_PER_PAGE  = 4;
-                
+                    const BLOCKS_PER_PAGE = 4;
+
                     if (!el) return;
-                
+
                     if (!orders.length) {
                         if (badge) badge.textContent = '0';
                         el.innerHTML = '<div class="formal-empty">Tidak ada data Non-Nike pada rentang tanggal ini</div>';
                         return;
                     }
-                
+
                     if (badge) badge.textContent = orders.length;
-                
-                    // ── Bangun allBlocks ──────────────────────────────────────────────────────
-                    // Setiap elemen `orders` sudah merupakan 1 sesi checking yang berbeda
-                    // (dipisahkan oleh controller via groupBy Order_code|checking_ke).
-                    const allBlocks = [];
-                
-                    orders.forEach(order => {
-                        (order.by_line || []).forEach(lineGroup => {
-                            const timbangans   = lineGroup.timbangans || [];
-                            const cartonChunks = chunkArray(timbangans, CARTON_PER_BLOCK);
-                
-                            cartonChunks.forEach((chunk, blockIdx) => {
-                                allBlocks.push({
-                                    buyer:              order.buyer             || '-',
-                                    kj:                 order.kj || order.order_code || '-',
-                                    order_code:         order.order_code        || '-',
-                                    po:                 order.po                || '-',
-                                    style:              order.style             || '-',
-                                    color:              order.color             || '-',
-                                    qty_order:          order.qty_order         || 0,
-                                    carton_weight_std:  order.carton_weight_std,
-                                    pcs_weight_std:     order.pcs_weight_std,
-                                    gac_date:           order.gac_date          || '-',
-                                    destination:        order.destination       || '-',
-                                    inspector:          order.inspector         || '-',
-                                    opt_qc:             order.opt_qc            || '-',
-                                    spv_qc:             order.spv_qc            || '-',
-                                    chief:              order.chief             || '-',
-                                    line:               lineGroup.line,
-                                    subcon:             order.subcon            || null,
-                
-                                    // ← checking_ke selalu ada; controller sudah cast ke integer
-                                    checking_ke:        parseInt(order.checking_ke) || 1,
-                
-                                    pcs_default:        order.pcs_default       || '-',
-                                    timbangans:         chunk,
+
+                    // ── Bangun semua blok, lalu pisah berdasarkan checking_ke ────────────────
+                    const buildAllBlocks = (orderList) => {
+                        const blocks = [];
+                        orderList.forEach(order => {
+                            (order.by_line || []).forEach(lineGroup => {
+                                const timbangans = lineGroup.timbangans || [];
+                                const cartonChunks = chunkArray(timbangans, CARTON_PER_BLOCK);
+
+                                cartonChunks.forEach((chunk, blockIdx) => {
+                                blocks.push({
+                                    buyer: order.buyer || '-',
+                                    kj: order.kj || order.order_code || '-',
+                                    order_code: order.order_code || '-',
+                                    po: order.po || '-',
+                                    style: order.style || '-',
+                                    color: order.color || '-',
+                                    qty_order: order.qty_order || 0,
+                                    carton_weight_std: order.carton_weight_std,
+                                    pcs_weight_std: order.pcs_weight_std,
+                                    gac_date: order.gac_date || '-',
+                                    destination: order.destination || '-',
+                                    inspector: order.inspector || '-',
+                                    opt_qc: order.opt_qc || '-',
+                                    spv_qc: order.spv_qc || '-',
+                                    chief: order.chief || '-',
+                                    line: lineGroup.line,
+                                    subcon: order.subcon || null,
+                                    checking_ke: parseInt(order.checking_ke) || 1,
+                                    pcs_default: order.pcs_default || '-',
+                                    // ↓ TAMBAHKAN DUA BARIS INI
+                                    ordersheet_id: order.ordersheet_id || '',
+                                    keterangan: order.keterangan || '',
+                                    // ↑ SAMPAI SINI
+                                    timbangans: chunk,
                                     blockIdx,
-                                    totalCartonInLine:  timbangans.length,
-                                    startNo:            blockIdx * CARTON_PER_BLOCK + 1,
+                                    totalCartonInLine: timbangans.length,
+                                    startNo: blockIdx * CARTON_PER_BLOCK + 1,
                                 });
                             });
+                            });
                         });
-                    });
-                
-                    // ── Helper: badge HTML untuk checking_ke ─────────────────────────────────
+                        return blocks;
+                    };
+
+                    const allBlocks = buildAllBlocks(orders);
+
+                    // ── Pisah: checking_ke === 1 vs checking_ke >= 2 ─────────────────────────
+                    const blocksNormal = allBlocks.filter(b => b.checking_ke === 1);
+                    const blocksDouble = allBlocks.filter(b => b.checking_ke >= 2);
+
+                    // ── Badge checking_ke ─────────────────────────────────────────────────────
                     function checkingBadgeHTML(checkingKe, fontSize = '10px') {
-                        // Semua sesi mendapat badge; sesi > 1 warnanya lebih mencolok
-                        const bg    = checkingKe > 1 ? '#ff6b35' : '#6c757d';  // oranye vs abu
+                        const bg = checkingKe > 1 ? '#ff6b35' : '#6c757d';
                         const label = `Checking #${checkingKe}`;
                         return `<span style="background:${bg};color:#fff;font-size:${fontSize};` +
                             `font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">${label}</span>`;
                     }
-                
-                    // ── Bangun HTML satu block ────────────────────────────────────────────────
+
+                    // ── Build HTML 1 blok ─────────────────────────────────────────────────────
                     function buildBlockHTML(block) {
-                        const isContinued  = block.blockIdx > 0;
-                        const startNo      = block.startNo;
-                        const cartons      = block.timbangans;
-                        let   tbodyRows    = '';
-                
+                        const isContinued = block.blockIdx > 0;
+                        const startNo = block.startNo;
+                        const cartons = block.timbangans;
+                        let tbodyRows = '';
+
                         for (let row = 0; row < ROWS_PER_BLOCK; row++) {
-                            const startIdx    = row * COLS_PER_BLOCK;
-                            const rowCartons  = cartons.slice(startIdx, startIdx + COLS_PER_BLOCK);
-                            const padded      = [...rowCartons, ...Array(COLS_PER_BLOCK - rowCartons.length).fill(null)];
+                            const startIdx = row * COLS_PER_BLOCK;
+                            const rowCartons = cartons.slice(startIdx, startIdx + COLS_PER_BLOCK);
+                            const padded = [...rowCartons, ...Array(COLS_PER_BLOCK - rowCartons.length).fill(null)];
                             const rowTotalBerat = rowCartons.reduce((s, t) => s + parseFloat(t?.berat || 0), 0);
-                            const hasData     = rowCartons.length > 0;
-                
-                            let tdBoxes = '', tdWeights = '';
-                
+                            const hasData = rowCartons.length > 0;
+
+                            let tdBoxes = '',
+                                tdWeights = '';
+
                             padded.forEach((t, colIdx) => {
                                 const no = startNo + startIdx + colIdx;
-                                tdBoxes += t
-                                    ? `<td class="td-box" style="font-weight:600;font-size:10px;">${t.no_box || no}</td>`
-                                    : `<td class="td-empty" style="color:#ddd;">-</td>`;
+                                tdBoxes += t ?
+                                    `<td class="td-box" style="font-weight:600;font-size:10px;">${t.no_box || no}</td>` :
+                                    `<td class="td-empty" style="color:#ddd;">-</td>`;
                             });
-                
+
                             padded.forEach(t => {
                                 if (t) {
-                                    const bv  = parseFloat(t.berat);
-                                    const mn  = parseFloat(t.rasio_batas_beban_min || 0);
-                                    const mx  = parseFloat(t.rasio_batas_beban_max  || 0);
-                                    let   cls = 'w-ok';
+                                    const bv = parseFloat(t.berat);
+                                    const mn = parseFloat(t.rasio_batas_beban_min || 0);
+                                    const mx = parseFloat(t.rasio_batas_beban_max || 0);
+                                    let cls = 'w-ok';
                                     if (mn > 0 && mx > 0) {
                                         if (bv < mn) cls = 'w-kurang';
                                         else if (bv > mx) cls = 'w-lebih';
                                     }
-                                    tdWeights += `<td class="td-w ${cls}" style="font-weight:700;font-size:11px;">${bv.toFixed(2)}</td>`;
+                                    tdWeights +=
+                                        `<td class="td-w ${cls}" style="font-weight:700;font-size:11px;">${bv.toFixed(2)}</td>`;
                                 } else {
                                     tdWeights += `<td class="td-empty" style="color:#ddd;">-</td>`;
                                 }
                             });
-                
-                            const rowDate = rowCartons[0]?.waktu_timbang
-                                ? rowCartons[0].waktu_timbang.substring(0, 10) : '-';
-                
+
+                            const rowDate = rowCartons[0]?.waktu_timbang ?
+                                rowCartons[0].waktu_timbang.substring(0, 10) : '-';
+
                             tbodyRows +=
                                 `<tr>` +
-                                    `<td class="td-date" rowspan="2" style="font-size:10px;color:#666;vertical-align:middle;white-space:nowrap;">${rowDate}</td>` +
-                                    tdBoxes +
-                                    `<td class="td-total" rowspan="2" style="font-weight:700;color:#2dce89;vertical-align:middle;">` +
-                                        `${hasData ? rowTotalBerat.toFixed(2) : '-'}` +
-                                    `</td>` +
-                                    `<td rowspan="2"></td>` +
+                                `<td class="td-date" rowspan="2" style="font-size:10px;color:#666;vertical-align:middle;white-space:nowrap;">${rowDate}</td>` +
+                                tdBoxes +
+                                `<td class="td-total" rowspan="2" style="font-weight:700;color:#2dce89;vertical-align:middle;">` +
+                                `${hasData ? rowTotalBerat.toFixed(2) : '-'}` +
+                                `</td>` +
+                                `<td rowspan="2"></td>` +
                                 `</tr>` +
                                 `<tr>${tdWeights}</tr>`;
                         }
-                
-                        const continuedBadge = isContinued
-                            ? `<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:600;` +
-                            `padding:2px 8px;border-radius:4px;margin-left:8px;">Lanjutan</span>`
-                            : '';
-                
-                        const thHeaders = Array.from({ length: COLS_PER_BLOCK }, (_, i) =>
+
+                        const continuedBadge = isContinued ?
+                            `<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:600;` +
+                            `padding:2px 8px;border-radius:4px;margin-left:8px;">Lanjutan</span>` :
+                            '';
+
+                        const thHeaders = Array.from({
+                                length: COLS_PER_BLOCK
+                            }, (_, i) =>
                             `<th style="min-width:50px;">#${i + 1}</th>`
                         ).join('');
-                
+
                         const totalBerat = block.timbangans
                             .reduce((s, t) => s + parseFloat(t?.berat || 0), 0).toFixed(2);
-                
+
                         return (
                             `<div class="non-nike-block" style="margin-bottom:12px;">` +
                             `<div class="nn-info-wrap">` +
-                
-                            /* ── Info KIRI ── */
+
                             `<div class="nn-info-left">` +
                             `<table class="nn-info-table">` +
                             `<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">` +
-                                `CARTON WEIGHT REPORT ` +
-                                continuedBadge +
-                                /* Badge checking_ke — selalu tampil */
-                                checkingBadgeHTML(block.checking_ke) +
-                                /* Tombol Print Block */
-                                `<button class="btn-print-block" onclick="printSingleBlock(this)" ` +
-                                `style="float:right;background:#fff;color:#435ebe;border:none;border-radius:3px;` +
-                                `padding:1px 6px;font-size:10px;cursor:pointer;font-weight:700;" ` +
-                                `data-block='${JSON.stringify(block).replace(/'/g, "&#39;")}'>` +
-                                `<i class="bi bi-printer"></i> Print Block</button>` +
+                            `CARTON WEIGHT REPORT ` +
+                            continuedBadge +
+                            checkingBadgeHTML(block.checking_ke) +
+                            `<button class="btn-print-block" onclick="printSingleBlock(this)" ` +
+                            `style="float:right;background:#fff;color:#435ebe;border:none;border-radius:3px;` +
+                            `padding:1px 6px;font-size:10px;cursor:pointer;font-weight:700;" ` +
+                            `data-block='${JSON.stringify(block).replace(/'/g, "&#39;")}'>` +
+                            `<i class="bi bi-printer"></i> Print Block</button>` +
                             `</th></tr>` +
                             `<tr><th>BUYER</th><td><strong>${block.buyer}</strong></td></tr>` +
                             `<tr><th>Order No. (KJ)</th><td><strong>${block.kj}</strong></td></tr>` +
@@ -1679,18 +1764,17 @@
                             `<tr><th>Style</th><td>${block.style}</td></tr>` +
                             `<tr><th>Color</th><td>${block.color}</td></tr>` +
                             `<tr><th>Qty Order</th><td>` +
-                                `${parseInt(block.qty_order || 0).toLocaleString()} pcs ` +
-                                `<span style="font-size:10px;color:#666;">` +
-                                `${block.subcon ? 'S = ' + block.subcon : 'L = ' + (block.line || '-')} ` +
-                                `&nbsp;·&nbsp; M = ${block.pcs_default}` +
-                                `</span>` +
+                            `${parseInt(block.qty_order || 0).toLocaleString()} pcs ` +
+                            `<span style="font-size:10px;color:#666;">` +
+                            `${block.subcon ? 'S = ' + block.subcon : 'L = ' + (block.line || '-')} ` +
+                            `&nbsp;·&nbsp; M = ${block.pcs_default}` +
+                            `</span>` +
                             `</td></tr>` +
                             `<tr><th>Carton Weight Std.</th><td>${block.carton_weight_std ? parseFloat(block.carton_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>` +
                             `<tr><th>Pcs Weight Std.</th><td>${block.pcs_weight_std ? parseFloat(block.pcs_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>` +
                             `</table>` +
                             `</div>` +
-                
-                            /* ── Info KANAN ── */
+
                             `<div class="nn-info-right">` +
                             `<table class="nn-info-table">` +
                             `<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">&nbsp;${continuedBadge}</th></tr>` +
@@ -1698,7 +1782,41 @@
                             `<tr><th>Destination</th><td>${block.destination}</td></tr>` +
                             `<tr><th>Inspector</th><td>${block.inspector}</td></tr>` +
                             `<tr><th>Total Carton</th><td><strong>${block.timbangans.length}</strong> / ${block.totalCartonInLine}</td></tr>` +
+                            // `<tr><th>Total Berat</th><td><strong>${totalBerat} kg</strong></td></tr>` +
                             `<tr><th>Total Berat</th><td><strong>${totalBerat} kg</strong></td></tr>` +
+                            `<tr>` +
+                            `<th style="vertical-align:top;padding-top:6px;">Keterangan</th>` +
+                            `<td style="padding:2px 4px;vertical-align:top;">` +
+                            `<div class="ket-cell" style="width:100%;">` +
+                                `<div class="ket-display" ` +
+                                    `style="font-size:11px;cursor:pointer;min-height:24px;padding:3px 4px;` +
+                                        `border:1px dashed #ced4da;border-radius:3px;background:#fafafa;` +
+                                        `color:${block.keterangan ? '#333' : '#bbb'};" ` +
+                                    `title="Klik untuk edit" ` +
+                                    `data-ordersheet-id="${block.ordersheet_id}">` +
+                                    `${block.keterangan 
+                                        ? block.keterangan.replace(/</g,'&lt;') 
+                                        : '<em style="font-size:10px;">Klik untuk tambah keterangan...</em>'}` +
+                                `</div>` +
+                                `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;margin-top:2px;">` +
+                                    `<textarea class="ket-input" data-ordersheet-id="${block.ordersheet_id}" ` +
+                                        `rows="2" placeholder="Tulis keterangan..." ` +
+                                        `style="width:100%;font-size:11px;padding:4px 6px;border:1px solid #ced4da;` +
+                                            `border-radius:4px;resize:vertical;box-sizing:border-box;"` +
+                                    `>${(block.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
+                                    `<div style="display:flex;gap:4px;align-items:center;">` +
+                                        `<button class="ket-save-btn" data-ordersheet-id="${block.ordersheet_id}" ` +
+                                            `style="font-size:10px;padding:3px 8px;background:#435ebe;color:#fff;border:none;` +
+                                                `border-radius:4px;cursor:pointer;white-space:nowrap;">💾 Simpan</button>` +
+                                        `<button class="ket-cancel-btn" ` +
+                                            `style="font-size:10px;padding:3px 8px;background:#6c757d;color:#fff;border:none;` +
+                                                `border-radius:4px;cursor:pointer;">✕ Batal</button>` +
+                                        `<span class="ket-status" style="font-size:10px;display:none;"></span>` +
+                                    `</div>` +
+                                `</div>` +
+                            `</div>` +
+                        `</td>` +
+                            `</tr>` +
                             `</table>` +
                             `<div class="nn-sign-wrap" style="margin-top:6px;">` +
                             `<table class="nn-sign-table">` +
@@ -1711,9 +1829,8 @@
                             `</table>` +
                             `</div>` +
                             `</div>` +
-                            `</div>` +   /* end nn-info-wrap */
-                
-                            /* ── Tabel Carton ── */
+                            `</div>` +
+
                             `<div class="nn-carton-wrap">` +
                             `<table class="nn-carton-table">` +
                             `<thead>` +
@@ -1728,68 +1845,142 @@
                             `<tbody>${tbodyRows}</tbody>` +
                             `</table>` +
                             `</div>` +
-                            `</div>`   /* end non-nike-block */
+                            `</div>`
                         );
                     }
-                
-                    // ── Pagination & render ───────────────────────────────────────────────────
-                    const pages     = chunkArray(allBlocks, BLOCKS_PER_PAGE);
-                    const totalPages = pages.length;
-                    let currentPage  = 1;
-                
-                    function render(page) {
-                        currentPage = page;
-                        const pageBlocks = pages[page - 1] || [];
-                
-                        let blocksHTML = '';
-                        pageBlocks.forEach(block => { blocksHTML += buildBlockHTML(block); });
-                
-                        let pagHTML = '';
-                        if (totalPages > 1) {
-                            pagHTML = `<div class="rpt-pagination" style="margin-top:12px;">`;
-                            pagHTML += `<button class="rpt-page-btn nn-page-btn" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>‹</button>`;
-                            for (let p = 1; p <= totalPages; p++) {
-                                if (totalPages <= 7 || p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
-                                    pagHTML += `<button class="rpt-page-btn nn-page-btn${p === page ? ' active' : ''}" data-page="${p}">${p}</button>`;
-                                } else if (p === page - 2 || p === page + 2) {
-                                    pagHTML += `<span class="rpt-page-btn" style="cursor:default;">…</span>`;
-                                }
-                            }
-                            pagHTML += `<button class="rpt-page-btn nn-page-btn" data-page="${page + 1}" ${page === totalPages ? 'disabled' : ''}>›</button>`;
-                            pagHTML += `</div>`;
+
+                    // ── Render satu grup (normal ATAU double check) ───────────────────────────
+                    // groupLabel  : label untuk header di atas pagination ("Timbangan Pertama" / "Double Check")
+                    // groupColor  : warna aksen header (#435ebe untuk normal, #ff6b35 untuk double)
+                    // idPrefix    : prefix untuk id elemen pagination agar tidak bentrok
+                    function renderGroup(targetEl, blocks, groupLabel, groupColor, idPrefix) {
+                        if (!blocks.length) {
+                            targetEl.innerHTML += `<div class="formal-empty" style="color:#aaa;font-size:11px;margin:8px 0;">
+                <em>Tidak ada data ${groupLabel} pada rentang ini</em></div>`;
+                            return;
                         }
-                
-                        el.innerHTML =
-                            `<div>` +
-                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;">` +
-                            `<div style="font-size:12px;color:#666;">` +
-                                `Lembar <strong>${page} / ${totalPages}</strong> &nbsp;·&nbsp; ` +
-                                `Total blok: <strong>${allBlocks.length}</strong>` +
-                            `</div>` +
-                            `<button class="btn-print-formal" id="btn-print-nn-page">` +
-                                `<i class="bi bi-printer"></i> Print Lembar ${page}` +
+
+                        const pages = chunkArray(blocks, BLOCKS_PER_PAGE);
+                        const totalPages = pages.length;
+                        let curPage = 1;
+                        const wrapperId = `${idPrefix}-wrapper`;
+                        const pagId = `${idPrefix}-pag`;
+
+                        // Buat container untuk grup ini
+                        const groupDiv = document.createElement('div');
+                        groupDiv.id = wrapperId;
+                        groupDiv.style.marginBottom = '20px';
+                        groupDiv.innerHTML =
+                            // ── Header grup ──
+                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;` +
+                            `gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:6px;` +
+                            `background:${groupColor}18;border-left:4px solid ${groupColor};">` +
+                            `<div style="font-size:12px;font-weight:700;color:${groupColor};">${groupLabel}</div>` +
+                            `<div id="${idPrefix}-meta" style="font-size:11px;color:#666;"></div>` +
+                            `<button class="btn-print-formal" id="${idPrefix}-print-btn">` +
+                            `<i class="bi bi-printer"></i> Print Lembar <span id="${idPrefix}-cur-page">1</span>` +
                             `</button>` +
                             `</div>` +
-                            blocksHTML +
-                            pagHTML +
-                            `</div>`;
-                
-                        el.querySelectorAll('.nn-page-btn').forEach(btn => {
-                            btn.addEventListener('click', function () {
-                                const p = parseInt(this.dataset.page);
-                                if (!isNaN(p) && p >= 1 && p <= totalPages) {
-                                    render(p);
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            // ── Area blok ──
+                            `<div id="${idPrefix}-blocks"></div>` +
+                            // ── Pagination ──
+                            `<div id="${pagId}"></div>`;
+
+                        targetEl.appendChild(groupDiv);
+
+                        function render(page) {
+                            curPage = page;
+                            const pageBlocks = pages[page - 1] || [];
+
+                            // Update meta info
+                            const metaEl = document.getElementById(`${idPrefix}-meta`);
+                            if (metaEl) metaEl.textContent =
+                                `Lembar ${page} / ${totalPages} · ${blocks.length} blok total`;
+
+                            // Update nomor halaman di tombol print
+                            const curPageEl = document.getElementById(`${idPrefix}-cur-page`);
+                            if (curPageEl) curPageEl.textContent = page;
+
+                            // Render blok
+                            const blocksArea = document.getElementById(`${idPrefix}-blocks`);
+                            if (blocksArea) {
+                                blocksArea.innerHTML = pageBlocks.map(b => buildBlockHTML(b)).join('');
+                            }
+
+                            // Render pagination
+                            const pagEl = document.getElementById(pagId);
+                            if (pagEl) {
+                                if (totalPages <= 1) {
+                                    pagEl.innerHTML = '';
+                                } else {
+                                    let pagHTML = `<div class="rpt-pagination" style="margin-top:8px;">`;
+                                    pagHTML +=
+                                        `<button class="${idPrefix}-pag-btn rpt-page-btn" data-page="${page-1}" ${page===1?'disabled':''}>‹</button>`;
+                                    for (let p = 1; p <= totalPages; p++) {
+                                        if (totalPages <= 7 || p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
+                                            pagHTML +=
+                                                `<button class="${idPrefix}-pag-btn rpt-page-btn${p===page?' active':''}" data-page="${p}">${p}</button>`;
+                                        } else if (p === page - 2 || p === page + 2) {
+                                            pagHTML += `<span class="rpt-page-btn" style="cursor:default;">…</span>`;
+                                        }
+                                    }
+                                    pagHTML +=
+                                        `<button class="${idPrefix}-pag-btn rpt-page-btn" data-page="${page+1}" ${page===totalPages?'disabled':''}>›</button>`;
+                                    pagHTML += `</div>`;
+                                    pagEl.innerHTML = pagHTML;
+
+                                    pagEl.querySelectorAll(`.${idPrefix}-pag-btn`).forEach(btn => {
+                                        btn.addEventListener('click', function() {
+                                            const p = parseInt(this.dataset.page);
+                                            if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                                                render(p);
+                                                document.getElementById(wrapperId)?.scrollIntoView({
+                                                    behavior: 'smooth',
+                                                    block: 'start'
+                                                });
+                                            }
+                                        });
+                                    });
                                 }
-                            });
+                            }
+                        }
+
+                        // Event print tombol
+                        groupDiv.querySelector(`#${idPrefix}-print-btn`)?.addEventListener('click', () => {
+                            printNonNikePage(curPage, pages[curPage - 1] || []);
                         });
-                
-                        document.getElementById('btn-print-nn-page')?.addEventListener('click', () => {
-                            printNonNikePage(page, pageBlocks);
-                        });
+
+                        render(1);
                     }
-                
-                    render(1);
+
+                    // ── Bersihkan container, lalu render dua grup ─────────────────────────────
+                    el.innerHTML = '';
+
+                    renderGroup(
+                        el,
+                        blocksNormal,
+                        '📋 Timbangan Pertama (Checking #1)',
+                        '#435ebe',
+                        'nn-normal'
+                    );
+
+                    if (blocksDouble.length > 0) {
+                        // Garis pemisah
+                        const sep = document.createElement('div');
+                        sep.style.cssText = 'border-top:2px dashed #ff6b35;margin:16px 0 12px;padding-top:8px;';
+                        sep.innerHTML = `<span style="background:#fff3e0;color:#ff6b35;font-size:11px;font-weight:700;
+            padding:3px 10px;border-radius:12px;border:1.5px solid #ff6b35;">
+            ⚠ Lembar Double Check — Checking #2 dst.</span>`;
+                        el.appendChild(sep);
+
+                        renderGroup(
+                            el,
+                            blocksDouble,
+                            '🔁 Double Check (Checking #2+)',
+                            '#ff6b35',
+                            'nn-double'
+                        );
+                    }
                 }
 
                 // ── Print Non-Nike — 4 blok per lembar seperti form fisik ───
@@ -1857,9 +2048,14 @@
                         const totalBerat = block.timbangans.reduce((s, t) => s + parseFloat(t?.berat || 0), 0)
                             .toFixed(2);
 
+                        function checkingBadgePrint(ke) {
+                            if (ke <= 1) return '';
+                            return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' + ke + '</span>';
+                        }
+                        
                         // Setiap blok = 1 form seperti di foto fisik
-                        blocksHTML += '<div class="block-wrap">'
-                            + '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +
+                        blocksHTML += '<div class="block-wrap">' +
+                            '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +
                             (isContinued ?
                                 ' <span style="background:#fff3cd;color:#856404;padding:1px 6px;border-radius:3px;font-size:8px;">Lanjutan</span>' :
                                 '') +
@@ -1887,9 +2083,9 @@
                                 .pcs_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
                             '<tr><td colspan="2" style="padding-top:2px;">' +
                             '<span style="font-size:8px;">' +
-                            (block.subcon
-                                ? 'S = <strong>' + block.subcon + '</strong>'
-                                : 'L = <strong>' + (block.line || '-') + '</strong>'
+                            (block.subcon ?
+                                'S = <strong>' + block.subcon + '</strong>' :
+                                'L = <strong>' + (block.line || '-') + '</strong>'
                             ) +
                             ' &nbsp;&nbsp; M = <strong>' + block.pcs_default +
                             '</strong> &nbsp;&nbsp; Pcs Less Ctn = -</span>' +
@@ -1904,6 +2100,7 @@
                             '<tr><td>GAC date</td><td>' + block.gac_date + '</td></tr>' +
                             '<tr><td>Destination</td><td>' + block.destination + '</td></tr>' +
                             '<tr><td>Inspector</td><td>' + block.inspector + '</td></tr>' +
+                            '<tr><td>Keterangan</td><td>' + (block.keterangan || '-') + '</td></tr>' +
                             '</table>'
                             // Tanda tangan
                             +
@@ -1976,6 +2173,8 @@
                         '.carton-tbl th{background:#435ebe!important;color:#fff!important;border:1px solid #000!important;padding:1px 0!important;text-align:center;font-weight:700;line-height:1.1;}' +
                         '.carton-tbl td{border:1px solid #ccc!important;padding:0px 0!important;text-align:center;vertical-align:middle;line-height:0;font-size:7px;}' +
                         '.carton-tbl tbody tr{height:auto!important;}' +
+                        '.ket-edit{display:none!important;}' +
+                        '.ket-display{display:block!important;font-size:7px!important;}'
                         '</style>';
 
                     const hariTanggal = start ?
@@ -2456,6 +2655,7 @@
                                         <tr><td>Destination</td><td>${block.destination}</td></tr>
                                         <tr><td>Inspector</td><td>${block.inspector}</td></tr>
                                         <tr><td>Total Carton</td><td><strong>${cartons.length}</strong> / ${block.totalCartonInLine}</td></tr>
+                                        <tr><td>Keterangan</td><td>${block.keterangan || '-'}</td></tr>
                                     </table>
                                     <table class="sign-tbl">
                                         <tr>
@@ -2504,6 +2704,107 @@
                 }
 
             })();
+
+            // ── Save Keterangan (inline edit di laporan) ──────────────────────────────
+            document.addEventListener('click', async function (e) {
+                const btn = e.target.closest('.ket-save-btn')
+                if (!btn) return
+
+                const ordersheetId = btn.dataset.ordersheetId
+                if (!ordersheetId) {
+                    alert('ID Ordersheet tidak ditemukan. Simpan timbangan terlebih dahulu.')
+                    return
+                }
+
+                const wrap    = btn.closest('td, div')
+                const input   = wrap?.querySelector('.ket-input') 
+                            ?? btn.parentElement?.querySelector('.ket-input')
+                const statusEl = wrap?.querySelector('.ket-status')
+                            ?? btn.parentElement?.querySelector('.ket-status')
+
+                if (!input) return
+
+                const keterangan = input.value.trim()
+                const originalText = btn.textContent
+                btn.disabled    = true
+                btn.textContent = '...'
+
+                try {
+                    const res = await fetch('/user/order/update-keterangan', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept':       'application/json',
+                        },
+                        body: JSON.stringify({ ordersheet_id: ordersheetId, keterangan }),
+                    })
+
+                    const json = await res.json()
+
+                    if (json.success) {
+                        // Update teks display
+                        const cell = btn.closest('.ket-cell')
+                        if (cell) {
+                            const displayEl = cell.querySelector('.ket-display')
+                            if (displayEl) {
+                                displayEl.innerHTML = keterangan 
+                                    || '<span style="color:#bbb;font-style:italic;">—</span>'
+                            }
+                            // Tutup editor
+                            cell.querySelector('.ket-edit').style.display = 'none'
+                            cell.querySelector('.ket-display').style.display = 'block'
+                        }
+                        
+                        if (statusEl) {
+                            statusEl.textContent  = '✓ Tersimpan'
+                            statusEl.style.color  = 'green'
+                            statusEl.style.display = 'inline'
+                            setTimeout(() => { statusEl.style.display = 'none' }, 2500)
+                        }
+                    } else {
+                        throw new Error(json.message || 'Gagal')
+                    }
+                } catch (err) {
+                    if (statusEl) {
+                        statusEl.textContent  = '✗ ' + err.message
+                        statusEl.style.color  = 'red'
+                        statusEl.style.display = 'inline'
+                    }
+                } finally {
+                    btn.disabled    = false
+                    btn.textContent = originalText
+                }
+            })
+
+            // Enter di textarea → save
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey && e.target.classList.contains('ket-input')) {
+                    e.preventDefault()
+                    e.target.closest('td, div')?.querySelector('.ket-save-btn')
+                        ?.click()
+                }
+            })
+
+            // Klik teks → buka editor
+            document.addEventListener('click', function(e) {
+                const display = e.target.closest('.ket-display')
+                if (!display) return
+                const cell = display.closest('.ket-cell')
+                display.style.display = 'none'
+                const editDiv = cell.querySelector('.ket-edit')
+                editDiv.style.display = 'flex'
+                editDiv.querySelector('.ket-input')?.focus()
+            })
+
+            // Tombol cancel → tutup editor
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.ket-cancel-btn')
+                if (!btn) return
+                const cell = btn.closest('.ket-cell')
+                cell.querySelector('.ket-edit').style.display = 'none'
+                cell.querySelector('.ket-display').style.display = 'block'
+            })
         </script>
     @endpush
 

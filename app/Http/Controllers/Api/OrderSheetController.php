@@ -19,96 +19,6 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class OrderSheetController extends Controller
 {
-    // Data perhari ini
-    // public function index()
-    // {
-    //     $auth = Auth::id();
-
-    //     $orders = Ordersheet::with([
-    //         'timbangans' => function ($q) {
-    //             $q->select(
-    //                 'id',
-    //                 'id_ordersheet',
-    //                 'no_box',
-    //                 'berat',
-    //                 'pcs',
-    //                 'waktu_timbang',
-    //                 'rasio_batas_beban_min',
-    //                 'rasio_batas_beban_max'
-    //             )
-    //                 ->orderBy('waktu_timbang');
-    //         }
-    //     ])
-    //         ->where('status', 'Success')
-    //         ->whereHas('timbangans')
-    //         ->select(
-    //             'id',
-    //             'Order_code',
-    //             'KJ',
-    //             'Buyer',
-    //             'PO',
-    //             'Style',
-    //             'line',
-    //             'Qty_order',
-    //             'PCS',
-    //             'Ctn',
-    //             'Less_Ctn',
-    //             'Pcs_Less_Ctn',
-    //             'Destination',
-    //             'Gac_date',
-    //             'Inspector',
-    //             'OPT_QC_TIMBANGAN',
-    //             'SPV_QC',
-    //             'CHIEF_FINISH_GOOD',
-    //             'status',
-    //             'created_at'
-    //         )
-    //         ->latest()
-    //         ->get();
-
-    //     // Group utama by KJ (untuk progress keseluruhan)
-    //     // Setiap KJ punya sub-group per line
-    //     $groupedByKJ = $orders->groupBy(function ($item) {
-    //         return $item->KJ ?? $item->Order_code;
-    //     })->map(function ($kjOrders) {
-    //         // Sub-group by line dalam 1 KJ
-    //         $byLine = $kjOrders->groupBy('line')->sortKeys();
-
-    //         // Semua timbangan dari semua line dalam KJ ini
-    //         $allTimbangans = $kjOrders->flatMap(fn($o) => $o->timbangans);
-
-    //         // Info dari record pertama
-    //         $first      = $kjOrders->first();
-    //         $qtyTotal   = intval($first->Qty_order) ?: 0;
-    //         $qtySudah   = $allTimbangans->sum('pcs');
-    //         $totalBerat = $allTimbangans->sum('berat');
-    //         $qtySisa    = max(0, $qtyTotal - $qtySudah);
-
-    //         // Tanggal timbang pertama
-    //         $firstDate = optional($allTimbangans->sortBy('waktu_timbang')->first())->waktu_timbang;
-    //         $date      = $firstDate
-    //             ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y')
-    //             : 'Tanpa Tanggal';
-
-    //         return [
-    //             'kj'           => $first->KJ ?? $first->Order_code,
-    //             'order_code'   => $first->Order_code,
-    //             'buyer'        => $first->Buyer ?? '-',
-    //             'style'        => $first->Style ?? '-',
-    //             'date'         => $date,
-    //             'qty_total'    => $qtyTotal,
-    //             'qty_sudah'    => $qtySudah,
-    //             'qty_sisa'     => $qtySisa,
-    //             'total_berat'  => $totalBerat,
-    //             'total_carton' => $allTimbangans->count(),
-    //             'by_line'      => $byLine,      // collection per line
-    //             'all_timbangans' => $allTimbangans,
-    //         ];
-    //     });
-
-    //     return view('order.index', compact('auth', 'groupedByKJ'));
-    // }
-
     public function index()
     {
         $auth = Auth::id();
@@ -344,6 +254,8 @@ class OrderSheetController extends Controller
             : 0;
     
         return [
+            'ordersheet_id'     => $first->id,          // ← tambahkan
+            'keterangan'        => $first->keterangan ?? '', // ← tambahkan
             'order_code'        => $first->Order_code,
             'kj'                => trim($first->KJ ?? '-'),
             'buyer'             => $first->Buyer,
@@ -405,7 +317,7 @@ class OrderSheetController extends Controller
             'Line', 'Subcon', 'checking_ke', 'Qty_order', 'PCS', 'Ctn',
             'Less_Ctn', 'Pcs_Less_Ctn', 'Carton_weight_std', 'Pcs_weight_std',
             'Gac_date', 'Destination', 'Inspector', 'OPT_QC_TIMBANGAN',
-            'SPV_QC', 'CHIEF_FINISH_GOOD', 'status', 'created_at'
+            'SPV_QC', 'CHIEF_FINISH_GOOD', 'keterangan', 'status', 'created_at' // ← tambah keterangan
         )
         ->get()
         ->filter(fn($o) => $o->timbangans->isNotEmpty());
@@ -418,6 +330,8 @@ class OrderSheetController extends Controller
         $nikeRows = $nike->map(function ($o) {
             $firstDate = optional($o->timbangans->first())->waktu_timbang;
             return [
+                'ordersheet_id' => $o->id,           // ← tambahkan
+                'keterangan'    => $o->keterangan ?? '', // ← tambahkan
                 'order_code'        => $o->Order_code,
                 'kj'                => trim($o->KJ ?? '-'),
                 'buyer'             => $o->Buyer,
@@ -493,7 +407,7 @@ class OrderSheetController extends Controller
             'Line', 'Subcon', 'checking_ke', 'Qty_order', 'PCS', 'Ctn',
             'Less_Ctn', 'Pcs_Less_Ctn', 'Carton_weight_std', 'Pcs_weight_std',
             'Gac_date', 'Destination', 'Inspector', 'OPT_QC_TIMBANGAN',
-            'SPV_QC', 'CHIEF_FINISH_GOOD', 'status', 'created_at'
+            'SPV_QC', 'CHIEF_FINISH_GOOD', 'keterangan', 'status', 'created_at'
         )
         ->get()
         ->filter(fn($o) => $o->timbangans->isNotEmpty());
@@ -505,6 +419,8 @@ class OrderSheetController extends Controller
         $nikeRows = $nike->map(function ($o) {
             $firstDate = optional($o->timbangans->first())->waktu_timbang;
             return [
+                'ordersheet_id' => $o->id,           // ← tambahkan
+                'keterangan'    => $o->keterangan ?? '', // ← tambahkan
                 'order_code'        => $o->Order_code,
                 'kj'                => trim($o->KJ ?? '-'),
                 'buyer'             => $o->Buyer,
@@ -750,135 +666,6 @@ class OrderSheetController extends Controller
         }
     }
 
-    // public function getData(Request $request)
-    // {
-    //     $search    = $request->query('search');
-    //     $startDate = $request->query('start_date');
-    //     $endDate   = $request->query('end_date');
-    //     $perPage   = min((int) $request->query('per_page', 10), 9999);
-    //     $page      = (int) $request->query('page', 1);
-
-    //     $queryParams = array_filter([
-    //         'search'     => $search,
-    //         'start_date' => $startDate,
-    //         'end_date'   => $endDate,
-    //     ]);
-
-    //     // ✅ FIX 1: Cache key unik per kombinasi parameter
-    //     $cacheKey = 'ordersheet_' . md5(serialize($queryParams));
-
-    //     try {
-    //         // ✅ VALIDASI: Batasi range tanggal maksimal 3 bulan
-    //         if ($startDate && $endDate) {
-    //             $start = strtotime($startDate);
-    //             $end = strtotime($endDate);
-    //             $diffDays = ($end - $start) / 86400;
-
-    //             if ($diffDays > 90) {
-    //                 return response()->json([
-    //                     'success' => false,
-    //                     'message' => 'Range tanggal maksimal 3 bulan (90 hari)'
-    //                 ], 422);
-    //             }
-    //         }
-
-    //         // ✅ FIX 2: Cache data mentah selama 5 menit
-    //         $itemsRaw = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($queryParams) {
-
-    //             // ============================================================
-    //             // MODE DUMMY / API SWITCH
-    //             // ============================================================
-    //             $useDummy = true; // Set ke false jika ingin pakai API asli
-
-    //             if ($useDummy) {
-    //                 // Path ke file dummy kamu
-    //                 $path = storage_path('app/dummy_orders.txt');
-
-    //                 if (!file_exists($path)) {
-    //                     throw new \RuntimeException("File dummy tidak ditemukan di: " . $path);
-    //                 }
-
-    //                 $rawContent = file_get_contents($path);
-    //                 $rawData = json_decode($rawContent, true);
-
-    //                 // Cek apakah JSON valid (tidak null)
-    //                 if (json_last_error() !== JSON_ERROR_NONE) {
-    //                     throw new \RuntimeException("Format JSON di file dummy rusak: " . json_last_error_msg());
-    //                 }
-    //             } else {
-    //                 $baseUrl = 'http://192.168.0.20/sewing/qa/ordersheet/get_ordersheet_data_json';
-    //                 $queryString = http_build_query($queryParams, '', '&', PHP_QUERY_RFC3986);
-    //                 $queryString = str_replace('%3B', ';', $queryString);
-    //                 $fullUrl = $baseUrl . '?' . $queryString;
-
-    //                 Log::info('Memanggil API Sewing: ' . $fullUrl);
-
-    //                 $response = Http::timeout(60)->get($fullUrl);
-
-    //                 if (!$response->successful()) {
-    //                     throw new \RuntimeException('Server sewing error: ' . $response->status());
-    //                 }
-
-    //                 $json = $response->json();
-    //                 $rawData = (isset($json['data']) && is_array($json['data'])) ? $json['data'] : $json;
-    //             }
-
-    //             if (!is_array($rawData)) {
-    //                 throw new \RuntimeException('Struktur data server/dummy tidak sesuai (bukan array)');
-    //             }
-
-    //             // Mapping & Cleaning
-    //             return collect($rawData)
-    //                 ->map(fn($item) => [
-    //                     'id'                  => data_get($item, 'id') ?? data_get($item, 'ID'),
-    //                     'KJ'                  => data_get($item, 'KJ'),
-    //                     'ProductCode'         => data_get($item, 'ProductCode') ?? data_get($item, 'Style'),
-    //                     'ColorDescription'    => data_get($item, 'ColorDescription') ?? data_get($item, 'Color'),
-    //                     'FinalDestination'    => data_get($item, 'FinalDestination') ?? data_get($item, 'Destination'),
-    //                     'Buyer'               => data_get($item, 'Buyer'),
-    //                     'PurchaseOrderNumber' => data_get($item, 'PurchaseOrderNumber') ?? data_get($item, 'PO'),
-    //                     'ProductName'         => data_get($item, 'ProductName'),
-    //                     'Qty'                 => (int) (data_get($item, 'Qty') ?? 0),
-    //                     'ActualFOB'           => data_get($item, 'ActualFOB'),
-    //                     'GAC'                 => data_get($item, 'GAC'),
-    //                 ])
-    //                 ->unique('id')
-    //                 ->sortByDesc(fn($item) => strtotime($item['GAC'] ?? '1970-01-01'))
-    //                 ->values()
-    //                 ->all(); // Simpan sebagai array di cache
-    //         });
-
-    //         // Ubah kembali array cache menjadi Collection untuk Pagination
-    //         $items = collect($itemsRaw);
-
-    //         // ✅ MANUAL PAGINATION
-    //         $total    = $items->count();
-    //         $results  = $items->slice(($page - 1) * $perPage, $perPage)->values();
-
-    //         $paginator = new LengthAwarePaginator($results, $total, $perPage, $page, [
-    //             'path' => $request->url(),
-    //             'query' => $request->query(),
-    //         ]);
-
-    //         return response()->json([
-    //             'success'      => true,
-    //             'total'        => $paginator->total(),
-    //             'current_page' => $paginator->currentPage(),
-    //             'last_page'    => $paginator->lastPage(),
-    //             'per_page'     => $paginator->perPage(),
-    //             'data'         => $paginator->items(),
-    //         ]);
-    //     } catch (\RuntimeException $e) {
-    //         return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
-    //     } catch (\Exception $e) {
-    //         Log::error('Error di OrderSheetController', [
-    //             'message' => $e->getMessage(),
-    //             'line'    => $e->getLine(),
-    //         ]);
-    //         return response()->json(['success' => false, 'message' => 'Terjadi kesalahan server internal'], 500);
-    //     }
-    // }
-
     /**
      * Print semua, atau filter by buyer
      */
@@ -1111,34 +898,46 @@ class OrderSheetController extends Controller
         ]);
     }
 
-    // Data perhari ini
-    // public function print($buyer = null)
-    // {
-    //     $auth = Auth::user();
+    public function updateKeterangan(Request $request)
+    {
+        $request->validate([
+            'ordersheet_id' => 'required|integer|exists:ordersheets,id',
+            'keterangan'    => 'nullable|string|max:500',
+        ]);
 
-    //     $today = Carbon::today();
+        $ordersheet = Ordersheet::where('id', $request->ordersheet_id)
+            ->where('id_user', Auth::id()) // pastikan hanya milik user sendiri
+            ->firstOrFail();
 
-    //     $orders = Ordersheet::with([
-    //             'timbangans' => function ($q) use ($today) {
-    //                 $q->whereDate('waktu_timbang', $today)
-    //                 ->select('id', 'id_ordersheet', 'no_box', 'berat', 'waktu_timbang');
-    //             }
-    //         ])
-    //         ->where('status', 'Success')
-    //         ->whereHas('timbangans', function ($q) use ($today) {
-    //             $q->whereDate('waktu_timbang', $today);
-    //         })
-    //         ->latest()
-    //         ->get();
+        $ordersheet->keterangan = $request->keterangan;
+        $ordersheet->save();
 
-    //     if ($buyer) {
-    //         $orders->where('Buyer', $buyer);
-    //     }
+        return response()->json([
+            'success'    => true,
+            'message'    => 'Keterangan berhasil disimpan.',
+            'keterangan' => $ordersheet->keterangan,
+        ]);
+    }
 
-    //     $groupedOrders = $orders->groupBy(function ($item) {
-    //         return Carbon::today()->format('d-m-Y') . '|' . $item->Buyer;
-    //     });
+    public function getKeterangan(Request $request)
+    {
+        $orderCode = $request->get('order_code');
+        $line      = $request->get('line');
+        $subcon    = $request->get('subcon');
+        $checking  = $request->get('checking_ke', 1);
 
-    //     return view('order.print', compact('auth', 'groupedOrders'));
-    // }
+        $query = \App\Models\Ordersheet::where('Order_code', $orderCode)
+            ->where('checking_ke', $checking);
+
+        if ($line)   $query->where('Line',   $line);
+        if ($subcon) $query->where('Subcon', $subcon);
+
+        $ordersheet = $query->first();
+
+        return response()->json([
+            'success'        => true,
+            'ordersheet_id'  => $ordersheet?->id,
+            'keterangan'     => $ordersheet?->keterangan ?? '',
+        ]);
+    }
 }

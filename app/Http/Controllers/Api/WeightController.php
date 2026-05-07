@@ -631,6 +631,7 @@ class WeightController extends Controller
                     'SPV_QC'            => $request->SPV_QC,
                     'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
                     'checking_ke'       => $checkingKe,
+                    'keterangan'        => $request->keterangan ?? null,  // ← tambahkan ini
                     'status'            => 'Success',
                 ]
             );

@@ -97,6 +97,8 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
     Route::get('/order/my-report', [OrderSheetController::class, 'myReport'])
         ->name('order.my-report');
 
+    Route::get('/order/get-keterangan', [OrdersheetController::class, 'getKeterangan']);
+    Route::post('/order/update-keterangan', [OrdersheetController::class, 'updateKeterangan']);
     Route::get('/order/checking-info', [OrderSheetController::class, 'getCheckingInfo']);
 
     // tambah data ordersheet
