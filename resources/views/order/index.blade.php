@@ -1182,32 +1182,87 @@
                     function renderNikeGroup(targetEl, rowSet, groupLabel, groupColor, idPrefix) {
                         if (!rowSet.length) {
                             targetEl.innerHTML += `<div class="formal-empty" style="color:#aaa;font-size:11px;margin:8px 0;">
-                <em>Tidak ada data Nike ${groupLabel} pada rentang ini</em></div>`;
+                                <em>Tidak ada data Nike ${groupLabel} pada rentang ini</em></div>`;
                             return;
                         }
 
-                        const allRows = buildAllRows(rowSet);
-                        const pages = chunkArray(allRows, ROWS_PER_PAGE);
-                        const totalPages = pages.length;
-                        let curPage = 1;
+                        // ── Group by tanggal ──────────────────────────────────────────────────
+                        const byDate = {};
+                        rowSet.forEach(r => {
+                            const tgl = r.tanggal || 'Tanpa Tanggal';
+                            if (!byDate[tgl]) byDate[tgl] = [];
+                            byDate[tgl].push(r);
+                        });
+
+                        const sortedDates = Object.keys(byDate).sort((a, b) => {
+                            const parse = d => {
+                                const [dd, mm, yyyy] = (d || '').split('-');
+                                return new Date(`${yyyy}-${mm}-${dd}`);
+                            };
+                            return parse(a) - parse(b);
+                        });
+
+                        // Tiap tanggal → chunk per ROWS_PER_PAGE → { date, pages[] }
+                        const datePages = sortedDates.map(tgl => {
+                            const allRows = buildAllRows(byDate[tgl]);
+                            const chunks  = chunkArray(allRows, ROWS_PER_PAGE);
+                            return { date: tgl, pages: chunks };
+                        });
+
+                        // State navigasi
+                        let curDateIdx  = 0;
+                        let curSheetIdx = 0; // lembar dalam 1 tanggal
+
                         const wrapperId = `${idPrefix}-wrapper`;
-                        const dates = [...new Set(rowSet.map(r => r.tanggal))].join(', ');
                         const totalCarton = rowSet.reduce((s, r) => s + r.timbangans.length, 0);
 
-                        // Buat container
+                        // ── Build container ───────────────────────────────────────────────────
                         const groupDiv = document.createElement('div');
                         groupDiv.id = wrapperId;
                         groupDiv.style.marginBottom = '20px';
                         groupDiv.innerHTML =
-                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;` +
-                            `gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:6px;` +
-                            `background:${groupColor}18;border-left:4px solid ${groupColor};">` +
-                            `<div style="font-size:12px;font-weight:700;color:${groupColor};">${groupLabel}</div>` +
-                            `<div id="${idPrefix}-meta" style="font-size:11px;color:#666;"></div>` +
-                            `<button class="btn-print-formal" id="${idPrefix}-print-btn">` +
-                            `<i class="bi bi-printer"></i> Print Lembar <span id="${idPrefix}-cur-page">1</span>` +
-                            `</button>` +
-                            `</div>` +
+                            // Header grup
+                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;
+                                gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:6px;
+                                background:${groupColor}18;border-left:4px solid ${groupColor};">
+                                <div style="font-size:12px;font-weight:700;color:${groupColor};">${groupLabel}</div>
+                                <div id="${idPrefix}-meta" style="font-size:11px;color:#666;"></div>
+                                <button class="btn-print-formal" id="${idPrefix}-print-btn">
+                                    <i class="bi bi-printer"></i> Print Lembar <span id="${idPrefix}-cur-page">1</span>
+                                </button>
+                            </div>` +
+
+                            // Navigasi tanggal
+                            `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+                                margin-bottom:10px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border:1px solid #dee2e6;">
+
+                                <!-- Prev/Next tanggal -->
+                                <button id="${idPrefix}-prev-date" class="rpt-page-btn" style="min-width:32px;">‹‹</button>
+
+                                <!-- Dropdown tanggal -->
+                                <select id="${idPrefix}-date-select"
+                                    style="font-size:11px;padding:3px 6px;border:1px solid #ced4da;
+                                        border-radius:4px;background:#fff;cursor:pointer;max-width:160px;">
+                                    ${sortedDates.map((tgl, i) =>
+                                        `<option value="${i}">📅 ${tgl}</option>`
+                                    ).join('')}
+                                </select>
+
+                                <!-- Prev/Next lembar dalam 1 tanggal -->
+                                <button id="${idPrefix}-prev-sheet" class="rpt-page-btn" style="min-width:28px;">‹</button>
+                                <span id="${idPrefix}-sheet-label"
+                                    style="font-size:11px;color:#555;white-space:nowrap;">Lembar 1/1</span>
+                                <button id="${idPrefix}-next-sheet" class="rpt-page-btn" style="min-width:28px;">›</button>
+
+                                <button id="${idPrefix}-next-date" class="rpt-page-btn" style="min-width:32px;">››</button>
+
+                                <!-- Info total -->
+                                <span style="margin-left:auto;font-size:10px;color:#999;">
+                                    ${sortedDates.length} hari · ${totalCarton} carton total
+                                </span>
+                            </div>` +
+
+                            // Konten tabel
                             `<div id="${idPrefix}-content"></div>`;
 
                         targetEl.appendChild(groupDiv);
@@ -1234,31 +1289,7 @@
                                     '';
 
                                 tbody +=
-                                    `<tr>${infoTds}${row.tdBerats}` +
-                                    `<td class="td-total">${row.chunkLen}</td>` +
-                                    (row.chunkIdx === 0
-                                        ? `<td rowspan="${row.rowspan}" style="min-width:90px;vertical-align:top;padding:4px;" class="ket-cell">` +
-                                            `<div class="ket-display" style="font-size:10px;cursor:pointer;min-height:20px;padding:2px;" ` +
-                                                `title="Klik untuk edit" data-ordersheet-id="${row.order.ordersheet_id}">` +
-                                                `${(row.order.keterangan || '<span style="color:#bbb;font-style:italic;">—</span>')}` +
-                                            `</div>` +
-                                            `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;">` +
-                                                `<textarea class="ket-input" data-ordersheet-id="${row.order.ordersheet_id}" rows="2" ` +
-                                                `placeholder="Keterangan..." ` +
-                                                `style="width:100%;font-size:10px;padding:3px;border:1px solid #ced4da;border-radius:3px;resize:vertical;"` +
-                                                `>${(row.order.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
-                                                `<div style="display:flex;gap:3px;">` +
-                                                    `<button class="ket-save-btn" data-ordersheet-id="${row.order.ordersheet_id}" ` +
-                                                    `style="font-size:9px;padding:2px 5px;background:#435ebe;color:#fff;border:none;border-radius:3px;cursor:pointer;">` +
-                                                    `💾</button>` +
-                                                    `<button class="ket-cancel-btn" ` +
-                                                    `style="font-size:9px;padding:2px 5px;background:#6c757d;color:#fff;border:none;border-radius:3px;cursor:pointer;">` +
-                                                    `✕</button>` +
-                                                `</div>` +
-                                                `<span class="ket-status" style="font-size:9px;display:none;"></span>` +
-                                            `</div>` +
-                                            `</td>`
-                                        : '')
+                                    `<tr>${infoTds}${row.tdBerats}<td class="td-total">${row.chunkLen}</td><td></td></tr>`;
                             });
 
                             // Baris kosong pengisi
@@ -1313,44 +1344,66 @@
                             return html;
                         }
 
-                        function render(page) {
-                            curPage = page;
-                            const pageRows = pages[page - 1] || [];
-                            const start = (page - 1) * ROWS_PER_PAGE + 1;
-                            const end = Math.min(page * ROWS_PER_PAGE, allRows.length);
+                        // ── Render ────────────────────────────────────────────────────────────
+                        function render() {
+                            const dp        = datePages[curDateIdx];
+                            const pageRows  = dp.pages[curSheetIdx] || [];
+                            const totalSheets = dp.pages.length;
 
+                            // Meta info
                             const metaEl = document.getElementById(`${idPrefix}-meta`);
                             if (metaEl) metaEl.textContent =
-                                `Lembar ${page} / ${totalPages} · Total order: ${rowSet.length} · Total carton: ${totalCarton} · Baris ${start}–${end}`;
+                                `📅 ${dp.date} · Lembar ${curSheetIdx + 1}/${totalSheets} · ${byDate[dp.date].length} order`;
 
+                            // Tombol print label
                             const curPageEl = document.getElementById(`${idPrefix}-cur-page`);
-                            if (curPageEl) curPageEl.textContent = page;
+                            if (curPageEl) curPageEl.textContent = curSheetIdx + 1;
 
+                            // Sheet label
+                            const sheetLabel = document.getElementById(`${idPrefix}-sheet-label`);
+                            if (sheetLabel) sheetLabel.textContent = `Lembar ${curSheetIdx + 1} / ${totalSheets}`;
+
+                            // Disable/enable tombol
+                            document.getElementById(`${idPrefix}-prev-date`).disabled  = curDateIdx === 0;
+                            document.getElementById(`${idPrefix}-next-date`).disabled  = curDateIdx === datePages.length - 1;
+                            document.getElementById(`${idPrefix}-prev-sheet`).disabled = curSheetIdx === 0;
+                            document.getElementById(`${idPrefix}-next-sheet`).disabled = curSheetIdx === totalSheets - 1;
+
+                            // Sync dropdown
+                            const sel = document.getElementById(`${idPrefix}-date-select`);
+                            if (sel) sel.value = curDateIdx;
+
+                            // Render tabel
                             const contentEl = document.getElementById(`${idPrefix}-content`);
-                            if (contentEl) {
-                                contentEl.innerHTML = buildTableHTML(pageRows) + buildPagHTML(page, totalPages);
-
-                                contentEl.querySelectorAll(`.${idPrefix}-pag`).forEach(btn => {
-                                    btn.addEventListener('click', function() {
-                                        const p = parseInt(this.dataset.page);
-                                        if (!isNaN(p) && p >= 1 && p <= totalPages) {
-                                            render(p);
-                                            document.getElementById(wrapperId)?.scrollIntoView({
-                                                behavior: 'smooth',
-                                                block: 'start'
-                                            });
-                                        }
-                                    });
-                                });
-                            }
+                            if (contentEl) contentEl.innerHTML = buildTableHTML(pageRows);
                         }
 
-                        groupDiv.querySelector(`#${idPrefix}-print-btn`)?.addEventListener('click', () => {
-                            // Panggil fungsi print Nike yang sudah ada
-                            printNikePage(curPage, pages[curPage - 1] || [], dates);
+                        // ── Event listeners ───────────────────────────────────────────────────
+                        groupDiv.querySelector(`#${idPrefix}-prev-date`).addEventListener('click', () => {
+                            if (curDateIdx > 0) { curDateIdx--; curSheetIdx = 0; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-next-date`).addEventListener('click', () => {
+                            if (curDateIdx < datePages.length - 1) { curDateIdx++; curSheetIdx = 0; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-prev-sheet`).addEventListener('click', () => {
+                            if (curSheetIdx > 0) { curSheetIdx--; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-next-sheet`).addEventListener('click', () => {
+                            if (curSheetIdx < datePages[curDateIdx].pages.length - 1) { curSheetIdx++; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-date-select`).addEventListener('change', function() {
+                            curDateIdx  = parseInt(this.value);
+                            curSheetIdx = 0;
+                            render();
                         });
 
-                        render(1);
+                        // Print button
+                        groupDiv.querySelector(`#${idPrefix}-print-btn`).addEventListener('click', () => {
+                            const dp   = datePages[curDateIdx];
+                            printNikePage(curSheetIdx + 1, dp.pages[curSheetIdx] || [], dp.date);
+                        });
+
+                        render();
                     }
 
                     // ── Bersihkan container, render dua grup ─────────────────────────────────
@@ -1366,8 +1419,8 @@
                         const sep = document.createElement('div');
                         sep.style.cssText = 'border-top:2px dashed #ff6b35;margin:16px 0 12px;padding-top:8px;';
                         sep.innerHTML = `<span style="background:#fff3e0;color:#ff6b35;font-size:11px;font-weight:700;
-            padding:3px 10px;border-radius:12px;border:1.5px solid #ff6b35;">
-            ⚠ Lembar Double Check — Checking #2 dst.</span>`;
+                            padding:3px 10px;border-radius:12px;border:1.5px solid #ff6b35;">
+                            ⚠ Lembar Double Check — Checking #2 dst.</span>`;
                         el.appendChild(sep);
 
                         renderNikeGroup(
@@ -1856,101 +1909,137 @@
                     function renderGroup(targetEl, blocks, groupLabel, groupColor, idPrefix) {
                         if (!blocks.length) {
                             targetEl.innerHTML += `<div class="formal-empty" style="color:#aaa;font-size:11px;margin:8px 0;">
-                <em>Tidak ada data ${groupLabel} pada rentang ini</em></div>`;
+                                <em>Tidak ada data ${groupLabel} pada rentang ini</em></div>`;
                             return;
                         }
 
-                        const pages = chunkArray(blocks, BLOCKS_PER_PAGE);
-                        const totalPages = pages.length;
-                        let curPage = 1;
-                        const wrapperId = `${idPrefix}-wrapper`;
-                        const pagId = `${idPrefix}-pag`;
+                        // ── Group by tanggal ──────────────────────────────────────────────────
+                        const byDate = {};
+                        blocks.forEach(b => {
+                            const tgl = b.timbangans?.[0]?.waktu_timbang?.substring(0, 10) || 'Tanpa Tanggal';
+                            if (!byDate[tgl]) byDate[tgl] = [];
+                            byDate[tgl].push(b);
+                        });
 
-                        // Buat container untuk grup ini
+                        const sortedDates = Object.keys(byDate).sort();
+
+                        // Tiap tanggal → chunk per BLOCKS_PER_PAGE
+                        const datePages = sortedDates.map(tgl => {
+                            const chunks = chunkArray(byDate[tgl], BLOCKS_PER_PAGE);
+                            return { date: tgl, pages: chunks };
+                        });
+
+                        // State
+                        let curDateIdx  = 0;
+                        let curSheetIdx = 0;
+
+                        const wrapperId = `${idPrefix}-wrapper`;
+                        const pagId     = `${idPrefix}-pag`;
+
+                        // ── Build container ───────────────────────────────────────────────────
                         const groupDiv = document.createElement('div');
                         groupDiv.id = wrapperId;
                         groupDiv.style.marginBottom = '20px';
                         groupDiv.innerHTML =
-                            // ── Header grup ──
-                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;` +
-                            `gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:6px;` +
-                            `background:${groupColor}18;border-left:4px solid ${groupColor};">` +
-                            `<div style="font-size:12px;font-weight:700;color:${groupColor};">${groupLabel}</div>` +
-                            `<div id="${idPrefix}-meta" style="font-size:11px;color:#666;"></div>` +
-                            `<button class="btn-print-formal" id="${idPrefix}-print-btn">` +
-                            `<i class="bi bi-printer"></i> Print Lembar <span id="${idPrefix}-cur-page">1</span>` +
-                            `</button>` +
-                            `</div>` +
-                            // ── Area blok ──
-                            `<div id="${idPrefix}-blocks"></div>` +
-                            // ── Pagination ──
-                            `<div id="${pagId}"></div>`;
+                            // Header grup
+                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;
+                                gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:6px;
+                                background:${groupColor}18;border-left:4px solid ${groupColor};">
+                                <div style="font-size:12px;font-weight:700;color:${groupColor};">${groupLabel}</div>
+                                <div id="${idPrefix}-meta" style="font-size:11px;color:#666;"></div>
+                                <button class="btn-print-formal" id="${idPrefix}-print-btn">
+                                    <i class="bi bi-printer"></i> Print Lembar <span id="${idPrefix}-cur-page">1</span>
+                                </button>
+                            </div>` +
+
+                            // Navigasi tanggal
+                            `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+                                margin-bottom:10px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border:1px solid #dee2e6;">
+
+                                <button id="${idPrefix}-prev-date" class="rpt-page-btn" style="min-width:32px;">‹‹</button>
+
+                                <select id="${idPrefix}-date-select"
+                                    style="font-size:11px;padding:3px 6px;border:1px solid #ced4da;
+                                        border-radius:4px;background:#fff;cursor:pointer;max-width:160px;">
+                                    ${sortedDates.map((tgl, i) =>
+                                        `<option value="${i}">📅 ${tgl}</option>`
+                                    ).join('')}
+                                </select>
+
+                                <button id="${idPrefix}-prev-sheet" class="rpt-page-btn" style="min-width:28px;">‹</button>
+                                <span id="${idPrefix}-sheet-label"
+                                    style="font-size:11px;color:#555;white-space:nowrap;">Lembar 1/1</span>
+                                <button id="${idPrefix}-next-sheet" class="rpt-page-btn" style="min-width:28px;">›</button>
+
+                                <button id="${idPrefix}-next-date" class="rpt-page-btn" style="min-width:32px;">››</button>
+
+                                <span style="margin-left:auto;font-size:10px;color:#999;">
+                                    ${sortedDates.length} hari · ${blocks.length} blok total
+                                </span>
+                            </div>` +
+
+                            // Konten blok
+                            `<div id="${idPrefix}-blocks"></div>`;
 
                         targetEl.appendChild(groupDiv);
 
-                        function render(page) {
-                            curPage = page;
-                            const pageBlocks = pages[page - 1] || [];
+                        // ── Render ────────────────────────────────────────────────────────────
+                        function render() {
+                            const dp          = datePages[curDateIdx];
+                            const pageBlocks  = dp.pages[curSheetIdx] || [];
+                            const totalSheets = dp.pages.length;
 
-                            // Update meta info
+                            // Meta
                             const metaEl = document.getElementById(`${idPrefix}-meta`);
                             if (metaEl) metaEl.textContent =
-                                `Lembar ${page} / ${totalPages} · ${blocks.length} blok total`;
+                                `📅 ${dp.date} · Lembar ${curSheetIdx + 1}/${totalSheets} · ${byDate[dp.date].length} blok`;
 
-                            // Update nomor halaman di tombol print
                             const curPageEl = document.getElementById(`${idPrefix}-cur-page`);
-                            if (curPageEl) curPageEl.textContent = page;
+                            if (curPageEl) curPageEl.textContent = curSheetIdx + 1;
+
+                            const sheetLabel = document.getElementById(`${idPrefix}-sheet-label`);
+                            if (sheetLabel) sheetLabel.textContent = `Lembar ${curSheetIdx + 1} / ${totalSheets}`;
+
+                            // Disable/enable
+                            document.getElementById(`${idPrefix}-prev-date`).disabled  = curDateIdx === 0;
+                            document.getElementById(`${idPrefix}-next-date`).disabled  = curDateIdx === datePages.length - 1;
+                            document.getElementById(`${idPrefix}-prev-sheet`).disabled = curSheetIdx === 0;
+                            document.getElementById(`${idPrefix}-next-sheet`).disabled = curSheetIdx === totalSheets - 1;
+
+                            // Sync dropdown
+                            const sel = document.getElementById(`${idPrefix}-date-select`);
+                            if (sel) sel.value = curDateIdx;
 
                             // Render blok
                             const blocksArea = document.getElementById(`${idPrefix}-blocks`);
-                            if (blocksArea) {
-                                blocksArea.innerHTML = pageBlocks.map(b => buildBlockHTML(b)).join('');
-                            }
-
-                            // Render pagination
-                            const pagEl = document.getElementById(pagId);
-                            if (pagEl) {
-                                if (totalPages <= 1) {
-                                    pagEl.innerHTML = '';
-                                } else {
-                                    let pagHTML = `<div class="rpt-pagination" style="margin-top:8px;">`;
-                                    pagHTML +=
-                                        `<button class="${idPrefix}-pag-btn rpt-page-btn" data-page="${page-1}" ${page===1?'disabled':''}>‹</button>`;
-                                    for (let p = 1; p <= totalPages; p++) {
-                                        if (totalPages <= 7 || p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
-                                            pagHTML +=
-                                                `<button class="${idPrefix}-pag-btn rpt-page-btn${p===page?' active':''}" data-page="${p}">${p}</button>`;
-                                        } else if (p === page - 2 || p === page + 2) {
-                                            pagHTML += `<span class="rpt-page-btn" style="cursor:default;">…</span>`;
-                                        }
-                                    }
-                                    pagHTML +=
-                                        `<button class="${idPrefix}-pag-btn rpt-page-btn" data-page="${page+1}" ${page===totalPages?'disabled':''}>›</button>`;
-                                    pagHTML += `</div>`;
-                                    pagEl.innerHTML = pagHTML;
-
-                                    pagEl.querySelectorAll(`.${idPrefix}-pag-btn`).forEach(btn => {
-                                        btn.addEventListener('click', function() {
-                                            const p = parseInt(this.dataset.page);
-                                            if (!isNaN(p) && p >= 1 && p <= totalPages) {
-                                                render(p);
-                                                document.getElementById(wrapperId)?.scrollIntoView({
-                                                    behavior: 'smooth',
-                                                    block: 'start'
-                                                });
-                                            }
-                                        });
-                                    });
-                                }
-                            }
+                            if (blocksArea) blocksArea.innerHTML = pageBlocks.map(b => buildBlockHTML(b)).join('');
                         }
 
-                        // Event print tombol
-                        groupDiv.querySelector(`#${idPrefix}-print-btn`)?.addEventListener('click', () => {
-                            printNonNikePage(curPage, pages[curPage - 1] || []);
+                        // ── Event listeners ───────────────────────────────────────────────────
+                        groupDiv.querySelector(`#${idPrefix}-prev-date`).addEventListener('click', () => {
+                            if (curDateIdx > 0) { curDateIdx--; curSheetIdx = 0; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-next-date`).addEventListener('click', () => {
+                            if (curDateIdx < datePages.length - 1) { curDateIdx++; curSheetIdx = 0; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-prev-sheet`).addEventListener('click', () => {
+                            if (curSheetIdx > 0) { curSheetIdx--; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-next-sheet`).addEventListener('click', () => {
+                            if (curSheetIdx < datePages[curDateIdx].pages.length - 1) { curSheetIdx++; render(); }
+                        });
+                        groupDiv.querySelector(`#${idPrefix}-date-select`).addEventListener('change', function() {
+                            curDateIdx  = parseInt(this.value);
+                            curSheetIdx = 0;
+                            render();
                         });
 
-                        render(1);
+                        // Print
+                        groupDiv.querySelector(`#${idPrefix}-print-btn`).addEventListener('click', () => {
+                            printNonNikePage(curSheetIdx + 1, datePages[curDateIdx].pages[curSheetIdx] || []);
+                        });
+
+                        render();
                     }
 
                     // ── Bersihkan container, lalu render dua grup ─────────────────────────────
@@ -2049,10 +2138,10 @@
                             .toFixed(2);
 
                         function checkingBadgePrint(ke) {
-                            if (ke <= 1) return '';
-                            return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' + ke + '</span>';
-                        }
-                        
+                if (ke <= 1) return '';
+                return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' + ke + '</span>';
+            }
+            
                         // Setiap blok = 1 form seperti di foto fisik
                         blocksHTML += '<div class="block-wrap">' +
                             '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +

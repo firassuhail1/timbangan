@@ -337,7 +337,12 @@ class OrderSheetController extends Controller
                 'buyer'             => $o->Buyer,
                 'style'             => $o->Style,
                 'color'             => $o->ColorDescription,
-                'pcs'               => $o->PCS,
+                // 'pcs'               => $o->PCS,
+                // Dengan ini — ambil nilai pcs yang paling sering muncul di timbangans:
+                'pcs' => $o->timbangans->groupBy('pcs')
+                    ->sortByDesc(fn($g) => $g->count())
+                    ->keys()
+                    ->first() ?? $o->PCS,
                 'qty_order'         => $o->Qty_order,
                 'gac_date'          => $o->Gac_date
                     ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
@@ -426,7 +431,12 @@ class OrderSheetController extends Controller
                 'buyer'             => $o->Buyer,
                 'style'             => $o->Style,
                 'color'             => $o->ColorDescription,
-                'pcs'               => $o->PCS,
+                // 'pcs'               => $o->PCS,
+                // Dengan ini — ambil nilai pcs yang paling sering muncul di timbangans:
+                'pcs' => $o->timbangans->groupBy('pcs')
+                    ->sortByDesc(fn($g) => $g->count())
+                    ->keys()
+                    ->first() ?? $o->PCS,
                 'qty_order'         => $o->Qty_order,
                 'gac_date'          => $o->Gac_date
                     ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
