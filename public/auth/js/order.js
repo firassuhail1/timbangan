@@ -1,3 +1,6 @@
+// Simpan order yang sedang aktif di variabel global/window
+window.currentSelectedItem = null; 
+
 document.addEventListener('DOMContentLoaded', () => {
     initDateTime()
     initSearch()
@@ -166,6 +169,9 @@ function initSearch() {
                         data-item='${JSON.stringify(item)}'>
                         <i class="fa-solid fa-weight-scale"></i> Timbang
                     </button>
+                    ${item.max_checking > 0
+                    ? `<span class="badge bg-warning text-dark ms-1">Checking #${item.max_checking}</span>`
+                    : ''}
                 </td>
             </tr>`
         })
@@ -399,60 +405,138 @@ let hasPlayedStableBeepForThisItem = false  // ← tambah ini
 function openModalForItem(item) {
     const modalElement = document.getElementById('timbangModal')
 
-    currentId = item.id
+    // SIMPAN DISINI agar bisa diakses oleh listener dropdown (triggerCheck)
+    window.currentSelectedItem = item
+    currentId      = item.id
     currentItemCtn = parseInt(item.Ctn) || 0
 
     fillModalFields(item)
     resetPreviewUI()
 
+    document.getElementById('info_checking_ke').value = 1
+
     const modal = new bootstrap.Modal(modalElement)
+
+    modalElement.addEventListener('shown.bs.modal', async () => {
+        try {
+            await fetch('/user/order/set-id', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ id: currentId })
+            })
+        } catch {}
+
+        await loadPreview()
+        hitungLossWeight()
+
+        const espId = window.APP?.espId
+        if (espId) startListening(espId)
+
+        await checkAndPromptChecking(item)
+
+    }, { once: true })
 
     modalElement.addEventListener('hidden.bs.modal', () => {
         stopPolling()
         stopListening()
-        document.getElementById('manualWeight').value = ''  // ← reset saat close
-        
-        // Kembalikan mode manual ke off jika aktif
+        document.getElementById('manualWeight').value = ''
+
         const toggle = document.getElementById('manualMode')
         const input  = document.getElementById('manualWeight')
         if (toggle && toggle.checked) {
-            toggle.checked   = false
-            input.disabled   = true
-            isManualMode     = false
+            toggle.checked = false
+            input.disabled = true
+            isManualMode   = false
             resetPreviewUI()
-            startListening(window.APP?.espId)
         }
     }, { once: true })
 
-    modalElement.addEventListener(
-        'shown.bs.modal',
-        async () => {
-            try {
-                await fetch('/user/order/set-id', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector(
-                            'meta[name="csrf-token"]'
-                        ).content
-                    },
-                    body: JSON.stringify({ id: currentId })
-                })
-            } catch {}
-
-            await loadPreview()
-            hitungLossWeight()
-            // startPolling()
-            // Ambil esp_id dari device aktif
-            const espId = window.APP?.espId  // ← perlu ditambah di blade
-            if (espId) {
-                startListening(espId)
-            }
-        },
-        { once: true }
-    )
-
     modal.show()
+}
+
+async function checkAndPromptChecking(item) {
+    const tipeEl = document.getElementById('tipe_asal');
+    const lineEl = document.getElementById('info_line');
+    const subconEl = document.getElementById('info_subcon');
+
+    console.log("--- Mencoba Fetch ---");
+    console.log("Tipe:", tipeEl.value);
+
+    const params = new URLSearchParams({ order_code: item.id });
+
+    if (tipeEl.value === 'sewing') {
+        if (!lineEl.value) {
+            console.log("Fetch batal: Line belum diisi");
+            return;
+        }
+        params.append('line', lineEl.value);
+    } else if (tipeEl.value === 'subcon') {
+        if (!subconEl.value) {
+            console.log("Fetch batal: Subcon belum diisi");
+            return;
+        }
+        params.append('subcon', subconEl.value);
+    } else {
+        console.log("Fetch batal: Tipe asal belum dipilih");
+        return;
+    }
+
+    // SEKARANG LOG INI PASTI MUNCUL JIKA DETAIL SUDAH DIPILIH
+    console.log("Fetching params:", params.toString());
+    
+    try {
+        const res = await fetch('/user/order/checking-info?' + params);
+        const json = await res.json();
+        
+        console.log("JSON Response:", json); // CEK INI DI CONSOLE
+
+        if (!json.success) return;
+
+        // Jika max_checking 0, set input ke 1 tapi jangan tampilkan modal pilihan
+        if (parseInt(json.max_checking) === 0) {
+            console.log("Belum ada history. Checking ke-1 otomatis.");
+            document.getElementById('info_checking_ke').value = 1;
+            return;
+        }
+
+        // Bangun opsi (Hanya jalan jika max_checking > 0)
+        let checkingOptions = '';
+        for (let i = 1; i <= json.max_checking; i++) {
+            checkingOptions += `<option value="${i}">Lanjut Checking #${i}</option>`;
+        }
+        checkingOptions += `<option value="${json.next_checking}" selected>Checking #${json.next_checking} (Baru)</option>`;
+
+        // Tampilkan Swal
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Order sudah pernah dicek',
+            target: document.getElementById('timbangModal'), // AGAR TIDAK TERSEMBUNYI DI BELAKANG MODAL
+            html: `
+                <div style="text-align:left;font-size:14px;line-height:2;">
+                    <b>Checking terakhir:</b> #${json.max_checking}<br>
+                    <b>Total carton:</b> ${json.total_cartons} carton<br><br>
+                    <label style="font-weight:600;">Pilih sesi timbang:</label><br>
+                    <select id="swal-checking-select" class="swal2-input" style="margin-top:8px;width:100%;">
+                        ${checkingOptions}
+                    </select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Pilih',
+            confirmButtonColor: '#435ebe',
+            preConfirm: () => document.getElementById('swal-checking-select').value
+        });
+
+        if (result.isConfirmed) {
+            document.getElementById('info_checking_ke').value = result.value;
+        }
+
+    } catch (err) {
+        console.error("Fetch error:", err);
+    }
 }
 
 function initTimbangModal() {
@@ -546,6 +630,18 @@ function fillModalFields(item) {
     }
 
     document.getElementById('lost_weight').value = ''
+
+     // ✅ TAMBAHKAN DI SINI — paling bawah sebelum tutup fungsi
+    const buyer = (item.Buyer || '').toUpperCase()
+    const isNike = buyer.includes('NIKE')
+
+    const requiredMark = document.getElementById('no_box_required_mark')
+    const optionalMark = document.getElementById('no_box_optional_mark')
+    const noBoxInput   = document.getElementById('no_box')
+
+    if (requiredMark) requiredMark.style.display = isNike ? 'none' : ''
+    if (optionalMark) optionalMark.style.display = isNike ? '' : 'none'
+    if (noBoxInput)   noBoxInput.placeholder = isNike ? 'Opsional untuk Nike' : 'A001'
 }
 
 function formatDateForInput(dateStr) {
@@ -1114,6 +1210,17 @@ function initSaveButton() {
     btnSimpan.addEventListener('click', async () => {
         if (!latestPreview || parseFloat(latestPreview.berat) < 0.05) {
             Swal.fire('Peringatan', 'Berat terlalu kecil atau belum terdeteksi!', 'warning')
+            return
+        }
+
+        // ✅ Cek apakah Nike — jika bukan Nike, no_box wajib diisi
+        const buyer = document.getElementById('info_buyer')?.value?.trim().toUpperCase() || ''
+        const isNike = buyer.includes('NIKE')
+        const noBox = document.getElementById('no_box')?.value?.trim()
+
+        if (!isNike && !noBox) {
+            Swal.fire('Peringatan', 'No. Carton harus diisi!', 'warning')
+            document.getElementById('no_box')?.focus()
             return
         }
  

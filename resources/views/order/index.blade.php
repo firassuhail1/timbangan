@@ -433,7 +433,7 @@
                                                         </td>
                                                     </tr>
                                                     <tr id="row_subcon" style="display: none;">
-                                                        <th>Kode Subcon <span class="text-danger">*</span></th>
+                                                        <th>Nama Subcon <span class="text-danger">*</span></th>
                                                         <td>
                                                             <input type="text" id="info_subcon" name="Subcon"
                                                                 class="form-control form-control-sm"
@@ -448,6 +448,7 @@
                                                     </tr> --}}
                                                     <input type="hidden" id="info_order_code" name="Order_code"
                                                         class="form-control form-control-sm" readonly>
+                                                    <input type="hidden" id="info_checking_ke" name="checking_ke" value="1">
                                                     <tr>
                                                         <th>KJ.</th>
                                                         <td><input type="text" id="info_kj" name="KJ"
@@ -614,14 +615,14 @@
                                             <div class="card-body p-3">
                                                 <!-- No. Carton + Tombol Scan Barcode -->
                                                 <div class="mb-3">
-                                                    <label for="no_box"
-                                                        class="form-label fw-semibold small text-muted">
-                                                        No. Carton <span class="text-danger">*</span>
+                                                    <label for="no_box" class="form-label fw-semibold small text-muted">
+                                                        No. Carton 
+                                                        <span class="text-danger" id="no_box_required_mark">*</span>
+                                                        <span class="text-muted" id="no_box_optional_mark" style="display:none;">(opsional untuk Nike)</span>
                                                     </label>
                                                     <div class="input-group">
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="no_box" id="no_box" placeholder="A001"
-                                                            required>
+                                                            name="no_box" id="no_box" placeholder="A001">
                                                         <button class="btn btn-outline-warning btn-sm" type="button"
                                                             id="btnScanBarcode">
                                                             <i class="fa-solid fa-barcode"></i>
@@ -827,6 +828,32 @@
             document.addEventListener('DOMContentLoaded', function () {
                 const tipeAsal = document.getElementById('tipe_asal');
                 if (tipeAsal) toggleAsalInput(tipeAsal.value);
+            });
+
+            // Fungsi pembantu untuk memicu pengecekan
+            function triggerCheck() {
+                if (window.currentSelectedItem) {
+                    checkAndPromptChecking(window.currentSelectedItem);
+                } else {
+                    console.warn("Item belum terpilih, fetch dibatalkan.");
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const tipeAsal = document.getElementById('tipe_asal');
+                const inputLine = document.getElementById('info_line');
+                const inputSubcon = document.getElementById('info_subcon');
+
+                // 1. Jalankan toggle UI saat load
+                if (tipeAsal) toggleAsalInput(tipeAsal.value);
+
+                // 2. Jalankan fetch hanya JIKA detail sudah dipilih
+                if (inputLine) {
+                    inputLine.addEventListener('change', triggerCheck);
+                }
+                if (inputSubcon) {
+                    inputSubcon.addEventListener('change', triggerCheck);
+                }
             });
         </script>
 
@@ -1491,262 +1518,277 @@
 
                 // ─── RENDER NON-NIKE ─────────────────────────────────────────
                 function renderNonNike(orders) {
-                    const el = document.getElementById('non-nike-report-content');
+                    const el    = document.getElementById('non-nike-report-content');
                     const badge = document.getElementById('non-nike-count-badge');
-
-                    const COLS_PER_BLOCK = 10;
-                    const ROWS_PER_BLOCK = 5;
+                
+                    const COLS_PER_BLOCK   = 10;
+                    const ROWS_PER_BLOCK   = 5;
                     const CARTON_PER_BLOCK = COLS_PER_BLOCK * ROWS_PER_BLOCK;
-                    const BLOCKS_PER_PAGE = 4;
-
+                    const BLOCKS_PER_PAGE  = 4;
+                
                     if (!el) return;
-
+                
                     if (!orders.length) {
                         if (badge) badge.textContent = '0';
                         el.innerHTML = '<div class="formal-empty">Tidak ada data Non-Nike pada rentang tanggal ini</div>';
                         return;
                     }
-
+                
                     if (badge) badge.textContent = orders.length;
-
+                
+                    // ── Bangun allBlocks ──────────────────────────────────────────────────────
+                    // Setiap elemen `orders` sudah merupakan 1 sesi checking yang berbeda
+                    // (dipisahkan oleh controller via groupBy Order_code|checking_ke).
                     const allBlocks = [];
+                
                     orders.forEach(order => {
                         (order.by_line || []).forEach(lineGroup => {
-                            const timbangans = lineGroup.timbangans || [];
+                            const timbangans   = lineGroup.timbangans || [];
                             const cartonChunks = chunkArray(timbangans, CARTON_PER_BLOCK);
+                
                             cartonChunks.forEach((chunk, blockIdx) => {
                                 allBlocks.push({
-                                buyer: order.buyer || '-',
-                                kj: order.kj || order.order_code || '-',
-                                order_code: order.order_code || '-',
-                                po: order.po || '-',
-                                style: order.style || '-',
-                                color: order.color || '-',
-                                qty_order: order.qty_order || 0,
-                                carton_weight_std: order.carton_weight_std,
-                                pcs_weight_std: order.pcs_weight_std,
-                                gac_date: order.gac_date || '-',
-                                destination: order.destination || '-',
-                                inspector: order.inspector || '-',
-                                opt_qc: order.opt_qc || '-',
-                                spv_qc: order.spv_qc || '-',
-                                chief: order.chief || '-',
-                                line: lineGroup.line,
-                                subcon: order.subcon || null,  // ← tambah ini
-                                pcs_default: order.pcs_default || '-',
-                                timbangans: chunk,
-                                blockIdx,
-                                totalCartonInLine: timbangans.length,
-                                startNo: blockIdx * CARTON_PER_BLOCK + 1,
-                            });
+                                    buyer:              order.buyer             || '-',
+                                    kj:                 order.kj || order.order_code || '-',
+                                    order_code:         order.order_code        || '-',
+                                    po:                 order.po                || '-',
+                                    style:              order.style             || '-',
+                                    color:              order.color             || '-',
+                                    qty_order:          order.qty_order         || 0,
+                                    carton_weight_std:  order.carton_weight_std,
+                                    pcs_weight_std:     order.pcs_weight_std,
+                                    gac_date:           order.gac_date          || '-',
+                                    destination:        order.destination       || '-',
+                                    inspector:          order.inspector         || '-',
+                                    opt_qc:             order.opt_qc            || '-',
+                                    spv_qc:             order.spv_qc            || '-',
+                                    chief:              order.chief             || '-',
+                                    line:               lineGroup.line,
+                                    subcon:             order.subcon            || null,
+                
+                                    // ← checking_ke selalu ada; controller sudah cast ke integer
+                                    checking_ke:        parseInt(order.checking_ke) || 1,
+                
+                                    pcs_default:        order.pcs_default       || '-',
+                                    timbangans:         chunk,
+                                    blockIdx,
+                                    totalCartonInLine:  timbangans.length,
+                                    startNo:            blockIdx * CARTON_PER_BLOCK + 1,
+                                });
                             });
                         });
                     });
-
-                    const pages = chunkArray(allBlocks, BLOCKS_PER_PAGE);
-                    const totalPages = pages.length;
-                    let currentPage = 1;
-
+                
+                    // ── Helper: badge HTML untuk checking_ke ─────────────────────────────────
+                    function checkingBadgeHTML(checkingKe, fontSize = '10px') {
+                        // Semua sesi mendapat badge; sesi > 1 warnanya lebih mencolok
+                        const bg    = checkingKe > 1 ? '#ff6b35' : '#6c757d';  // oranye vs abu
+                        const label = `Checking #${checkingKe}`;
+                        return `<span style="background:${bg};color:#fff;font-size:${fontSize};` +
+                            `font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">${label}</span>`;
+                    }
+                
+                    // ── Bangun HTML satu block ────────────────────────────────────────────────
                     function buildBlockHTML(block) {
-                        const isContinued = block.blockIdx > 0;
-                        const startNo = block.startNo;
-                        const cartons = block.timbangans;
-                        let tbodyRows = '';
-
+                        const isContinued  = block.blockIdx > 0;
+                        const startNo      = block.startNo;
+                        const cartons      = block.timbangans;
+                        let   tbodyRows    = '';
+                
                         for (let row = 0; row < ROWS_PER_BLOCK; row++) {
-                            const startIdx = row * COLS_PER_BLOCK;
-                            const rowCartons = cartons.slice(startIdx, startIdx + COLS_PER_BLOCK);
-                            const padded = [...rowCartons, ...Array(COLS_PER_BLOCK - rowCartons.length).fill(null)];
+                            const startIdx    = row * COLS_PER_BLOCK;
+                            const rowCartons  = cartons.slice(startIdx, startIdx + COLS_PER_BLOCK);
+                            const padded      = [...rowCartons, ...Array(COLS_PER_BLOCK - rowCartons.length).fill(null)];
                             const rowTotalBerat = rowCartons.reduce((s, t) => s + parseFloat(t?.berat || 0), 0);
-                            const hasData = rowCartons.length > 0;
-
-                            let tdBoxes = '';
+                            const hasData     = rowCartons.length > 0;
+                
+                            let tdBoxes = '', tdWeights = '';
+                
                             padded.forEach((t, colIdx) => {
                                 const no = startNo + startIdx + colIdx;
-                                tdBoxes += t ?
-                                    '<td class="td-box" style="font-weight:600;font-size:10px;">' + (t.no_box ||
-                                        no) + '</td>' :
-                                    '<td class="td-empty" style="color:#ddd;">-</td>';
+                                tdBoxes += t
+                                    ? `<td class="td-box" style="font-weight:600;font-size:10px;">${t.no_box || no}</td>`
+                                    : `<td class="td-empty" style="color:#ddd;">-</td>`;
                             });
-
-                            let tdWeights = '';
+                
                             padded.forEach(t => {
                                 if (t) {
-                                    const bv = parseFloat(t.berat);
-                                    const mn = parseFloat(t.rasio_batas_beban_min || 0);
-                                    const mx = parseFloat(t.rasio_batas_beban_max || 0);
-                                    let cls = 'w-ok';
+                                    const bv  = parseFloat(t.berat);
+                                    const mn  = parseFloat(t.rasio_batas_beban_min || 0);
+                                    const mx  = parseFloat(t.rasio_batas_beban_max  || 0);
+                                    let   cls = 'w-ok';
                                     if (mn > 0 && mx > 0) {
                                         if (bv < mn) cls = 'w-kurang';
                                         else if (bv > mx) cls = 'w-lebih';
                                     }
-                                    tdWeights += '<td class="td-w ' + cls +
-                                        '" style="font-weight:700;font-size:11px;">' + bv.toFixed(2) + '</td>';
+                                    tdWeights += `<td class="td-w ${cls}" style="font-weight:700;font-size:11px;">${bv.toFixed(2)}</td>`;
                                 } else {
-                                    tdWeights += '<td class="td-empty" style="color:#ddd;">-</td>';
+                                    tdWeights += `<td class="td-empty" style="color:#ddd;">-</td>`;
                                 }
                             });
-
-                            const rowDate = rowCartons[0]?.waktu_timbang ?
-                                rowCartons[0].waktu_timbang.substring(0, 10) :
-                                '-';
-
-                            tbodyRows += '<tr>' +
-                                '<td class="td-date" rowspan="2" style="font-size:10px;color:#666;vertical-align:middle;white-space:nowrap;">' +
-                                rowDate + '</td>' +
-                                tdBoxes +
-                                '<td class="td-total" rowspan="2" style="font-weight:700;color:#2dce89;vertical-align:middle;">' +
-                                (hasData ? rowTotalBerat.toFixed(2) : '-') + '</td>' +
-                                '<td rowspan="2"></td>' +
-                                '</tr>' +
-                                '<tr>' + tdWeights + '</tr>';
+                
+                            const rowDate = rowCartons[0]?.waktu_timbang
+                                ? rowCartons[0].waktu_timbang.substring(0, 10) : '-';
+                
+                            tbodyRows +=
+                                `<tr>` +
+                                    `<td class="td-date" rowspan="2" style="font-size:10px;color:#666;vertical-align:middle;white-space:nowrap;">${rowDate}</td>` +
+                                    tdBoxes +
+                                    `<td class="td-total" rowspan="2" style="font-weight:700;color:#2dce89;vertical-align:middle;">` +
+                                        `${hasData ? rowTotalBerat.toFixed(2) : '-'}` +
+                                    `</td>` +
+                                    `<td rowspan="2"></td>` +
+                                `</tr>` +
+                                `<tr>${tdWeights}</tr>`;
                         }
-
-                        const continuedBadge = isContinued ?
-                            '<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;margin-left:8px;">Lanjutan</span>' :
-                            '';
-
-                        const thHeaders = Array.from({
-                                length: COLS_PER_BLOCK
-                            }, (_, i) =>
-                            '<th style="min-width:50px;">#' + (i + 1) + '</th>'
+                
+                        const continuedBadge = isContinued
+                            ? `<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:600;` +
+                            `padding:2px 8px;border-radius:4px;margin-left:8px;">Lanjutan</span>`
+                            : '';
+                
+                        const thHeaders = Array.from({ length: COLS_PER_BLOCK }, (_, i) =>
+                            `<th style="min-width:50px;">#${i + 1}</th>`
                         ).join('');
-
-                        const totalBerat = block.timbangans.reduce((s, t) => s + parseFloat(t?.berat || 0), 0).toFixed(2);
-
-                        return '<div class="non-nike-block" style="margin-bottom:12px;">' +
-                            '<div class="nn-info-wrap">'
-
-                            +
-                            '<div class="nn-info-left">' +
-                            '<table class="nn-info-table">' +
-                            '<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">' +
-                            'CARTON WEIGHT REPORT ' + continuedBadge +
-                            '<button class="btn-print-block" onclick="printSingleBlock(this)" ' +
-                            'style="float:right;background:#fff;color:#435ebe;border:none;border-radius:3px;padding:1px 6px;font-size:10px;cursor:pointer;font-weight:700;" ' +
-                            'data-block=\'' + JSON.stringify(block).replace(/'/g, "&#39;") + '\'>' +
-                            '<i class="bi bi-printer"></i> Print Block' +
-                            '</button>' +
-                            '</th></tr>' +
-                            '<tr><th>BUYER</th><td><strong>' + block.buyer + '</strong></td></tr>' +
-                            '<tr><th>Order No. (KJ)</th><td><strong>' + block.kj + '</strong></td></tr>' +
-                            '<tr><th>PO#</th><td>' + block.po + '</td></tr>' +
-                            '<tr><th>Style</th><td>' + block.style + '</td></tr>' +
-                            '<tr><th>Color</th><td>' + block.color + '</td></tr>' +
-                            '<tr><th>Qty Order</th><td>' + parseInt(block.qty_order || 0).toLocaleString() + ' pcs' +
-                            ' <span style="font-size:10px;color:#666;">' +
-                            (block.subcon ? 'S = ' + block.subcon : 'L = ' + (block.line || '-')) +
-                            ' &nbsp;·&nbsp; M = ' + block.pcs_default +
-                            '</span></td></tr>' +
-                            '<tr><th>Carton Weight Std.</th><td>' + (block.carton_weight_std ? parseFloat(block
-                                .carton_weight_std).toFixed(2) + ' kg' : '-') + '</td></tr>' +
-                            '<tr><th>Pcs Weight Std.</th><td>' + (block.pcs_weight_std ? parseFloat(block.pcs_weight_std)
-                                .toFixed(2) + ' kg' : '-') + '</td></tr>' +
-                            '</table>' +
-                            '</div>'
-
-                            +
-                            '<div class="nn-info-right">' +
-                            '<table class="nn-info-table">' +
-                            '<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">&nbsp; ' +
-                            continuedBadge + '</th></tr>' +
-                            '<tr><th>GAC Date</th><td>' + block.gac_date + '</td></tr>' +
-                            '<tr><th>Destination</th><td>' + block.destination + '</td></tr>' +
-                            '<tr><th>Inspector</th><td>' + block.inspector + '</td></tr>' +
-                            '<tr><th>Total Carton</th><td><strong>' + block.timbangans.length + '</strong> / ' + block
-                            .totalCartonInLine + '</td></tr>' +
-                            '<tr><th>Total Berat</th><td><strong>' + totalBerat + ' kg</strong></td></tr>' +
-                            '</table>' +
-                            '<div class="nn-sign-wrap" style="margin-top:6px;">' +
-                            '<table class="nn-sign-table">' +
-                            '<thead><tr><th>OPT QC TIMBANGAN</th><th>SPV QC</th><th>CHIEF FINISH GOOD</th></tr></thead>' +
-                            '<tbody><tr>' +
-                            '<td style="height:45px;vertical-align:bottom;font-weight:700;">' + (block.opt_qc !== '-' ?
-                                block.opt_qc : '') + '</td>' +
-                            '<td style="height:45px;vertical-align:bottom;font-weight:700;">' + (block.spv_qc !== '-' ?
-                                block.spv_qc : '') + '</td>' +
-                            '<td style="height:45px;vertical-align:bottom;font-weight:700;">' + (block.chief !== '-' ? block
-                                .chief : '') + '</td>' +
-                            '</tr></tbody>' +
-                            '</table>' +
-                            '</div>' +
-                            '</div>' +
-                            '</div>'
-
-                            +
-                            '<div class="nn-carton-wrap">' +
-                            '<table class="nn-carton-table">' +
-                            '<thead>' +
-                            '<tr>' +
-                            '<th rowspan="2" style="min-width:50px;">Date</th>' +
-                            '<th colspan="' + COLS_PER_BLOCK + '">Ctn. No &amp; Weight (kg)</th>' +
-                            '<th rowspan="2" style="min-width:50px;">Total (kg)</th>' +
-                            '<th rowspan="2" style="min-width:45px;">Remark</th>' +
-                            '</tr>' +
-                            '<tr>' + thHeaders + '</tr>' +
-                            '</thead>' +
-                            '<tbody>' + tbodyRows + '</tbody>' +
-                            '</table>' +
-                            '</div>' +
-                            '</div>';
+                
+                        const totalBerat = block.timbangans
+                            .reduce((s, t) => s + parseFloat(t?.berat || 0), 0).toFixed(2);
+                
+                        return (
+                            `<div class="non-nike-block" style="margin-bottom:12px;">` +
+                            `<div class="nn-info-wrap">` +
+                
+                            /* ── Info KIRI ── */
+                            `<div class="nn-info-left">` +
+                            `<table class="nn-info-table">` +
+                            `<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">` +
+                                `CARTON WEIGHT REPORT ` +
+                                continuedBadge +
+                                /* Badge checking_ke — selalu tampil */
+                                checkingBadgeHTML(block.checking_ke) +
+                                /* Tombol Print Block */
+                                `<button class="btn-print-block" onclick="printSingleBlock(this)" ` +
+                                `style="float:right;background:#fff;color:#435ebe;border:none;border-radius:3px;` +
+                                `padding:1px 6px;font-size:10px;cursor:pointer;font-weight:700;" ` +
+                                `data-block='${JSON.stringify(block).replace(/'/g, "&#39;")}'>` +
+                                `<i class="bi bi-printer"></i> Print Block</button>` +
+                            `</th></tr>` +
+                            `<tr><th>BUYER</th><td><strong>${block.buyer}</strong></td></tr>` +
+                            `<tr><th>Order No. (KJ)</th><td><strong>${block.kj}</strong></td></tr>` +
+                            `<tr><th>PO#</th><td>${block.po}</td></tr>` +
+                            `<tr><th>Style</th><td>${block.style}</td></tr>` +
+                            `<tr><th>Color</th><td>${block.color}</td></tr>` +
+                            `<tr><th>Qty Order</th><td>` +
+                                `${parseInt(block.qty_order || 0).toLocaleString()} pcs ` +
+                                `<span style="font-size:10px;color:#666;">` +
+                                `${block.subcon ? 'S = ' + block.subcon : 'L = ' + (block.line || '-')} ` +
+                                `&nbsp;·&nbsp; M = ${block.pcs_default}` +
+                                `</span>` +
+                            `</td></tr>` +
+                            `<tr><th>Carton Weight Std.</th><td>${block.carton_weight_std ? parseFloat(block.carton_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>` +
+                            `<tr><th>Pcs Weight Std.</th><td>${block.pcs_weight_std ? parseFloat(block.pcs_weight_std).toFixed(2) + ' kg' : '-'}</td></tr>` +
+                            `</table>` +
+                            `</div>` +
+                
+                            /* ── Info KANAN ── */
+                            `<div class="nn-info-right">` +
+                            `<table class="nn-info-table">` +
+                            `<tr><th colspan="2" style="background:#435ebe;color:#fff;text-align:center;font-size:11px;padding:4px;">&nbsp;${continuedBadge}</th></tr>` +
+                            `<tr><th>GAC Date</th><td>${block.gac_date}</td></tr>` +
+                            `<tr><th>Destination</th><td>${block.destination}</td></tr>` +
+                            `<tr><th>Inspector</th><td>${block.inspector}</td></tr>` +
+                            `<tr><th>Total Carton</th><td><strong>${block.timbangans.length}</strong> / ${block.totalCartonInLine}</td></tr>` +
+                            `<tr><th>Total Berat</th><td><strong>${totalBerat} kg</strong></td></tr>` +
+                            `</table>` +
+                            `<div class="nn-sign-wrap" style="margin-top:6px;">` +
+                            `<table class="nn-sign-table">` +
+                            `<thead><tr><th>OPT QC TIMBANGAN</th><th>SPV QC</th><th>CHIEF FINISH GOOD</th></tr></thead>` +
+                            `<tbody><tr>` +
+                            `<td style="height:45px;vertical-align:bottom;font-weight:700;">${block.opt_qc !== '-' ? block.opt_qc : ''}</td>` +
+                            `<td style="height:45px;vertical-align:bottom;font-weight:700;">${block.spv_qc !== '-' ? block.spv_qc : ''}</td>` +
+                            `<td style="height:45px;vertical-align:bottom;font-weight:700;">${block.chief !== '-'  ? block.chief  : ''}</td>` +
+                            `</tr></tbody>` +
+                            `</table>` +
+                            `</div>` +
+                            `</div>` +
+                            `</div>` +   /* end nn-info-wrap */
+                
+                            /* ── Tabel Carton ── */
+                            `<div class="nn-carton-wrap">` +
+                            `<table class="nn-carton-table">` +
+                            `<thead>` +
+                            `<tr>` +
+                            `<th rowspan="2" style="min-width:50px;">Date</th>` +
+                            `<th colspan="${COLS_PER_BLOCK}">Ctn. No &amp; Weight (kg)</th>` +
+                            `<th rowspan="2" style="min-width:50px;">Total (kg)</th>` +
+                            `<th rowspan="2" style="min-width:45px;">Remark</th>` +
+                            `</tr>` +
+                            `<tr>${thHeaders}</tr>` +
+                            `</thead>` +
+                            `<tbody>${tbodyRows}</tbody>` +
+                            `</table>` +
+                            `</div>` +
+                            `</div>`   /* end non-nike-block */
+                        );
                     }
-
+                
+                    // ── Pagination & render ───────────────────────────────────────────────────
+                    const pages     = chunkArray(allBlocks, BLOCKS_PER_PAGE);
+                    const totalPages = pages.length;
+                    let currentPage  = 1;
+                
                     function render(page) {
                         currentPage = page;
                         const pageBlocks = pages[page - 1] || [];
-
+                
                         let blocksHTML = '';
-                        pageBlocks.forEach(block => {
-                            blocksHTML += buildBlockHTML(block);
-                        });
-
+                        pageBlocks.forEach(block => { blocksHTML += buildBlockHTML(block); });
+                
                         let pagHTML = '';
                         if (totalPages > 1) {
-                            pagHTML = '<div class="rpt-pagination" style="margin-top:12px;">';
-                            pagHTML += '<button class="rpt-page-btn nn-page-btn" data-page="' + (page - 1) + '" ' + (
-                                page === 1 ? 'disabled' : '') + '>‹</button>';
+                            pagHTML = `<div class="rpt-pagination" style="margin-top:12px;">`;
+                            pagHTML += `<button class="rpt-page-btn nn-page-btn" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>‹</button>`;
                             for (let p = 1; p <= totalPages; p++) {
                                 if (totalPages <= 7 || p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
-                                    pagHTML += '<button class="rpt-page-btn nn-page-btn' + (p === page ? ' active' : '') +
-                                        '" data-page="' + p + '">' + p + '</button>';
+                                    pagHTML += `<button class="rpt-page-btn nn-page-btn${p === page ? ' active' : ''}" data-page="${p}">${p}</button>`;
                                 } else if (p === page - 2 || p === page + 2) {
-                                    pagHTML += '<span class="rpt-page-btn" style="cursor:default;">…</span>';
+                                    pagHTML += `<span class="rpt-page-btn" style="cursor:default;">…</span>`;
                                 }
                             }
-                            pagHTML += '<button class="rpt-page-btn nn-page-btn" data-page="' + (page + 1) + '" ' + (
-                                page === totalPages ? 'disabled' : '') + '>›</button>';
-                            pagHTML += '</div>';
+                            pagHTML += `<button class="rpt-page-btn nn-page-btn" data-page="${page + 1}" ${page === totalPages ? 'disabled' : ''}>›</button>`;
+                            pagHTML += `</div>`;
                         }
-
-                        el.innerHTML = '<div>' +
-                            '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;">' +
-                            '<div style="font-size:12px;color:#666;">Lembar <strong>' + page + ' / ' + totalPages +
-                            '</strong> &nbsp;·&nbsp; Total blok: <strong>' + allBlocks.length + '</strong></div>' +
-                            '<button class="btn-print-formal" id="btn-print-nn-page"><i class="bi bi-printer"></i> Print Lembar ' +
-                            page + '</button>' +
-                            '</div>' +
+                
+                        el.innerHTML =
+                            `<div>` +
+                            `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;">` +
+                            `<div style="font-size:12px;color:#666;">` +
+                                `Lembar <strong>${page} / ${totalPages}</strong> &nbsp;·&nbsp; ` +
+                                `Total blok: <strong>${allBlocks.length}</strong>` +
+                            `</div>` +
+                            `<button class="btn-print-formal" id="btn-print-nn-page">` +
+                                `<i class="bi bi-printer"></i> Print Lembar ${page}` +
+                            `</button>` +
+                            `</div>` +
                             blocksHTML +
                             pagHTML +
-                            '</div>';
-
+                            `</div>`;
+                
                         el.querySelectorAll('.nn-page-btn').forEach(btn => {
-                            btn.addEventListener('click', function() {
+                            btn.addEventListener('click', function () {
                                 const p = parseInt(this.dataset.page);
                                 if (!isNaN(p) && p >= 1 && p <= totalPages) {
                                     render(p);
-                                    el.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'start'
-                                    });
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }
                             });
                         });
-
+                
                         document.getElementById('btn-print-nn-page')?.addEventListener('click', () => {
                             printNonNikePage(page, pageBlocks);
                         });
                     }
-
+                
                     render(1);
                 }
 
@@ -1817,13 +1859,11 @@
 
                         // Setiap blok = 1 form seperti di foto fisik
                         blocksHTML += '<div class="block-wrap">'
-
-                            // Header biru title
-                            +
-                            '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +
+                            + '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +
                             (isContinued ?
                                 ' <span style="background:#fff3cd;color:#856404;padding:1px 6px;border-radius:3px;font-size:8px;">Lanjutan</span>' :
                                 '') +
+                            checkingBadgePrint(block.checking_ke) +
                             '</div>'
 
                             // Info section: kiri + kanan
@@ -2392,6 +2432,7 @@
                             <div class="block-title">
                                 CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton
                                 ${isContinued ? '<span style="background:#fff3cd;color:#856404;padding:1px 6px;border-radius:3px;font-size:7px;">Lanjutan</span>' : ''}
+                                ${block.checking_ke > 1 ? '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:8px;">Checking #' + block.checking_ke + '</span>' : ''}
                             </div>
 
                             <div class="block-info">

@@ -20,7 +20,8 @@ return new class extends Migration
             $table->string('Buyer')->nullable();
             $table->string('PO')->nullable();
             $table->string('Style')->nullable();
-            $table->integer('Line');
+            $table->integer('Line')->nullable();
+            $table->string('Line')->nullable();
             $table->string('Qty_order')->nullable();
             $table->decimal('Carton_weight_std', 8, 2)->nullable();
             $table->decimal('Pcs_weight_std', 8, 2)->nullable();
@@ -35,6 +36,7 @@ return new class extends Migration
             $table->string('SPV_QC')->nullable();
             $table->string('CHIEF_FINISH_GOOD')->nullable();
             $table->string('status')->nullable();
+            $table->integer('checking_ke')->default(1);
             $table->timestamps();
         });
     }

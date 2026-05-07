@@ -306,236 +306,115 @@ class OrderSheetController extends Controller
         return view('order.index', compact('auth', 'groupedByKJ'));
     }
 
-    public function formalReport(Request $request)
+    private function buildNonNikeBlock($orderGroup): array
     {
-        Log::info('masuk');
-        $start = $request->get('start', now()->format('Y-m-d'));
-        $end   = $request->get('end',   now()->format('Y-m-d'));
-
-        // Ambil semua Ordersheet yang punya timbangan di rentang waktu
-        $orders = Ordersheet::with([
-            'timbangans' => function ($q) use ($start, $end) {
-                $q->select(
-                    'id',
-                    'id_ordersheet',
-                    'no_box',
-                    'berat',
-                    'pcs',
-                    'rasio_batas_beban_min',
-                    'rasio_batas_beban_max',
-                    'waktu_timbang'
-                )
-                    ->whereDate('waktu_timbang', '>=', $start)
-                    ->whereDate('waktu_timbang', '<=', $end)
-                    ->orderBy('waktu_timbang');
-            }
-        ])
-            ->where('status', 'Success')
-            ->whereHas('timbangans', function ($q) use ($start, $end) {
-                $q->whereDate('waktu_timbang', '>=', $start)
-                    ->whereDate('waktu_timbang', '<=', $end);
-            })
-            ->select(
-                'id',
-                'Order_code',
-                'KJ',
-                'Buyer',
-                'PO',
-                'Style',
-                'ColorDescription',
-                'Line',
-                'Subcon',
-                'Qty_order',
-                'PCS',
-                'Ctn',
-                'Less_Ctn',
-                'Pcs_Less_Ctn',
-                'Carton_weight_std',
-                'Pcs_weight_std',
-                'Gac_date',
-                'Destination',
-                'Inspector',
-                'OPT_QC_TIMBANGAN',
-                'SPV_QC',
-                'CHIEF_FINISH_GOOD',
-                'status',
-                'created_at'
-            )
-            ->get()
-            // Hanya yang punya timbangan di rentang ini
-            ->filter(fn($o) => $o->timbangans->isNotEmpty());
-
-        // Pisah Nike vs Non-Nike (case-insensitive)
-        $nike    = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) === 'nike');
-        $nonNike = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) !== 'nike');
-
-        // ── Format NIKE ──────────────────────────────────────────
-        // Tiap Ordersheet = 1 row di tabel
-        $nikeRows = $nike->map(function ($o) {
-            $firstDate = optional($o->timbangans->first())->waktu_timbang;
+        $first      = $orderGroup->first();
+        $allTimbang = $orderGroup->flatMap(fn($o) => $o->timbangans)
+            ->sortBy('waktu_timbang')->values();
+    
+        $byLine = $orderGroup->groupBy('Line')->sortKeys()->map(function ($lineOrders, $line) {
+            $timbangans = $lineOrders->flatMap(fn($o) => $o->timbangans)
+                ->sortBy('waktu_timbang')->values();
+    
             return [
-                'order_code'        => $o->Order_code,
-                'kj'                => trim($o->KJ ?? '-'),
-                'buyer'             => $o->Buyer,
-                'style'             => $o->Style,
-                'color'             => $o->ColorDescription,
-                'pcs'               => $o->PCS,           // MOC / isi per carton
-                'qty_order'         => $o->Qty_order,
-                'gac_date'          => $o->Gac_date
-                    ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y')
-                    : '-',
-                'destination'       => $o->Destination,
-                'line'              => $o->Line,
-                'subcon' => $o->Subcon, // ← tambah ini
-                'carton_weight_std' => $o->Carton_weight_std,
-                'tanggal'           => $firstDate
-                    ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y')
-                    : '-',
-                // Hanya berat, tanpa no_box (Nike belum pakai no box)
-                'timbangans'        => $o->timbangans->map(fn($t) => [
-                    'berat'      => $t->berat,
-                    'waktu'      => $t->waktu_timbang
-                        ? \Carbon\Carbon::parse($t->waktu_timbang)->format('H:i')
-                        : '-',
-                ])->values()->toArray(),
-            ];
-        })->values()->toArray();
-
-        // ── Format NON-NIKE ──────────────────────────────────────
-        // Group by Order_code (sudah unik per order+line)
-        // Tiap order = 1 blok laporan
-        $nonNikeBlocks = $nonNike->groupBy('Order_code')->map(function ($orderGroup) {
-
-            $first       = $orderGroup->first();
-            $allTimbang  = $orderGroup->flatMap(fn($o) => $o->timbangans)->sortBy('waktu_timbang')->values();
-
-            // By Line
-            $byLine = $orderGroup->groupBy('Line')->sortKeys()->map(function ($lineOrders, $line) {
-                $timbangans = $lineOrders->flatMap(fn($o) => $o->timbangans)
-                    ->sortBy('waktu_timbang')
-                    ->values();
-
-                return [
-                    'line'        => $line,
-                    'timbangans'  => $timbangans->map(fn($t) => [
-                        'no_box'                => $t->no_box,
-                        'berat'                 => $t->berat,
-                        'pcs'                   => $t->pcs,
-                        'waktu_timbang'         => optional($t->waktu_timbang instanceof \Carbon\Carbon
+                'line'         => $line,
+                'timbangans'   => $timbangans->map(fn($t) => [
+                    'no_box'                => $t->no_box,
+                    'berat'                 => $t->berat,
+                    'pcs'                   => $t->pcs,
+                    'waktu_timbang'         => optional(
+                        $t->waktu_timbang instanceof \Carbon\Carbon
                             ? $t->waktu_timbang
-                            : \Carbon\Carbon::parse($t->waktu_timbang))->format('Y-m-d H:i:s'),
-                        'rasio_batas_beban_min' => $t->rasio_batas_beban_min,
-                        'rasio_batas_beban_max' => $t->rasio_batas_beban_max,
-                    ])->values()->toArray(),
-                    'total_carton' => $timbangans->count(),
-                    'total_berat'  => $timbangans->sum('berat'),
-                    'qty_sudah'    => $timbangans->sum('pcs'),
-                ];
-            })->values()->toArray();
-
-            return [
-                'order_code'        => $first->Order_code,
-                'kj'                => trim($first->KJ ?? '-'),
-                'buyer'             => $first->Buyer,
-                'po'                => $first->PO,
-                'style'             => $first->Style,
-                'color'             => $first->ColorDescription,
-                'line_list'         => $orderGroup->pluck('Line')->unique()->sort()->values()->toArray(),
-                'line'              => $first->Line,    // ← tambah ini
-                'subcon'            => $first->Subcon, // ← tambah ini
-                'pcs_default'       => $first->PCS,   // M = MOC
-                'qty_order'         => $first->Qty_order,
-                'less_ctn'          => $first->Less_Ctn,
-                'pcs_less_ctn'      => $first->Pcs_Less_Ctn,
-                'carton_weight_std' => $first->Carton_weight_std,
-                'pcs_weight_std'    => $first->Pcs_weight_std,
-                'gac_date'          => $first->Gac_date
-                    ? \Carbon\Carbon::parse($first->Gac_date)->format('d/m/Y')
-                    : '-',
-                'destination'       => $first->Destination,
-                'inspector'         => $first->Inspector,
-                'opt_qc'            => $first->OPT_QC_TIMBANGAN,
-                'spv_qc'            => $first->SPV_QC,
-                'chief'             => $first->CHIEF_FINISH_GOOD,
-                'total_carton'      => $allTimbang->count(),
-                'total_berat'       => $allTimbang->sum('berat'),
-                'qty_sudah'         => $allTimbang->sum('pcs'),
-                'by_line'           => $byLine,
+                            : \Carbon\Carbon::parse($t->waktu_timbang)
+                    )->format('Y-m-d H:i:s'),
+                    'rasio_batas_beban_min' => $t->rasio_batas_beban_min,
+                    'rasio_batas_beban_max' => $t->rasio_batas_beban_max,
+                ])->values()->toArray(),
+                'total_carton' => $timbangans->count(),
+                'total_berat'  => $timbangans->sum('berat'),
+                'qty_sudah'    => $timbangans->sum('pcs'),
             ];
         })->values()->toArray();
-
-        return response()->json([
-            'success'  => true,
-            'nike'     => $nikeRows,
-            'non_nike' => $nonNikeBlocks,
-        ]);
+    
+        // Ambil waktu timbang PALING AWAL dari seluruh timbangan di block ini
+        // → dipakai sebagai kunci urutan kronologis
+        $earliestTimbang = optional($allTimbang->first())->waktu_timbang;
+        $earliestTs      = $earliestTimbang
+            ? (\Carbon\Carbon::parse($earliestTimbang)->timestamp)
+            : 0;
+    
+        return [
+            'order_code'        => $first->Order_code,
+            'kj'                => trim($first->KJ ?? '-'),
+            'buyer'             => $first->Buyer,
+            'po'                => $first->PO,
+            'style'             => $first->Style,
+            'color'             => $first->ColorDescription,
+            'line_list'         => $orderGroup->pluck('Line')->unique()->sort()->values()->toArray(),
+            'line'              => $first->Line,
+            'subcon'            => $first->Subcon,
+            'checking_ke'       => (int) ($first->checking_ke ?? 1),
+            'pcs_default'       => $first->PCS,
+            'qty_order'         => $first->Qty_order,
+            'less_ctn'          => $first->Less_Ctn,
+            'pcs_less_ctn'      => $first->Pcs_Less_Ctn,
+            'carton_weight_std' => $first->Carton_weight_std,
+            'pcs_weight_std'    => $first->Pcs_weight_std,
+            'gac_date'          => $first->Gac_date
+                ? \Carbon\Carbon::parse($first->Gac_date)->format('d/m/Y') : '-',
+            'destination'       => $first->Destination,
+            'inspector'         => $first->Inspector,
+            'opt_qc'            => $first->OPT_QC_TIMBANGAN,
+            'spv_qc'            => $first->SPV_QC,
+            'chief'             => $first->CHIEF_FINISH_GOOD,
+            'total_carton'      => $allTimbang->count(),
+            'total_berat'       => $allTimbang->sum('berat'),
+            'qty_sudah'         => $allTimbang->sum('pcs'),
+            'by_line'           => $byLine,
+    
+            // ← TAMBAHAN: timestamp waktu timbang pertama, untuk sorting kronologis
+            '_earliest_ts'      => $earliestTs,
+        ];
     }
 
-    public function myReport(Request $request)
+    public function formalReport(Request $request)
     {
-        $userId = Auth::id();
-        $start  = $request->get('start', now()->format('Y-m-d'));
-        $end    = $request->get('end',   now()->format('Y-m-d'));
-
-        $orders = Ordersheet::with([
-            'timbangans' => function ($q) use ($start, $end, $userId) {
+        \Illuminate\Support\Facades\Log::info('masuk formalReport');
+    
+        $start = $request->get('start', now()->format('Y-m-d'));
+        $end   = $request->get('end',   now()->format('Y-m-d'));
+    
+        $orders = \App\Models\Ordersheet::with([
+            'timbangans' => function ($q) use ($start, $end) {
                 $q->select(
-                    'id',
-                    'id_ordersheet',
-                    'id_user',
-                    'no_box',
-                    'berat',
-                    'pcs',
-                    'rasio_batas_beban_min',
-                    'rasio_batas_beban_max',
-                    'waktu_timbang'
+                    'id', 'id_ordersheet', 'no_box', 'berat', 'pcs',
+                    'rasio_batas_beban_min', 'rasio_batas_beban_max', 'waktu_timbang'
                 )
-                    ->where('id_user', $userId)
-                    ->whereDate('waktu_timbang', '>=', $start)
-                    ->whereDate('waktu_timbang', '<=', $end)
-                    ->orderBy('waktu_timbang');
+                ->whereDate('waktu_timbang', '>=', $start)
+                ->whereDate('waktu_timbang', '<=', $end)
+                ->orderBy('waktu_timbang');
             }
         ])
-            ->where('status', 'Success')
-            ->whereHas('timbangans', function ($q) use ($start, $end, $userId) {
-                $q->where('id_user', $userId)
-                    ->whereDate('waktu_timbang', '>=', $start)
-                    ->whereDate('waktu_timbang', '<=', $end);
-            })
-            ->select(
-                'id',
-                'Order_code',
-                'KJ',
-                'Buyer',
-                'PO',
-                'Style',
-                'ColorDescription',
-                'Line',
-                'Subcon',
-                'Qty_order',
-                'PCS',
-                'Ctn',
-                'Less_Ctn',
-                'Pcs_Less_Ctn',
-                'Carton_weight_std',
-                'Pcs_weight_std',
-                'Gac_date',
-                'Destination',
-                'Inspector',
-                'OPT_QC_TIMBANGAN',
-                'SPV_QC',
-                'CHIEF_FINISH_GOOD',
-                'status',
-                'created_at'
-            )
-            ->get()
-            ->filter(fn($o) => $o->timbangans->isNotEmpty());
-
+        ->where('status', 'Success')
+        ->whereHas('timbangans', function ($q) use ($start, $end) {
+            $q->whereDate('waktu_timbang', '>=', $start)
+            ->whereDate('waktu_timbang', '<=', $end);
+        })
+        ->select(
+            'id', 'Order_code', 'KJ', 'Buyer', 'PO', 'Style', 'ColorDescription',
+            'Line', 'Subcon', 'checking_ke', 'Qty_order', 'PCS', 'Ctn',
+            'Less_Ctn', 'Pcs_Less_Ctn', 'Carton_weight_std', 'Pcs_weight_std',
+            'Gac_date', 'Destination', 'Inspector', 'OPT_QC_TIMBANGAN',
+            'SPV_QC', 'CHIEF_FINISH_GOOD', 'status', 'created_at'
+        )
+        ->get()
+        ->filter(fn($o) => $o->timbangans->isNotEmpty());
+    
         // Pisah Nike vs Non-Nike
         $nike    = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) === 'nike');
         $nonNike = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) !== 'nike');
-
-        // Format Nike (sama dengan formalReport)
+    
+        // ── Format NIKE (tidak berubah dari versi asli) ──
         $nikeRows = $nike->map(function ($o) {
             $firstDate = optional($o->timbangans->first())->waktu_timbang;
             return [
@@ -550,7 +429,8 @@ class OrderSheetController extends Controller
                     ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
                 'destination'       => $o->Destination,
                 'line'              => $o->Line,
-                'subcon' => $o->Subcon, // ← tambah ini
+                'subcon'            => $o->Subcon,
+                'checking_ke'       => (int) ($o->checking_ke ?? 1),
                 'carton_weight_std' => $o->Carton_weight_std,
                 'tanggal'           => $firstDate
                     ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y') : '-',
@@ -561,64 +441,106 @@ class OrderSheetController extends Controller
                 ])->values()->toArray(),
             ];
         })->values()->toArray();
+    
+        // ── Format NON-NIKE ──
+        // KEY CHANGE: groupBy pakai Order_code|checking_ke, bukan Order_code saja.
+        // Hasilnya: Order yang sama tapi beda sesi checking → block terpisah.
+        $nonNikeBlocks = $nonNike
+            ->groupBy(fn($o) => $o->Order_code . '|' . (int) ($o->checking_ke ?? 1))
+            ->map(fn($grp) => $this->buildNonNikeBlock($grp))
+            // Urutkan: Order_code ASC, lalu checking_ke ASC (sesi 1 → 2 → 3…)
+            // ->sortBy([
+            //     fn($a, $b) => strcmp($a['order_code'], $b['order_code']),
+            //     fn($a, $b) => $a['checking_ke'] <=> $b['checking_ke'],
+            // ])
+            ->sortBy('_earliest_ts')
+            ->values()
+            ->toArray();
+    
+        return response()->json([
+            'success'  => true,
+            'nike'     => $nikeRows,
+            'non_nike' => $nonNikeBlocks,
+        ]);
+    }
 
-        // Format Non-Nike
-        $nonNikeBlocks = $nonNike->groupBy('Order_code')->map(function ($orderGroup) {
-            $first      = $orderGroup->first();
-            $allTimbang = $orderGroup->flatMap(fn($o) => $o->timbangans)
-                ->sortBy('waktu_timbang')->values();
-
-            $byLine = $orderGroup->groupBy('Line')->sortKeys()->map(function ($lineOrders, $line) {
-                $timbangans = $lineOrders->flatMap(fn($o) => $o->timbangans)
-                    ->sortBy('waktu_timbang')->values();
-                return [
-                    'line'         => $line,
-                    'timbangans'   => $timbangans->map(fn($t) => [
-                        'no_box'                => $t->no_box,
-                        'berat'                 => $t->berat,
-                        'pcs'                   => $t->pcs,
-                        'waktu_timbang'         => optional($t->waktu_timbang instanceof \Carbon\Carbon
-                            ? $t->waktu_timbang
-                            : \Carbon\Carbon::parse($t->waktu_timbang))->format('Y-m-d H:i:s'),
-                        'rasio_batas_beban_min' => $t->rasio_batas_beban_min,
-                        'rasio_batas_beban_max' => $t->rasio_batas_beban_max,
-                    ])->values()->toArray(),
-                    'total_carton' => $timbangans->count(),
-                    'total_berat'  => $timbangans->sum('berat'),
-                    'qty_sudah'    => $timbangans->sum('pcs'),
-                ];
-            })->values()->toArray();
-
+    public function myReport(Request $request)
+    {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        $start  = $request->get('start', now()->format('Y-m-d'));
+        $end    = $request->get('end',   now()->format('Y-m-d'));
+    
+        $orders = \App\Models\Ordersheet::with([
+            'timbangans' => function ($q) use ($start, $end, $userId) {
+                $q->select(
+                    'id', 'id_ordersheet', 'id_user', 'no_box', 'berat', 'pcs',
+                    'rasio_batas_beban_min', 'rasio_batas_beban_max', 'waktu_timbang'
+                )
+                ->where('id_user', $userId)
+                ->whereDate('waktu_timbang', '>=', $start)
+                ->whereDate('waktu_timbang', '<=', $end)
+                ->orderBy('waktu_timbang');
+            }
+        ])
+        ->where('status', 'Success')
+        ->whereHas('timbangans', function ($q) use ($start, $end, $userId) {
+            $q->where('id_user', $userId)
+            ->whereDate('waktu_timbang', '>=', $start)
+            ->whereDate('waktu_timbang', '<=', $end);
+        })
+        ->select(
+            'id', 'Order_code', 'KJ', 'Buyer', 'PO', 'Style', 'ColorDescription',
+            'Line', 'Subcon', 'checking_ke', 'Qty_order', 'PCS', 'Ctn',
+            'Less_Ctn', 'Pcs_Less_Ctn', 'Carton_weight_std', 'Pcs_weight_std',
+            'Gac_date', 'Destination', 'Inspector', 'OPT_QC_TIMBANGAN',
+            'SPV_QC', 'CHIEF_FINISH_GOOD', 'status', 'created_at'
+        )
+        ->get()
+        ->filter(fn($o) => $o->timbangans->isNotEmpty());
+    
+        $nike    = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) === 'nike');
+        $nonNike = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) !== 'nike');
+    
+        // Nike rows (sama seperti formalReport)
+        $nikeRows = $nike->map(function ($o) {
+            $firstDate = optional($o->timbangans->first())->waktu_timbang;
             return [
-                'order_code'        => $first->Order_code,
-                'kj'                => trim($first->KJ ?? '-'),
-                'buyer'             => $first->Buyer,
-                'po'                => $first->PO,
-                'style'             => $first->Style,
-                'color'             => $first->ColorDescription,
-                'line_list'         => $orderGroup->pluck('Line')->unique()->sort()->values()->toArray(),
-                'line'              => $first->Line,    // ← tambah ini
-                'subcon'            => $first->Subcon, // ← tambah ini
-                'pcs_default'       => $first->PCS,
-                'qty_order'         => $first->Qty_order,
-                'less_ctn'          => $first->Less_Ctn,
-                'pcs_less_ctn'      => $first->Pcs_Less_Ctn,
-                'carton_weight_std' => $first->Carton_weight_std,
-                'pcs_weight_std'    => $first->Pcs_weight_std,
-                'gac_date'          => $first->Gac_date
-                    ? \Carbon\Carbon::parse($first->Gac_date)->format('d/m/Y') : '-',
-                'destination'       => $first->Destination,
-                'inspector'         => $first->Inspector,
-                'opt_qc'            => $first->OPT_QC_TIMBANGAN,
-                'spv_qc'            => $first->SPV_QC,
-                'chief'             => $first->CHIEF_FINISH_GOOD,
-                'total_carton'      => $allTimbang->count(),
-                'total_berat'       => $allTimbang->sum('berat'),
-                'qty_sudah'         => $allTimbang->sum('pcs'),
-                'by_line'           => $byLine,
+                'order_code'        => $o->Order_code,
+                'kj'                => trim($o->KJ ?? '-'),
+                'buyer'             => $o->Buyer,
+                'style'             => $o->Style,
+                'color'             => $o->ColorDescription,
+                'pcs'               => $o->PCS,
+                'qty_order'         => $o->Qty_order,
+                'gac_date'          => $o->Gac_date
+                    ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
+                'destination'       => $o->Destination,
+                'line'              => $o->Line,
+                'subcon'            => $o->Subcon,
+                'checking_ke'       => (int) ($o->checking_ke ?? 1),
+                'carton_weight_std' => $o->Carton_weight_std,
+                'tanggal'           => $firstDate
+                    ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y') : '-',
+                'timbangans'        => $o->timbangans->map(fn($t) => [
+                    'berat' => $t->berat,
+                    'waktu' => $t->waktu_timbang
+                        ? \Carbon\Carbon::parse($t->waktu_timbang)->format('H:i') : '-',
+                ])->values()->toArray(),
             ];
         })->values()->toArray();
-
+    
+        // KEY CHANGE: sama dengan formalReport — groupBy pakai Order_code|checking_ke
+        $nonNikeBlocks = $nonNike
+            ->groupBy(fn($o) => $o->Order_code . '|' . (int) ($o->checking_ke ?? 1))
+            ->map(fn($grp) => $this->buildNonNikeBlock($grp))
+            // ->sortBy([
+            //     fn($a, $b) => strcmp($a['order_code'], $b['order_code']),
+            //     fn($a, $b) => $a['checking_ke'] <=> $b['checking_ke'],
+            // ])
+            ->sortBy('_earliest_ts')
+            ->values()
+            ->toArray();
+    
         return response()->json([
             'success'  => true,
             'nike'     => $nikeRows,
@@ -1152,6 +1074,41 @@ class OrderSheetController extends Controller
         });
 
         return view('order.print', compact('auth', 'groupedByKJ'));
+    }
+
+    public function getCheckingInfo(Request $request)
+    {
+        $orderCode = $request->get('order_code');
+        $line      = $request->get('line');
+        $subcon    = $request->get('subcon');
+
+        // Bangun base query
+        $baseQuery = Ordersheet::where('Order_code', $orderCode);
+
+        if ($line) {
+            $baseQuery->where('Line', $line);
+        } elseif ($subcon) {
+            $baseQuery->where('Subcon', $subcon);
+        }
+
+        // Ambil max_checking dengan clone agar query utama tidak rusak
+        $maxChecking = (int) ((clone $baseQuery)->max('checking_ke') ?? 0);
+        $totalCartons = 0;
+
+        if ($maxChecking > 0) {
+            // Cari data berdasarkan max_checking
+            $lastOrdersheet = (clone $baseQuery)->where('checking_ke', $maxChecking)->first();
+            if ($lastOrdersheet) {
+                $totalCartons = $lastOrdersheet->timbangans()->count();
+            }
+        }
+
+        return response()->json([
+            'success'      => true,
+            'max_checking' => $maxChecking,
+            'next_checking'=> $maxChecking + 1,
+            'total_cartons'=> $totalCartons,
+        ]);
     }
 
     // Data perhari ini

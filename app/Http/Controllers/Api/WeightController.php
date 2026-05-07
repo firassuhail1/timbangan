@@ -551,7 +551,7 @@ class WeightController extends Controller
             'Buyer.required'                 => 'Nama Pembeli jangan dikosongkan.',
             'berat.required'                 => 'Timbangan belum stabil atau berat belum masuk.',
             'berat.numeric'                  => 'Data berat harus berupa angka.',
-            'no_box.required'                => 'Nomor Carton harus diisi.',
+            // 'no_box.required'                => 'Nomor Carton harus diisi.',
             'rasio_batas_beban_min.required' => 'Batas beban minimum belum ditentukan.',
             'rasio_batas_beban_max.required' => 'Batas beban maksimum belum ditentukan.',
         ];
@@ -563,7 +563,7 @@ class WeightController extends Controller
             'Subcon'                => 'required_if:Tipe_Asal,subcon|nullable|string',
             'Buyer'                 => 'required|string',
             'berat'                 => 'required|numeric|min:0.01',
-            'no_box'                => 'required',
+            'no_box'                => 'nullable|string',
             'rasio_batas_beban_min' => 'required|numeric',
             'rasio_batas_beban_max' => 'required|numeric',
         ], $messages);
@@ -594,41 +594,46 @@ class WeightController extends Controller
 
         DB::beginTransaction();
         try {
+            // Tentukan checking_ke
+            $checkingKe = (int) $request->input('checking_ke', 1);
 
             // ✅ updateOrCreate: 1 Order_code = 1 record Ordersheet
             // Setiap timbang carton baru TIDAK membuat Ordersheet baru
+            // Cari ordersheet yang cocok dengan checking_ke ini
             $ordersheet = Ordersheet::updateOrCreate(
-            [
-                'Order_code' => $request->Order_code,
-                'Line'       => $request->Tipe_Asal === 'sewing' ? $request->Line : null,
-                'Subcon'     => $request->Tipe_Asal === 'subcon' ? $request->Subcon : null,
-            ],
-            [
-                'id_user'           => Auth::id(),
-                'id_device'         => $device->id,
-                'KJ'                => $request->KJ,
-                'Buyer'             => $request->Buyer,
-                'PO'                => $request->PO,
-                'Style'             => $request->Style,
-                'ColorDescription'  => $request->ColorDescription,
-                'Qty_order'         => $request->Qty_order,
-                'Line'              => $request->Tipe_Asal === 'sewing' ? $request->Line : null,
-                'Subcon'            => $request->Tipe_Asal === 'subcon' ? $request->Subcon : null,
-                'Carton_weight_std' => $request->Carton_weight_std,
-                'Pcs_weight_std'    => $request->Pcs_weight_std,
-                'PCS'               => $request->PCS,
-                'Ctn'               => $request->Ctn,
-                'Less_Ctn'          => $request->Less_Ctn,
-                'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
-                'Gac_date'          => $request->Gac_date,
-                'Destination'       => $request->Destination,
-                'Inspector'         => $request->Inspector,
-                'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
-                'SPV_QC'            => $request->SPV_QC,
-                'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
-                'status'            => 'Success',
-            ]
-        );
+                [
+                    'Order_code'  => $request->Order_code,
+                    'Line'        => $request->Tipe_Asal === 'sewing' ? $request->Line : null,
+                    'Subcon'      => $request->Tipe_Asal === 'subcon' ? $request->Subcon : null,
+                    'checking_ke' => $checkingKe,
+                ],
+                [
+                    'id_user'           => Auth::id(),
+                    'id_device'         => $device->id,
+                    'KJ'                => $request->KJ,
+                    'Buyer'             => $request->Buyer,
+                    'PO'                => $request->PO,
+                    'Style'             => $request->Style,
+                    'ColorDescription'  => $request->ColorDescription,
+                    'Qty_order'         => $request->Qty_order,
+                    'Line'              => $request->Tipe_Asal === 'sewing' ? $request->Line : null,
+                    'Subcon'            => $request->Tipe_Asal === 'subcon' ? $request->Subcon : null,
+                    'Carton_weight_std' => $request->Carton_weight_std,
+                    'Pcs_weight_std'    => $request->Pcs_weight_std,
+                    'PCS'               => $request->PCS,
+                    'Ctn'               => $request->Ctn,
+                    'Less_Ctn'          => $request->Less_Ctn,
+                    'Pcs_Less_Ctn'      => $request->Pcs_Less_Ctn,
+                    'Gac_date'          => $request->Gac_date,
+                    'Destination'       => $request->Destination,
+                    'Inspector'         => $request->Inspector,
+                    'OPT_QC_TIMBANGAN'  => $request->OPT_QC_TIMBANGAN ?? Auth::user()->username,
+                    'SPV_QC'            => $request->SPV_QC,
+                    'CHIEF_FINISH_GOOD' => $request->CHIEF_FINISH_GOOD,
+                    'checking_ke'       => $checkingKe,
+                    'status'            => 'Success',
+                ]
+            );
 
             $berat = floatval($request->berat);
 
@@ -638,7 +643,7 @@ class WeightController extends Controller
                 'id_device'             => $device->id,
                 'id_ordersheet'         => $ordersheet->id,
                 'berat'                 => $berat,
-                'no_box'                => $request->no_box,
+                'no_box'                => $request->no_box ?: null,
                 'pcs'                   => intval($request->PCS) ?: 0, // ← simpan PCS saat itu
                 'rasio_batas_beban_min' => $request->rasio_batas_beban_min,
                 'rasio_batas_beban_max' => $request->rasio_batas_beban_max,
@@ -649,6 +654,9 @@ class WeightController extends Controller
             // Hitung total carton yang sudah ditimbang untuk Order_code ini
             $totalCartonDitimbang = Timbangan_riwayat::where('id_ordersheet', $ordersheet->id)->count();
             $totalCartonTarget    = intval($request->Ctn) ?: 0;
+
+            // Hitung checking_ke tertinggi untuk order_code ini (untuk info ke frontend)
+            $maxChecking = Ordersheet::where('Order_code', $request->Order_code)->max('checking_ke');
 
             // Update view/cache pencarian
             $existingV = VAllOrdersheetPlusCari::where('Order_code', $request->Order_code)->first();
@@ -669,6 +677,7 @@ class WeightController extends Controller
                 ]
             );
 
+
             DB::commit();
 
             // ✅ Kirim info apakah semua carton sudah selesai
@@ -680,6 +689,8 @@ class WeightController extends Controller
                 'total_ditimbang'       => $totalCartonDitimbang,
                 'total_target'          => $totalCartonTarget,
                 'semua_carton_selesai'  => $selesai,
+                'checking_ke'          => $checkingKe,
+                'max_checking'         => $maxChecking,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
