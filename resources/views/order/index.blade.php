@@ -1776,7 +1776,35 @@
                                 `<td class="td-total" rowspan="2" style="font-weight:700;color:#2dce89;vertical-align:middle;">` +
                                 `${hasData ? rowTotalBerat.toFixed(2) : '-'}` +
                                 `</td>` +
-                                `<td rowspan="2"></td>` +
+                                // ── Kolom Remark: hanya baris pertama (row===0) yang berisi keterangan ──
+                                (row === 0
+                                    ? `<td rowspan="${ROWS_PER_BLOCK * 2}" style="vertical-align:top;padding:4px;" class="ket-cell">` +
+                                        `<div class="ket-display" ` +
+                                            `style="font-size:10px;cursor:pointer;min-height:24px;padding:3px 4px;` +
+                                                `border:1px dashed #ced4da;border-radius:3px;background:#fafafa;" ` +
+                                            `title="Klik untuk edit" data-ordersheet-id="${block.ordersheet_id}">` +
+                                            `${block.keterangan
+                                                ? block.keterangan.replace(/</g,'&lt;')
+                                                : '<em style="font-size:9px;color:#bbb;">Klik untuk tambah...</em>'}` +
+                                        `</div>` +
+                                        `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;margin-top:2px;">` +
+                                            `<textarea class="ket-input" data-ordersheet-id="${block.ordersheet_id}" ` +
+                                                `rows="3" placeholder="Tulis keterangan..." ` +
+                                                `style="width:100%;font-size:10px;padding:4px;border:1px solid #ced4da;` +
+                                                    `border-radius:4px;resize:vertical;box-sizing:border-box;"` +
+                                            `>${(block.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
+                                            `<div style="display:flex;gap:3px;">` +
+                                                `<button class="ket-save-btn" data-ordersheet-id="${block.ordersheet_id}" ` +
+                                                    `style="font-size:9px;padding:2px 5px;background:#435ebe;color:#fff;` +
+                                                        `border:none;border-radius:3px;cursor:pointer;">💾</button>` +
+                                                `<button class="ket-cancel-btn" ` +
+                                                    `style="font-size:9px;padding:2px 5px;background:#6c757d;color:#fff;` +
+                                                        `border:none;border-radius:3px;cursor:pointer;">✕</button>` +
+                                            `</div>` +
+                                            `<span class="ket-status" style="font-size:9px;display:none;"></span>` +
+                                        `</div>` +
+                                        `</td>`
+                                    : '') +
                                 `</tr>` +
                                 `<tr>${tdWeights}</tr>`;
                         }
@@ -1837,39 +1865,6 @@
                             `<tr><th>Total Carton</th><td><strong>${block.timbangans.length}</strong> / ${block.totalCartonInLine}</td></tr>` +
                             // `<tr><th>Total Berat</th><td><strong>${totalBerat} kg</strong></td></tr>` +
                             `<tr><th>Total Berat</th><td><strong>${totalBerat} kg</strong></td></tr>` +
-                            `<tr>` +
-                            `<th style="vertical-align:top;padding-top:6px;">Keterangan</th>` +
-                            `<td style="padding:2px 4px;vertical-align:top;">` +
-                            `<div class="ket-cell" style="width:100%;">` +
-                                `<div class="ket-display" ` +
-                                    `style="font-size:11px;cursor:pointer;min-height:24px;padding:3px 4px;` +
-                                        `border:1px dashed #ced4da;border-radius:3px;background:#fafafa;` +
-                                        `color:${block.keterangan ? '#333' : '#bbb'};" ` +
-                                    `title="Klik untuk edit" ` +
-                                    `data-ordersheet-id="${block.ordersheet_id}">` +
-                                    `${block.keterangan 
-                                        ? block.keterangan.replace(/</g,'&lt;') 
-                                        : '<em style="font-size:10px;">Klik untuk tambah keterangan...</em>'}` +
-                                `</div>` +
-                                `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;margin-top:2px;">` +
-                                    `<textarea class="ket-input" data-ordersheet-id="${block.ordersheet_id}" ` +
-                                        `rows="2" placeholder="Tulis keterangan..." ` +
-                                        `style="width:100%;font-size:11px;padding:4px 6px;border:1px solid #ced4da;` +
-                                            `border-radius:4px;resize:vertical;box-sizing:border-box;"` +
-                                    `>${(block.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
-                                    `<div style="display:flex;gap:4px;align-items:center;">` +
-                                        `<button class="ket-save-btn" data-ordersheet-id="${block.ordersheet_id}" ` +
-                                            `style="font-size:10px;padding:3px 8px;background:#435ebe;color:#fff;border:none;` +
-                                                `border-radius:4px;cursor:pointer;white-space:nowrap;">💾 Simpan</button>` +
-                                        `<button class="ket-cancel-btn" ` +
-                                            `style="font-size:10px;padding:3px 8px;background:#6c757d;color:#fff;border:none;` +
-                                                `border-radius:4px;cursor:pointer;">✕ Batal</button>` +
-                                        `<span class="ket-status" style="font-size:10px;display:none;"></span>` +
-                                    `</div>` +
-                                `</div>` +
-                            `</div>` +
-                        `</td>` +
-                            `</tr>` +
                             `</table>` +
                             `<div class="nn-sign-wrap" style="margin-top:6px;">` +
                             `<table class="nn-sign-table">` +
@@ -2123,7 +2118,11 @@
                                 tdBoxes +
                                 '<td rowspan="2" style="font-weight:700;vertical-align:middle;">' + (hasData ?
                                     rowTotal.toFixed(2) : '-') + '</td>' +
-                                '<td rowspan="2"></td>' +
+                                (row === 0
+                                    ? '<td rowspan="' + (ROWS * 2) + '" style="vertical-align:top;padding:3px;font-size:7px;">' +
+                                        (block.keterangan || '-') +
+                                    '</td>'
+                                    : '') +
                                 '</tr>' +
                                 '<tr>' + tdWeights + '</tr>';
                         }
@@ -2138,9 +2137,9 @@
                             .toFixed(2);
 
                         function checkingBadgePrint(ke) {
-                if (ke <= 1) return '';
-                return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' + ke + '</span>';
-            }
+                            if (ke <= 1) return '';
+                            return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' + ke + '</span>';
+                        }
             
                         // Setiap blok = 1 form seperti di foto fisik
                         blocksHTML += '<div class="block-wrap">' +
@@ -2189,7 +2188,6 @@
                             '<tr><td>GAC date</td><td>' + block.gac_date + '</td></tr>' +
                             '<tr><td>Destination</td><td>' + block.destination + '</td></tr>' +
                             '<tr><td>Inspector</td><td>' + block.inspector + '</td></tr>' +
-                            '<tr><td>Keterangan</td><td>' + (block.keterangan || '-') + '</td></tr>' +
                             '</table>'
                             // Tanda tangan
                             +
@@ -2637,7 +2635,11 @@
                             tdBoxes +
                             '<td rowspan="2" style="font-weight:700;vertical-align:middle;">' + (hasData ? rowTotal
                                 .toFixed(2) : '-') + '</td>' +
-                            '<td rowspan="2"></td>' +
+                            + (row === 0
+                                ? `<td rowspan="${ROWS * 2}" style="vertical-align:top;padding:3px;font-size:7px;">` +
+                                    `${block.keterangan || '-'}` +
+                                `</td>`
+                                : '')
                             '</tr>' +
                             '<tr>' + tdWeights + '</tr>';
                     }
@@ -2744,7 +2746,6 @@
                                         <tr><td>Destination</td><td>${block.destination}</td></tr>
                                         <tr><td>Inspector</td><td>${block.inspector}</td></tr>
                                         <tr><td>Total Carton</td><td><strong>${cartons.length}</strong> / ${block.totalCartonInLine}</td></tr>
-                                        <tr><td>Keterangan</td><td>${block.keterangan || '-'}</td></tr>
                                     </table>
                                     <table class="sign-tbl">
                                         <tr>
