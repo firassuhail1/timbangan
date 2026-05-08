@@ -182,11 +182,11 @@
                                     <small>Hanya timbangan yang Anda kerjakan sendiri</small>
                                 </div>
                             </div>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <!-- <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn-print-formal" onclick="printMyReport()">
                                     <i class="bi bi-printer"></i> Print Laporan Saya
                                 </button>
-                            </div>
+                            </div> -->
                         </div>
 
                         <div class="formal-filter-bar">
