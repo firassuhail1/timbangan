@@ -1642,9 +1642,9 @@
                         '<script>window.onload=()=>{window.print();}<\/script>' +
                         '</body></html>';
 
-                    const win = window.open('', '_blank');
-                    win.document.write(html);
-                    win.document.close();
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const win = window.open(url, '_blank');
                 }
 
                 // ─── RENDER NON-NIKE ─────────────────────────────────────────
@@ -2235,14 +2235,11 @@
 
                     // CSS: 4 blok per halaman F4 landscape, mirip form fisik
                     const css = '<style>' +
-                        '@page{size:210mm 330mm;margin:4mm 6mm;}' /* F4 portrait */ +
+                        '@page{size:210mm 330mm;margin:4mm 6mm;}' +
                         '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
                         'body{font-family:"Segoe UI",Arial,sans-serif;font-size:7px;color:#000;margin:0;padding:0;}' +
-                        '.print-header{text-align:center;border-bottom:1.5px solid #333;margin-bottom:3px;padding-bottom:2px;}' +
-                        '.print-header h4{margin:0;font-size:9px;font-weight:700;}' +
-                        '.print-header p{margin:1px 0 0;font-size:7px;color:#555;}'
-                        /* 1 kolom 4 baris */
-                        +
+
+                        /* ── Page grid ── */
                         '.page-grid{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(4,1fr);gap:1mm;height:calc(310mm - 22mm);}' +
                         '.block-wrap{border:1px solid #999;border-radius:2px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}' +
                         '.block-title{background:#435ebe!important;color:#fff!important;text-align:center;font-size:7px;font-weight:700;padding:1px 3px;}' +
@@ -2261,7 +2258,19 @@
                         '.carton-tbl td{border:1px solid #ccc!important;padding:0px 0!important;text-align:center;vertical-align:middle;line-height:0;font-size:7px;}' +
                         '.carton-tbl tbody tr{height:auto!important;}' +
                         '.ket-edit{display:none!important;}' +
-                        '.ket-display{display:block!important;font-size:7px!important;}'
+                        '.ket-display{display:block!important;font-size:7px!important;}' +
+
+                        /* ── Form header (GABUNG DI SINI, jangan di style terpisah) ── */
+                        '.form-header{display:flex;align-items:stretch;border:1.5px solid #333;margin-bottom:5px;}' +
+                        '.logo-area{width:110px;min-width:110px;border-right:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;gap:3px;}' +
+                        '.logo-box{width:42px;height:42px;border:2.5px solid #1a3a7a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#1a3a7a;}' +
+                        '.title-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-right:1px solid #333;}' +
+                        '.title-area h4{margin:0;font-size:13px;font-weight:700;text-align:center;text-transform:uppercase;}' +
+                        '.title-area p{margin:2px 0 0;font-size:10px;text-align:center;}' +
+                        '.doc-area{width:175px;min-width:175px;}' +
+                        '.doc-area table{width:100%;border-collapse:collapse;height:100%;}' +
+                        '.doc-area td{border:1px solid #ddd;padding:2px 4px;vertical-align:middle;font-size:7px;}' +
+                        '.doc-area td:first-child{font-weight:600;white-space:nowrap;background:#f5f5f5;width:52%;}' +
                         '</style>';
 
                     const hariTanggal = start ?
@@ -2275,27 +2284,9 @@
 
                     const html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
                         '<title>Carton Weight Report NON-NIKE — Hal. ' + pageNum + '</title>' +
-                        css +
-
+                        
                         /* Tambah CSS header form (sama dengan Nike) */
-                        '<style>' +
-                        '.form-header{display:flex;align-items:stretch;border:1.5px solid #333;margin-bottom:5px;}' +
-                        '.logo-area{width:110px;min-width:110px;border-right:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;gap:3px;}' +
-                        '.logo-box{width:42px;height:42px;border:2.5px solid #1a3a7a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#1a3a7a;}' +
-                        '.company-name{font-size:6.5px;font-weight:700;text-align:center;color:#1a3a7a;line-height:1.4;}' +
-                        '.title-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-right:1px solid #333;}' +
-                        '.title-area h4{margin:0;font-size:13px;font-weight:700;text-align:center;text-transform:uppercase;}' +
-                        '.title-area p{margin:2px 0 0;font-size:10px;text-align:center;}' +
-                        '.doc-area{width:175px;min-width:175px;border-right:1px solid #333;}' +
-                        '.doc-area table{width:100%;border-collapse:collapse;height:100%;}' +
-                        '.doc-area td{border:1px solid #ddd;padding:2px 4px;vertical-align:middle;font-size:7px;}' +
-                        '.doc-area td:first-child{font-weight:600;white-space:nowrap;background:#f5f5f5;width:52%;}' +
-                        '.sign-area-3{width:230px;min-width:230px;display:flex;align-items:stretch;}' +
-                        '.sign-tbl-3{width:100%;height:100%;border-collapse:collapse;font-size:7px;text-align:center;}' +
-                        '.sign-tbl-3 th{background:#f0f0f0!important;border:1px solid #999!important;padding:2px 3px;font-weight:700;font-size:6.5px;vertical-align:middle;color:#000!important;}' +
-                        '.sign-tbl-3 td.sign-td{border:1px solid #999;height:55px;vertical-align:bottom;padding:2px 4px;font-weight:700;font-size:7px;min-width:72px;}' +
-                        '.hari-tanggal{font-size:9px;margin-bottom:4px;font-weight:600;padding:1px 0;}' +
-                        '</style>' +
+                        css +
 
                         '</head><body>' +
 
@@ -2367,9 +2358,9 @@
                         '<script>window.onload=()=>{window.print();}<\/script>' +
                         '</body></html>';
 
-                    const win = window.open('', '_blank');
-                    win.document.write(html);
-                    win.document.close();
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const win = window.open(url, '_blank');
                 }
 
                 // ── Print Laporan (button paling atas) ───────────────────────

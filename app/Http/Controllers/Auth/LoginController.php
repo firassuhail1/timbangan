@@ -19,52 +19,52 @@ class LoginController extends Controller
         return view('auth.password.lupa-password');
     }
 
-    public function index()
-    {
-        $autoSelectedEspId = null;
-        $lastUsername = Cookie::get('username');
+    // public function index()
+    // {   
+    //     $autoSelectedEspId = null;
+    //     $lastUsername = Cookie::get('username');
 
-        if ($lastUsername) {
-            $user = User::where('username', $lastUsername)->first();
-            if ($user) {
-                $device = Device::where('user_id', $user->id)
-                    ->where('status', 'in_use')
-                    ->first();
+    //     if ($lastUsername) {
+    //         $user = User::where('username', $lastUsername)->first();
+    //         if ($user) {
+    //             $device = Device::where('user_id', $user->id)
+    //                 ->where('status', 'in_use')
+    //                 ->first();
 
-                if ($device) {
-                    $autoSelectedEspId = $device->esp_id;
-                }
-            }
-        }
+    //             if ($device) {
+    //                 $autoSelectedEspId = $device->esp_id;
+    //             }
+    //         }
+    //     }
 
-        $availableDevices = Device::where(function ($q) {
-            // 1. Tampilkan yang memang kosong & online
-            $q->whereNull('user_id')
-                ->where('status', 'online');
-        })
-            ->orWhere(function ($q) use ($autoSelectedEspId) {
-                // 2. Tampilkan yang nyangkut di USER INI (agar auto-select jalan)
-                if ($autoSelectedEspId) {
-                    $q->where('esp_id', $autoSelectedEspId)
-                        ->where('status', 'in_use');
-                }
-            })
-            ->orWhere(function ($q) {
-                // 3. Tampilkan yang nyangkut di USER LAIN tapi sudah lewat 5 menit (TIMEOUT)
-                $q->where('status', 'in_use')
-                    ->whereNotNull('user_id')
-                    ->where('last_seen_at', '<', now()->subMinutes(5));
-            })
-            ->orderBy('esp_id') // Biasanya lebih enak urut ID timbangan
-            ->get();
+    //     $availableDevices = Device::where(function ($q) {
+    //         // 1. Tampilkan yang memang kosong & online
+    //         $q->whereNull('user_id')
+    //             ->where('status', 'online');
+    //     })
+    //         ->orWhere(function ($q) use ($autoSelectedEspId) {
+    //             // 2. Tampilkan yang nyangkut di USER INI (agar auto-select jalan)
+    //             if ($autoSelectedEspId) {
+    //                 $q->where('esp_id', $autoSelectedEspId)
+    //                     ->where('status', 'in_use');
+    //             }
+    //         })
+    //         ->orWhere(function ($q) {
+    //             // 3. Tampilkan yang nyangkut di USER LAIN tapi sudah lewat 5 menit (TIMEOUT)
+    //             $q->where('status', 'in_use')
+    //                 ->whereNotNull('user_id')
+    //                 ->where('last_seen_at', '<', now()->subMinutes(5));
+    //         })
+    //         ->orderBy('esp_id') // Biasanya lebih enak urut ID timbangan
+    //         ->get();
 
-        Log::info('available devices : ' . $availableDevices);
+    //     Log::info('available devices : ' . $availableDevices);
 
-        return view('auth.login', compact(
-            'availableDevices',
-            'autoSelectedEspId'
-        ));
-    }
+    //     return view('auth.login', compact(
+    //         'availableDevices',
+    //         'autoSelectedEspId'
+    //     ));
+    // }
 
     // public function store(Request $request)
     // {

@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\Role::class,
             'idle' => \App\Http\Middleware\IdleLogout::class,
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
         $middleware->append(\App\Http\Middleware\ObfuscateHtmlMiddleware::class);
         $middleware->append(\App\Http\Middleware\IdleLogout::class);

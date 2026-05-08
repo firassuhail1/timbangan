@@ -25,12 +25,15 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [HomeController::class, 'index']);
 
 // Login & Logout
-Route::get('login/view', [LoginController::class, 'index'])->name('login');
-Route::post('login/store', [LoginController::class, 'store'])->name('login.store');
-Route::get('login/admin', [LoginController::class, 'admin'])->name('login.admin');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/', [HomeController::class, 'index'])->name('login');
+    // Route::get('login/view', [LoginController::class, 'index']);
+    Route::post('login/store', [LoginController::class, 'store'])->name('login.store');
+    Route::get('login/admin', [LoginController::class, 'admin'])->name('login.admin');
+});
 
 Route::get('/devices/list', [DeviceLoginController::class, 'listDevices'])->name('devices.list');
 
