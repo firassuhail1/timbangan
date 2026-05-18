@@ -131,21 +131,21 @@
                             <thead class="table-info">
                                 <tr>
                                     <th>No</th>
-                                    <th>KJ</th>
-                                    <th>Style</th>
+                                    <th>Order No</th>
+                                    <th>No Style</th>
                                     <th>Color</th>
-                                    <th>Product</th>
+                                    <th>Description</th>
                                     <th>Qty</th>
                                     <th>PO Number</th>
                                     <th>Buyer</th>
-                                    {{-- <th>FOB</th> --}}
+                                    <th>Destination</th>
                                     <th>Tanggal</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="10" class="text-muted text-center py-4">
+                                    <td colspan="11" class="text-muted text-center py-4">
                                         Silakan cari data untuk memulai timbangan.
                                     </td>
                                 </tr>
@@ -159,20 +159,16 @@
 
             <div class="card report">
                 <div class="card-body">
-                    <!-- Carton Weight Report -->
+                    <!-- Judul -->
                     <div class="judul">
                         <h5 class="fw-bold text-center mb-3">Carton Weight Report - <span>Laporan Timbangan
-                                Karton</span>
-                        </h5>
-                        {{-- <div class="d-flex justify-content-center">
-                            <a href="{{ route('order.print') }}" target="_blank" class="btn btn-primary">
-                                <i class="fa-solid fa-print"></i> Print Laporann
-                            </a>
-                        </div> --}}
+                                Karton</span></h5>
                     </div>
                     <hr>
 
-                    {{-- MY REPORT (per user login) --}}
+                    {{-- ═══════════════════════════════════════════════════════
+             1. MY REPORT (data milik user login sendiri)
+        ═══════════════════════════════════════════════════════ --}}
                     <div class="formal-report-wrap" id="my-report-wrap" style="margin-bottom: 24px;">
 
                         <div class="formal-report-header">
@@ -182,11 +178,6 @@
                                     <small>Hanya timbangan yang Anda kerjakan sendiri</small>
                                 </div>
                             </div>
-                            <!-- <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button class="btn-print-formal" onclick="printMyReport()">
-                                    <i class="bi bi-printer"></i> Print Laporan Saya
-                                </button>
-                            </div> -->
                         </div>
 
                         <div class="formal-filter-bar">
@@ -244,25 +235,22 @@
                     </div>
                     {{-- END MY REPORT --}}
 
-                    {{-- REPORT FORMAL ASLI --}}
-                    <!-- <div class="formal-report-wrap" id="formal-report-wrap">
+                    <hr style="border-top: 2px solid #dee2e6; margin: 28px 0;">
 
-                        {{-- HEADER --}}
+                    {{-- ═══════════════════════════════════════════════════════
+             2. FORMAL REPORT (semua user)
+        ═══════════════════════════════════════════════════════ --}}
+                    <div class="formal-report-wrap" id="formal-report-wrap" style="margin-bottom: 24px;">
+
                         <div class="formal-report-header">
                             <div>
                                 <div class="formal-report-title">
-                                    📋 Carton Weight Report
-                                    <small>Laporan Timbangan Karton — PT. Kanindo Makmur Jaya</small>
+                                    📋 Laporan Semua User
+                                    <small>Seluruh timbangan dari semua operator</small>
                                 </div>
                             </div>
-                            {{-- <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button class="btn-print-formal" onclick="printFormalReport()">
-                                    <i class="bi bi-printer"></i> Print Laporan
-                                </button>
-                            </div> --}}
                         </div>
 
-                        {{-- FILTER BAR --}}
                         <div class="formal-filter-bar">
                             <div>
                                 <label>Tanggal Mulai</label>
@@ -283,23 +271,21 @@
                             </div>
                         </div>
 
-                        {{-- TABS --}}
                         <div class="formal-tabs">
-                            <div class="formal-tab active" data-tab="nike">
+                            <div class="formal-tab active" data-formal-tab="nike">
                                 <i class="fas fa-check-circle" style="font-size:11px;"></i>
                                 NIKE
-                                <span class="tab-badge" id="nike-count-badge">0</span>
+                                <span class="tab-badge" id="formal-nike-count-badge">0</span>
                             </div>
-                            <div class="formal-tab" data-tab="non-nike">
+                            <div class="formal-tab" data-formal-tab="non-nike">
                                 <i class="fas fa-layer-group" style="font-size:11px;"></i>
                                 NON-NIKE
-                                <span class="tab-badge" id="non-nike-count-badge">0</span>
+                                <span class="tab-badge" id="formal-non-nike-count-badge">0</span>
                             </div>
                         </div>
 
-                        {{-- NIKE PANEL --}}
-                        <div class="formal-panel active" id="panel-nike">
-                            <div id="nike-report-content">
+                        <div class="formal-panel active" id="formal-panel-nike">
+                            <div id="formal-nike-report-content">
                                 <div class="formal-empty">
                                     <i class="fas fa-search"
                                         style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
@@ -308,9 +294,8 @@
                             </div>
                         </div>
 
-                        {{-- NON-NIKE PANEL --}}
-                        <div class="formal-panel" id="panel-non-nike">
-                            <div id="non-nike-report-content">
+                        <div class="formal-panel" id="formal-panel-non-nike">
+                            <div id="formal-non-nike-report-content">
                                 <div class="formal-empty">
                                     <i class="fas fa-search"
                                         style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
@@ -318,12 +303,89 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    {{-- END FORMAL REPORT --}}
 
-                    </div> -->
+                    <hr style="border-top: 2px solid #dee2e6; margin: 28px 0;">
 
                     {{-- ═══════════════════════════════════════════════════════
-     PRINT TEMPLATE (hidden, hanya saat print)
-═══════════════════════════════════════════════════════ --}}
+             3. REPORT PER BUYER
+        ═══════════════════════════════════════════════════════ --}}
+                    <div class="formal-report-wrap" id="buyer-report-wrap" style="margin-bottom: 24px;">
+
+                        <div class="formal-report-header">
+                            <div>
+                                <div class="formal-report-title">
+                                    🏷️ Laporan Per Buyer
+                                    <small>Filter laporan berdasarkan buyer tertentu</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="formal-filter-bar">
+                            <div>
+                                <label>Tanggal Mulai</label>
+                                <input type="date" id="buyer-date-start" value="{{ now()->format('Y-m-d') }}">
+                            </div>
+                            <div>
+                                <label>Tanggal Akhir</label>
+                                <input type="date" id="buyer-date-end" value="{{ now()->format('Y-m-d') }}">
+                            </div>
+                            <div>
+                                <label>Buyer</label>
+                                <select id="buyer-select"
+                                    style="font-size:11px;padding:4px 8px;border:1px solid #ced4da;border-radius:4px;
+                               background:#fff;cursor:pointer;min-width:160px;">
+                                    <option value="">-- Pilih Buyer --</option>
+                                    {{-- Diisi via JS dari endpoint /user/order/buyers --}}
+                                </select>
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:flex-end;">
+                                <button class="btn-filter" id="btn-buyer-filter">
+                                    <i class="fas fa-search" style="font-size:10px;"></i> Tampilkan
+                                </button>
+                                <button class="btn-reset-filter" id="btn-buyer-reset">Reset</button>
+                            </div>
+                            <div style="margin-left:auto; font-size:11px; color:var(--muted); align-self:flex-end;">
+                                Menampilkan: <strong id="buyer-range-label">Hari ini</strong>
+                            </div>
+                        </div>
+
+                        <div class="formal-tabs">
+                            <div class="formal-tab active" data-buyer-tab="nike">
+                                <i class="fas fa-check-circle" style="font-size:11px;"></i>
+                                NIKE
+                                <span class="tab-badge" id="buyer-nike-count-badge">0</span>
+                            </div>
+                            <div class="formal-tab" data-buyer-tab="non-nike">
+                                <i class="fas fa-layer-group" style="font-size:11px;"></i>
+                                NON-NIKE
+                                <span class="tab-badge" id="buyer-non-nike-count-badge">0</span>
+                            </div>
+                        </div>
+
+                        <div class="formal-panel active" id="buyer-panel-nike">
+                            <div id="buyer-nike-report-content">
+                                <div class="formal-empty">
+                                    <i class="fas fa-filter"
+                                        style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
+                                    Pilih buyer lalu klik "Tampilkan"
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="formal-panel" id="buyer-panel-non-nike">
+                            <div id="buyer-non-nike-report-content">
+                                <div class="formal-empty">
+                                    <i class="fas fa-filter"
+                                        style="font-size:24px; opacity:0.3; display:block; margin-bottom:8px;"></i>
+                                    Pilih buyer lalu klik "Tampilkan"
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- END REPORT PER BUYER --}}
+
                     <div id="print-formal-area" style="display:none;"></div>
                 </div>
             </div>
@@ -556,9 +618,7 @@
                                                     <tr>
                                                         <th width="40%">Keterangan</th>
                                                         <td>
-                                                            <textarea id="info_keterangan" name="keterangan" 
-                                                                class="form-control form-control-sm" 
-                                                                rows="2" 
+                                                            <textarea id="info_keterangan" name="keterangan" class="form-control form-control-sm" rows="2"
                                                                 placeholder="Tulis keterangan (opsional)..."></textarea>
                                                         </td>
                                                     </tr>
@@ -1205,12 +1265,15 @@
                         // Tiap tanggal → chunk per ROWS_PER_PAGE → { date, pages[] }
                         const datePages = sortedDates.map(tgl => {
                             const allRows = buildAllRows(byDate[tgl]);
-                            const chunks  = chunkArray(allRows, ROWS_PER_PAGE);
-                            return { date: tgl, pages: chunks };
+                            const chunks = chunkArray(allRows, ROWS_PER_PAGE);
+                            return {
+                                date: tgl,
+                                pages: chunks
+                            };
                         });
 
                         // State navigasi
-                        let curDateIdx  = 0;
+                        let curDateIdx = 0;
                         let curSheetIdx = 0; // lembar dalam 1 tanggal
 
                         const wrapperId = `${idPrefix}-wrapper`;
@@ -1346,8 +1409,8 @@
 
                         // ── Render ────────────────────────────────────────────────────────────
                         function render() {
-                            const dp        = datePages[curDateIdx];
-                            const pageRows  = dp.pages[curSheetIdx] || [];
+                            const dp = datePages[curDateIdx];
+                            const pageRows = dp.pages[curSheetIdx] || [];
                             const totalSheets = dp.pages.length;
 
                             // Meta info
@@ -1364,8 +1427,8 @@
                             if (sheetLabel) sheetLabel.textContent = `Lembar ${curSheetIdx + 1} / ${totalSheets}`;
 
                             // Disable/enable tombol
-                            document.getElementById(`${idPrefix}-prev-date`).disabled  = curDateIdx === 0;
-                            document.getElementById(`${idPrefix}-next-date`).disabled  = curDateIdx === datePages.length - 1;
+                            document.getElementById(`${idPrefix}-prev-date`).disabled = curDateIdx === 0;
+                            document.getElementById(`${idPrefix}-next-date`).disabled = curDateIdx === datePages.length - 1;
                             document.getElementById(`${idPrefix}-prev-sheet`).disabled = curSheetIdx === 0;
                             document.getElementById(`${idPrefix}-next-sheet`).disabled = curSheetIdx === totalSheets - 1;
 
@@ -1380,26 +1443,40 @@
 
                         // ── Event listeners ───────────────────────────────────────────────────
                         groupDiv.querySelector(`#${idPrefix}-prev-date`).addEventListener('click', () => {
-                            if (curDateIdx > 0) { curDateIdx--; curSheetIdx = 0; render(); }
+                            if (curDateIdx > 0) {
+                                curDateIdx--;
+                                curSheetIdx = 0;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-next-date`).addEventListener('click', () => {
-                            if (curDateIdx < datePages.length - 1) { curDateIdx++; curSheetIdx = 0; render(); }
+                            if (curDateIdx < datePages.length - 1) {
+                                curDateIdx++;
+                                curSheetIdx = 0;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-prev-sheet`).addEventListener('click', () => {
-                            if (curSheetIdx > 0) { curSheetIdx--; render(); }
+                            if (curSheetIdx > 0) {
+                                curSheetIdx--;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-next-sheet`).addEventListener('click', () => {
-                            if (curSheetIdx < datePages[curDateIdx].pages.length - 1) { curSheetIdx++; render(); }
+                            if (curSheetIdx < datePages[curDateIdx].pages.length - 1) {
+                                curSheetIdx++;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-date-select`).addEventListener('change', function() {
-                            curDateIdx  = parseInt(this.value);
+                            curDateIdx = parseInt(this.value);
                             curSheetIdx = 0;
                             render();
                         });
 
                         // Print button
                         groupDiv.querySelector(`#${idPrefix}-print-btn`).addEventListener('click', () => {
-                            const dp   = datePages[curDateIdx];
+                            const dp = datePages[curDateIdx];
                             printNikePage(curSheetIdx + 1, dp.pages[curSheetIdx] || [], dp.date);
                         });
 
@@ -1447,8 +1524,8 @@
                     let tbody = '';
                     pageRows.forEach(row => {
                         const r = row.order;
-                        const infoTds = row.chunkIdx === 0
-                            ? `<td class="td-order" rowspan="${row.rowspan}" style="text-align:left;font-size:10px;word-break:break-all;max-width:100px;">${r.kj}</td>` +
+                        const infoTds = row.chunkIdx === 0 ?
+                            `<td class="td-order" rowspan="${row.rowspan}" style="text-align:left;font-size:10px;word-break:break-all;max-width:100px;">${r.kj}</td>` +
                             `<td rowspan="${row.rowspan}" style="font-size:11px;">${r.style || '-'}</td>` +
                             `<td rowspan="${row.rowspan}">${r.color || '-'}</td>` +
                             `<td rowspan="${row.rowspan}">${r.pcs || '-'}</td>` +
@@ -1456,16 +1533,17 @@
                             `<td rowspan="${row.rowspan}" style="font-size:10px;">${r.gac_date || '-'}</td>` +
                             `<td rowspan="${row.rowspan}" style="font-size:10px;max-width:80px;">${r.destination || '-'}</td>` +
                             `<td rowspan="${row.rowspan}">${r.line || '-'}</td>` +
-                            `<td rowspan="${row.rowspan}">${r.carton_weight_std || '-'}</td>`
-                            : '';
+                            `<td rowspan="${row.rowspan}">${r.carton_weight_std || '-'}</td>` :
+                            '';
 
-                        const ketTd = row.chunkIdx === 0
-                            ? `<td rowspan="${row.rowspan}" style="min-width:80px;vertical-align:top;padding:4px;font-size:8px;">` +
-                                `${(r.keterangan || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '-'}` +
-                            `</td>`
-                            : '';
+                        const ketTd = row.chunkIdx === 0 ?
+                            `<td rowspan="${row.rowspan}" style="min-width:80px;vertical-align:top;padding:4px;font-size:8px;">` +
+                            `${(r.keterangan || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '-'}` +
+                            `</td>` :
+                            '';
 
-                        tbody += `<tr>${infoTds}${row.tdBerats}<td class="td-total">${row.chunkLen}</td>${ketTd}</tr>`;
+                        tbody +=
+                            `<tr>${infoTds}${row.tdBerats}<td class="td-total">${row.chunkLen}</td>${ketTd}</tr>`;
                     });
 
                     // Baris kosong pengisi sampai 24
@@ -1541,7 +1619,7 @@
                         'table.main-tbl{width:100%;border-collapse:collapse;font-size:7.5px;}' +
                         'table.main-tbl th{background:#435ebe!important;color:#fff!important;padding:2px 3px;border:1px solid #3551b0;text-align:center;}' +
                         'table.main-tbl td{padding:2px 3px;border:1px solid #ccc!important;text-align:center;vertical-align:middle;}' +
-                        '.bg-blue{background:#2d4fad!important;}' + 
+                        '.bg-blue{background:#2d4fad!important;}' +
                         '.ket-edit{display:none!important;}' +
                         '.ket-display{font-size:8px!important;}';
 
@@ -1642,7 +1720,9 @@
                         '<script>window.onload=()=>{window.print();}<\/script>' +
                         '</body></html>';
 
-                    const blob = new Blob([html], { type: 'text/html' });
+                    const blob = new Blob([html], {
+                        type: 'text/html'
+                    });
                     const url = URL.createObjectURL(blob);
                     const win = window.open(url, '_blank');
                 }
@@ -1676,36 +1756,36 @@
                                 const cartonChunks = chunkArray(timbangans, CARTON_PER_BLOCK);
 
                                 cartonChunks.forEach((chunk, blockIdx) => {
-                                blocks.push({
-                                    buyer: order.buyer || '-',
-                                    kj: order.kj || order.order_code || '-',
-                                    order_code: order.order_code || '-',
-                                    po: order.po || '-',
-                                    style: order.style || '-',
-                                    color: order.color || '-',
-                                    qty_order: order.qty_order || 0,
-                                    carton_weight_std: order.carton_weight_std,
-                                    pcs_weight_std: order.pcs_weight_std,
-                                    gac_date: order.gac_date || '-',
-                                    destination: order.destination || '-',
-                                    inspector: order.inspector || '-',
-                                    opt_qc: order.opt_qc || '-',
-                                    spv_qc: order.spv_qc || '-',
-                                    chief: order.chief || '-',
-                                    line: lineGroup.line,
-                                    subcon: order.subcon || null,
-                                    checking_ke: parseInt(order.checking_ke) || 1,
-                                    pcs_default: order.pcs_default || '-',
-                                    // ↓ TAMBAHKAN DUA BARIS INI
-                                    ordersheet_id: order.ordersheet_id || '',
-                                    keterangan: order.keterangan || '',
-                                    // ↑ SAMPAI SINI
-                                    timbangans: chunk,
-                                    blockIdx,
-                                    totalCartonInLine: timbangans.length,
-                                    startNo: blockIdx * CARTON_PER_BLOCK + 1,
+                                    blocks.push({
+                                        buyer: order.buyer || '-',
+                                        kj: order.kj || order.order_code || '-',
+                                        order_code: order.order_code || '-',
+                                        po: order.po || '-',
+                                        style: order.style || '-',
+                                        color: order.color || '-',
+                                        qty_order: order.qty_order || 0,
+                                        carton_weight_std: order.carton_weight_std,
+                                        pcs_weight_std: order.pcs_weight_std,
+                                        gac_date: order.gac_date || '-',
+                                        destination: order.destination || '-',
+                                        inspector: order.inspector || '-',
+                                        opt_qc: order.opt_qc || '-',
+                                        spv_qc: order.spv_qc || '-',
+                                        chief: order.chief || '-',
+                                        line: lineGroup.line,
+                                        subcon: order.subcon || null,
+                                        checking_ke: parseInt(order.checking_ke) || 1,
+                                        pcs_default: order.pcs_default || '-',
+                                        // ↓ TAMBAHKAN DUA BARIS INI
+                                        ordersheet_id: order.ordersheet_id || '',
+                                        keterangan: order.keterangan || '',
+                                        // ↑ SAMPAI SINI
+                                        timbangans: chunk,
+                                        blockIdx,
+                                        totalCartonInLine: timbangans.length,
+                                        startNo: blockIdx * CARTON_PER_BLOCK + 1,
+                                    });
                                 });
-                            });
                             });
                         });
                         return blocks;
@@ -1777,34 +1857,34 @@
                                 `${hasData ? rowTotalBerat.toFixed(2) : '-'}` +
                                 `</td>` +
                                 // ── Kolom Remark: hanya baris pertama (row===0) yang berisi keterangan ──
-                                (row === 0
-                                    ? `<td rowspan="${ROWS_PER_BLOCK * 2}" style="vertical-align:top;padding:4px;" class="ket-cell">` +
-                                        `<div class="ket-display" ` +
-                                            `style="font-size:10px;cursor:pointer;min-height:24px;padding:3px 4px;` +
-                                                `border:1px dashed #ced4da;border-radius:3px;background:#fafafa;" ` +
-                                            `title="Klik untuk edit" data-ordersheet-id="${block.ordersheet_id}">` +
-                                            `${block.keterangan
+                                (row === 0 ?
+                                    `<td rowspan="${ROWS_PER_BLOCK * 2}" style="vertical-align:top;padding:4px;" class="ket-cell">` +
+                                    `<div class="ket-display" ` +
+                                    `style="font-size:10px;cursor:pointer;min-height:24px;padding:3px 4px;` +
+                                    `border:1px dashed #ced4da;border-radius:3px;background:#fafafa;" ` +
+                                    `title="Klik untuk edit" data-ordersheet-id="${block.ordersheet_id}">` +
+                                    `${block.keterangan
                                                 ? block.keterangan.replace(/</g,'&lt;')
                                                 : '<em style="font-size:9px;color:#bbb;">Klik untuk tambah...</em>'}` +
-                                        `</div>` +
-                                        `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;margin-top:2px;">` +
-                                            `<textarea class="ket-input" data-ordersheet-id="${block.ordersheet_id}" ` +
-                                                `rows="3" placeholder="Tulis keterangan..." ` +
-                                                `style="width:100%;font-size:10px;padding:4px;border:1px solid #ced4da;` +
-                                                    `border-radius:4px;resize:vertical;box-sizing:border-box;"` +
-                                            `>${(block.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
-                                            `<div style="display:flex;gap:3px;">` +
-                                                `<button class="ket-save-btn" data-ordersheet-id="${block.ordersheet_id}" ` +
-                                                    `style="font-size:9px;padding:2px 5px;background:#435ebe;color:#fff;` +
-                                                        `border:none;border-radius:3px;cursor:pointer;">💾</button>` +
-                                                `<button class="ket-cancel-btn" ` +
-                                                    `style="font-size:9px;padding:2px 5px;background:#6c757d;color:#fff;` +
-                                                        `border:none;border-radius:3px;cursor:pointer;">✕</button>` +
-                                            `</div>` +
-                                            `<span class="ket-status" style="font-size:9px;display:none;"></span>` +
-                                        `</div>` +
-                                        `</td>`
-                                    : '') +
+                                    `</div>` +
+                                    `<div class="ket-edit" style="display:none;flex-direction:column;gap:3px;margin-top:2px;">` +
+                                    `<textarea class="ket-input" data-ordersheet-id="${block.ordersheet_id}" ` +
+                                    `rows="3" placeholder="Tulis keterangan..." ` +
+                                    `style="width:100%;font-size:10px;padding:4px;border:1px solid #ced4da;` +
+                                    `border-radius:4px;resize:vertical;box-sizing:border-box;"` +
+                                    `>${(block.keterangan || '').replace(/</g,'&lt;')}</textarea>` +
+                                    `<div style="display:flex;gap:3px;">` +
+                                    `<button class="ket-save-btn" data-ordersheet-id="${block.ordersheet_id}" ` +
+                                    `style="font-size:9px;padding:2px 5px;background:#435ebe;color:#fff;` +
+                                    `border:none;border-radius:3px;cursor:pointer;">💾</button>` +
+                                    `<button class="ket-cancel-btn" ` +
+                                    `style="font-size:9px;padding:2px 5px;background:#6c757d;color:#fff;` +
+                                    `border:none;border-radius:3px;cursor:pointer;">✕</button>` +
+                                    `</div>` +
+                                    `<span class="ket-status" style="font-size:9px;display:none;"></span>` +
+                                    `</div>` +
+                                    `</td>` :
+                                    '') +
                                 `</tr>` +
                                 `<tr>${tdWeights}</tr>`;
                         }
@@ -1921,15 +2001,18 @@
                         // Tiap tanggal → chunk per BLOCKS_PER_PAGE
                         const datePages = sortedDates.map(tgl => {
                             const chunks = chunkArray(byDate[tgl], BLOCKS_PER_PAGE);
-                            return { date: tgl, pages: chunks };
+                            return {
+                                date: tgl,
+                                pages: chunks
+                            };
                         });
 
                         // State
-                        let curDateIdx  = 0;
+                        let curDateIdx = 0;
                         let curSheetIdx = 0;
 
                         const wrapperId = `${idPrefix}-wrapper`;
-                        const pagId     = `${idPrefix}-pag`;
+                        const pagId = `${idPrefix}-pag`;
 
                         // ── Build container ───────────────────────────────────────────────────
                         const groupDiv = document.createElement('div');
@@ -1980,8 +2063,8 @@
 
                         // ── Render ────────────────────────────────────────────────────────────
                         function render() {
-                            const dp          = datePages[curDateIdx];
-                            const pageBlocks  = dp.pages[curSheetIdx] || [];
+                            const dp = datePages[curDateIdx];
+                            const pageBlocks = dp.pages[curSheetIdx] || [];
                             const totalSheets = dp.pages.length;
 
                             // Meta
@@ -1996,8 +2079,8 @@
                             if (sheetLabel) sheetLabel.textContent = `Lembar ${curSheetIdx + 1} / ${totalSheets}`;
 
                             // Disable/enable
-                            document.getElementById(`${idPrefix}-prev-date`).disabled  = curDateIdx === 0;
-                            document.getElementById(`${idPrefix}-next-date`).disabled  = curDateIdx === datePages.length - 1;
+                            document.getElementById(`${idPrefix}-prev-date`).disabled = curDateIdx === 0;
+                            document.getElementById(`${idPrefix}-next-date`).disabled = curDateIdx === datePages.length - 1;
                             document.getElementById(`${idPrefix}-prev-sheet`).disabled = curSheetIdx === 0;
                             document.getElementById(`${idPrefix}-next-sheet`).disabled = curSheetIdx === totalSheets - 1;
 
@@ -2012,19 +2095,33 @@
 
                         // ── Event listeners ───────────────────────────────────────────────────
                         groupDiv.querySelector(`#${idPrefix}-prev-date`).addEventListener('click', () => {
-                            if (curDateIdx > 0) { curDateIdx--; curSheetIdx = 0; render(); }
+                            if (curDateIdx > 0) {
+                                curDateIdx--;
+                                curSheetIdx = 0;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-next-date`).addEventListener('click', () => {
-                            if (curDateIdx < datePages.length - 1) { curDateIdx++; curSheetIdx = 0; render(); }
+                            if (curDateIdx < datePages.length - 1) {
+                                curDateIdx++;
+                                curSheetIdx = 0;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-prev-sheet`).addEventListener('click', () => {
-                            if (curSheetIdx > 0) { curSheetIdx--; render(); }
+                            if (curSheetIdx > 0) {
+                                curSheetIdx--;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-next-sheet`).addEventListener('click', () => {
-                            if (curSheetIdx < datePages[curDateIdx].pages.length - 1) { curSheetIdx++; render(); }
+                            if (curSheetIdx < datePages[curDateIdx].pages.length - 1) {
+                                curSheetIdx++;
+                                render();
+                            }
                         });
                         groupDiv.querySelector(`#${idPrefix}-date-select`).addEventListener('change', function() {
-                            curDateIdx  = parseInt(this.value);
+                            curDateIdx = parseInt(this.value);
                             curSheetIdx = 0;
                             render();
                         });
@@ -2118,11 +2215,12 @@
                                 tdBoxes +
                                 '<td rowspan="2" style="font-weight:700;vertical-align:middle;">' + (hasData ?
                                     rowTotal.toFixed(2) : '-') + '</td>' +
-                                (row === 0
-                                    ? '<td rowspan="' + (ROWS * 2) + '" style="vertical-align:top;padding:3px;font-size:7px;">' +
-                                        (block.keterangan || '-') +
-                                    '</td>'
-                                    : '') +
+                                (row === 0 ?
+                                    '<td rowspan="' + (ROWS * 2) +
+                                    '" style="vertical-align:top;padding:3px;font-size:7px;">' +
+                                    (block.keterangan || '-') +
+                                    '</td>' :
+                                    '') +
                                 '</tr>' +
                                 '<tr>' + tdWeights + '</tr>';
                         }
@@ -2138,9 +2236,10 @@
 
                         function checkingBadgePrint(ke) {
                             if (ke <= 1) return '';
-                            return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' + ke + '</span>';
+                            return '<span style="background:#ff6b35;color:#fff;padding:1px 6px;border-radius:3px;font-size:7px;">Checking #' +
+                                ke + '</span>';
                         }
-            
+
                         // Setiap blok = 1 form seperti di foto fisik
                         blocksHTML += '<div class="block-wrap">' +
                             '<div class="block-title">CARTON WEIGHT REPORT &nbsp;—&nbsp; Laporan Timbangan Karton' +
@@ -2284,7 +2383,7 @@
 
                     const html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">' +
                         '<title>Carton Weight Report NON-NIKE — Hal. ' + pageNum + '</title>' +
-                        
+
                         /* Tambah CSS header form (sama dengan Nike) */
                         css +
 
@@ -2358,7 +2457,9 @@
                         '<script>window.onload=()=>{window.print();}<\/script>' +
                         '</body></html>';
 
-                    const blob = new Blob([html], { type: 'text/html' });
+                    const blob = new Blob([html], {
+                        type: 'text/html'
+                    });
                     const url = URL.createObjectURL(blob);
                     const win = window.open(url, '_blank');
                 }
@@ -2626,13 +2727,13 @@
                             tdBoxes +
                             '<td rowspan="2" style="font-weight:700;vertical-align:middle;">' + (hasData ? rowTotal
                                 .toFixed(2) : '-') + '</td>' +
-                            + (row === 0
-                                ? `<td rowspan="${ROWS * 2}" style="vertical-align:top;padding:3px;font-size:7px;">` +
-                                    `${block.keterangan || '-'}` +
-                                `</td>`
-                                : '')
-                            '</tr>' +
-                            '<tr>' + tdWeights + '</tr>';
+                            +(row === 0 ?
+                                `<td rowspan="${ROWS * 2}" style="vertical-align:top;padding:3px;font-size:7px;">` +
+                                `${block.keterangan || '-'}` +
+                                `</td>` :
+                                '')
+                        '</tr>' +
+                        '<tr>' + tdWeights + '</tr>';
                     }
 
                     const thCols = Array.from({
@@ -2775,6 +2876,242 @@
                     win.document.close();
                 };
 
+                // HELPER: renderNikeInto & renderNonNikeInto
+                // Menukar ID sementara agar bisa memakai fungsi renderNike / renderNonNike
+                // yang sudah didefinisikan di script existing.
+                // ─────────────────────────────────────────────────────────────────────
+                function renderNikeInto(targetNikeId, targetBadgeId, rows) {
+                    const origNike = document.getElementById('nike-report-content');
+                    const origBadge = document.getElementById('nike-count-badge');
+                    const myNike = document.getElementById(targetNikeId);
+                    const myBadge = document.getElementById(targetBadgeId);
+
+                    if (!myNike || !myBadge) return;
+
+                    // swap
+                    myNike.id = 'nike-report-content';
+                    myBadge.id = 'nike-count-badge';
+                    if (origNike) origNike.id = '__tmp_nike';
+                    if (origBadge) origBadge.id = '__tmp_nike_badge';
+
+                    renderNike(rows); // fungsi existing
+
+                    // swap balik
+                    myNike.id = targetNikeId;
+                    myBadge.id = targetBadgeId;
+                    if (origNike) origNike.id = 'nike-report-content';
+                    if (origBadge) origBadge.id = 'nike-count-badge';
+                }
+
+                function renderNonNikeInto(targetNonNikeId, targetBadgeId, orders) {
+                    const origEl = document.getElementById('non-nike-report-content');
+                    const origBadge = document.getElementById('non-nike-count-badge');
+                    const myEl = document.getElementById(targetNonNikeId);
+                    const myBadge = document.getElementById(targetBadgeId);
+
+                    if (!myEl || !myBadge) return;
+
+                    // swap
+                    myEl.id = 'non-nike-report-content';
+                    myBadge.id = 'non-nike-count-badge';
+                    if (origEl) origEl.id = '__tmp_nn';
+                    if (origBadge) origBadge.id = '__tmp_nn_badge';
+
+                    renderNonNike(orders); // fungsi existing
+
+                    // swap balik
+                    myEl.id = targetNonNikeId;
+                    myBadge.id = targetBadgeId;
+                    if (origEl) origEl.id = 'non-nike-report-content';
+                    if (origBadge) origBadge.id = 'non-nike-count-badge';
+                }
+
+                // ─────────────────────────────────────────────────────────────────────
+                // GENERIC REPORT LOADER
+                // endpoint : URL string  e.g. '/user/order/formal-report'
+                // ids      : { nikeContent, nonNikeContent, nikeBadge, nonNikeBadge, rangeLabel }
+                // params   : URLSearchParams
+                // ─────────────────────────────────────────────────────────────────────
+                async function loadReport(endpoint, ids, params) {
+                    const nikeEl = document.getElementById(ids.nikeContent);
+                    const nonNikeEl = document.getElementById(ids.nonNikeContent);
+                    const label = document.getElementById(ids.rangeLabel);
+
+                    if (nikeEl) nikeEl.innerHTML = loadingHTML();
+                    if (nonNikeEl) nonNikeEl.innerHTML = loadingHTML();
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const start = params.get('start') || '';
+                    const end = params.get('end') || '';
+                    if (label) {
+                        label.textContent = (start === today && end === today) ?
+                            'Hari ini' :
+                            (start + (start !== end ? ' s/d ' + end : ''));
+                    }
+
+                    try {
+                        const res = await fetch(endpoint + '?' + params.toString(), {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        const json = await res.json();
+                        if (!json.success) throw new Error(json.message || 'Gagal memuat data.');
+
+                        renderNikeInto(ids.nikeContent, ids.nikeBadge, json.nike || []);
+                        renderNonNikeInto(ids.nonNikeContent, ids.nonNikeBadge, json.non_nike || []);
+
+                    } catch (err) {
+                        const errHTML = '<div class="formal-empty" style="color:#ef5350;padding:20px;">' +
+                            '<i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>' +
+                            '<b>Error:</b> ' + err.message + '</div>';
+                        if (nikeEl) nikeEl.innerHTML = errHTML;
+                        if (nonNikeEl) nonNikeEl.innerHTML = errHTML;
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────────────
+                // INISIALISASI TAB SWITCHING untuk masing-masing wrap
+                // ─────────────────────────────────────────────────────────────────────
+                function initTabs(wrapId, attrName, panelPrefix) {
+                    const wrap = document.getElementById(wrapId);
+                    if (!wrap) return;
+                    wrap.querySelectorAll('[data-' + attrName + '-tab]').forEach(tab => {
+                        tab.addEventListener('click', function() {
+                            wrap.querySelectorAll('[data-' + attrName + '-tab]').forEach(t => t.classList
+                                .remove('active'));
+                            wrap.querySelectorAll('.formal-panel').forEach(p => p.classList.remove(
+                                'active'));
+                            this.classList.add('active');
+                            const panel = document.getElementById(panelPrefix + '-panel-' + this.dataset[
+                                attrName + 'Tab']);
+                            if (panel) panel.classList.add('active');
+                        });
+                    });
+                }
+
+                // ─────────────────────────────────────────────────────────────────────
+                // 1. FORMAL REPORT (semua user)
+                // ─────────────────────────────────────────────────────────────────────
+                function initFormalReport() {
+                    initTabs('formal-report-wrap', 'formal', 'formal');
+
+                    function load() {
+                        const start = document.getElementById('formal-date-start')?.value || '';
+                        const end = document.getElementById('formal-date-end')?.value || '';
+                        const p = new URLSearchParams();
+                        if (start) p.append('start', start);
+                        if (end) p.append('end', end);
+
+                        loadReport('/user/order/formal-report', {
+                            nikeContent: 'formal-nike-report-content',
+                            nonNikeContent: 'formal-non-nike-report-content',
+                            nikeBadge: 'formal-nike-count-badge',
+                            nonNikeBadge: 'formal-non-nike-count-badge',
+                            rangeLabel: 'formal-range-label',
+                        }, p);
+                    }
+
+                    document.getElementById('btn-formal-filter')?.addEventListener('click', load);
+                    document.getElementById('btn-formal-reset')?.addEventListener('click', () => {
+                        const today = new Date().toISOString().split('T')[0];
+                        document.getElementById('formal-date-start').value = today;
+                        document.getElementById('formal-date-end').value = today;
+                        load();
+                    });
+
+                    load(); // auto-load
+                }
+
+                // ─────────────────────────────────────────────────────────────────────
+                // 2. BUYER REPORT
+                // ─────────────────────────────────────────────────────────────────────
+                async function initBuyerReport() {
+                    initTabs('buyer-report-wrap', 'buyer', 'buyer');
+
+                    // Load daftar buyer ke select
+                    try {
+                        const res = await fetch('/user/order/buyers', {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        const json = await res.json();
+                        const sel = document.getElementById('buyer-select');
+                        if (sel && json.success && json.buyers) {
+                            json.buyers.forEach(b => {
+                                const opt = document.createElement('option');
+                                opt.value = b;
+                                opt.textContent = b;
+                                sel.appendChild(opt);
+                            });
+                        }
+                    } catch {}
+
+                    function load() {
+                        const start = document.getElementById('buyer-date-start')?.value || '';
+                        const end = document.getElementById('buyer-date-end')?.value || '';
+                        const buyer = document.getElementById('buyer-select')?.value || '';
+
+                        if (!buyer) {
+                            const nikeEl = document.getElementById('buyer-nike-report-content');
+                            const nonNikeEl = document.getElementById('buyer-non-nike-report-content');
+                            const msg = '<div class="formal-empty" style="color:#f39c12;padding:20px;">' +
+                                '<i class="fas fa-exclamation-triangle" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.5;"></i>' +
+                                'Pilih buyer terlebih dahulu</div>';
+                            if (nikeEl) nikeEl.innerHTML = msg;
+                            if (nonNikeEl) nonNikeEl.innerHTML = msg;
+                            return;
+                        }
+
+                        const p = new URLSearchParams();
+                        if (start) p.append('start', start);
+                        if (end) p.append('end', end);
+                        p.append('buyer', buyer);
+
+                        loadReport('/user/order/buyer-report', {
+                            nikeContent: 'buyer-nike-report-content',
+                            nonNikeContent: 'buyer-non-nike-report-content',
+                            nikeBadge: 'buyer-nike-count-badge',
+                            nonNikeBadge: 'buyer-non-nike-count-badge',
+                            rangeLabel: 'buyer-range-label',
+                        }, p);
+                    }
+
+                    document.getElementById('btn-buyer-filter')?.addEventListener('click', load);
+                    document.getElementById('btn-buyer-reset')?.addEventListener('click', () => {
+                        const today = new Date().toISOString().split('T')[0];
+                        document.getElementById('buyer-date-start').value = today;
+                        document.getElementById('buyer-date-end').value = today;
+                        document.getElementById('buyer-select').value = '';
+                        document.getElementById('buyer-range-label').textContent = 'Hari ini';
+                        const msg =
+                            '<div class="formal-empty"><i class="fas fa-filter" style="font-size:24px;opacity:0.3;display:block;margin-bottom:8px;"></i>Pilih buyer lalu klik "Tampilkan"</div>';
+                        document.getElementById('buyer-nike-report-content').innerHTML = msg;
+                        document.getElementById('buyer-non-nike-report-content').innerHTML = msg;
+                        document.getElementById('buyer-nike-count-badge').textContent = '0';
+                        document.getElementById('buyer-non-nike-count-badge').textContent = '0';
+                    });
+
+                    // Tidak auto-load karena harus pilih buyer dulu
+                }
+
+                // ─────────────────────────────────────────────────────────────────────
+                // BOOT
+                // ─────────────────────────────────────────────────────────────────────
+                function boot() {
+                    initFormalReport();
+                    initBuyerReport();
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', boot);
+                } else {
+                    boot();
+                }
+
                 // ─── UTILS ───────────────────────────────────────────────────
                 function chunkArray(arr, size) {
                     const chunks = [];
@@ -2787,7 +3124,7 @@
             })();
 
             // ── Save Keterangan (inline edit di laporan) ──────────────────────────────
-            document.addEventListener('click', async function (e) {
+            document.addEventListener('click', async function(e) {
                 const btn = e.target.closest('.ket-save-btn')
                 if (!btn) return
 
@@ -2797,17 +3134,17 @@
                     return
                 }
 
-                const wrap    = btn.closest('td, div')
-                const input   = wrap?.querySelector('.ket-input') 
-                            ?? btn.parentElement?.querySelector('.ket-input')
-                const statusEl = wrap?.querySelector('.ket-status')
-                            ?? btn.parentElement?.querySelector('.ket-status')
+                const wrap = btn.closest('td, div')
+                const input = wrap?.querySelector('.ket-input') ??
+                    btn.parentElement?.querySelector('.ket-input')
+                const statusEl = wrap?.querySelector('.ket-status') ??
+                    btn.parentElement?.querySelector('.ket-status')
 
                 if (!input) return
 
                 const keterangan = input.value.trim()
                 const originalText = btn.textContent
-                btn.disabled    = true
+                btn.disabled = true
                 btn.textContent = '...'
 
                 try {
@@ -2816,9 +3153,12 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept':       'application/json',
+                            'Accept': 'application/json',
                         },
-                        body: JSON.stringify({ ordersheet_id: ordersheetId, keterangan }),
+                        body: JSON.stringify({
+                            ordersheet_id: ordersheetId,
+                            keterangan
+                        }),
                     })
 
                     const json = await res.json()
@@ -2829,37 +3169,39 @@
                         if (cell) {
                             const displayEl = cell.querySelector('.ket-display')
                             if (displayEl) {
-                                displayEl.innerHTML = keterangan 
-                                    || '<span style="color:#bbb;font-style:italic;">—</span>'
+                                displayEl.innerHTML = keterangan ||
+                                    '<span style="color:#bbb;font-style:italic;">—</span>'
                             }
                             // Tutup editor
                             cell.querySelector('.ket-edit').style.display = 'none'
                             cell.querySelector('.ket-display').style.display = 'block'
                         }
-                        
+
                         if (statusEl) {
-                            statusEl.textContent  = '✓ Tersimpan'
-                            statusEl.style.color  = 'green'
+                            statusEl.textContent = '✓ Tersimpan'
+                            statusEl.style.color = 'green'
                             statusEl.style.display = 'inline'
-                            setTimeout(() => { statusEl.style.display = 'none' }, 2500)
+                            setTimeout(() => {
+                                statusEl.style.display = 'none'
+                            }, 2500)
                         }
                     } else {
                         throw new Error(json.message || 'Gagal')
                     }
                 } catch (err) {
                     if (statusEl) {
-                        statusEl.textContent  = '✗ ' + err.message
-                        statusEl.style.color  = 'red'
+                        statusEl.textContent = '✗ ' + err.message
+                        statusEl.style.color = 'red'
                         statusEl.style.display = 'inline'
                     }
                 } finally {
-                    btn.disabled    = false
+                    btn.disabled = false
                     btn.textContent = originalText
                 }
             })
 
             // Enter di textarea → save
-            document.addEventListener('keydown', function (e) {
+            document.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey && e.target.classList.contains('ket-input')) {
                     e.preventDefault()
                     e.target.closest('td, div')?.querySelector('.ket-save-btn')

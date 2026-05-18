@@ -98,7 +98,7 @@ function initSearch() {
         saveSearchState({ search, start, end, page })
 
         spinner.style.display = 'inline-block'
-        tableBody.innerHTML = `<tr><td colspan="10" class="text-center">Memuat...</td></tr>`
+        tableBody.innerHTML = `<tr><td colspan="11" class="text-center">Memuat...</td></tr>`
 
         try {
             const params = new URLSearchParams({ per_page: PAGE_SIZE, page })
@@ -163,6 +163,7 @@ function initSearch() {
                 <td>${item.Qty || 0}</td>
                 <td>${item.PurchaseOrderNumber || '-'}</td>
                 <td>${item.Buyer || '-'}</td>
+                <td>${item.FinalDestination || item.Destination || '-'}</td>
                 <td>${item.DocumentDate || '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary btn-timbang"
@@ -1254,6 +1255,23 @@ function initSaveButton() {
             Swal.fire('Peringatan', 'No. Carton harus diisi!', 'warning')
             document.getElementById('no_box')?.focus()
             return
+        }
+
+        // ✅ Cek batas beban min & max
+        const min = parseFloat(document.getElementById('rasio_batas_beban_min')?.value) || 0
+        const max = parseFloat(document.getElementById('rasio_batas_beban_max')?.value) || 0
+        const berat = parseFloat(latestPreview.berat)
+
+        if (min > 0 && max > 0) {
+            if (berat < min || berat > max) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Berat Tidak Valid!',
+                    html: `Berat <b>${berat.toFixed(2)} kg</b> di luar batas.<br>
+                        Min: <b>${min.toFixed(2)} kg</b> — Max: <b>${max.toFixed(2)} kg</b>`,
+                })
+                return
+            }
         }
  
         const form     = document.getElementById('formOrdersheet')
