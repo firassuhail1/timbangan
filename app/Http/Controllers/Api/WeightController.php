@@ -12,9 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class WeightController extends Controller
@@ -711,5 +709,72 @@ class WeightController extends Controller
             'success' => true,
             'data' => $records,
         ]);
+    }
+
+    public function deleteRiwayat($id)
+    {
+        $riwayat = Timbangan_riwayat::find($id);
+
+        if (!$riwayat) {
+            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+        }
+
+        // Pastikan hanya user yang menimbang atau admin yang bisa hapus
+        if ($riwayat->id_user !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Tidak diizinkan'], 403);
+        }
+
+        DB::beginTransaction();
+        try {
+            $idOrdersheet = $riwayat->id_ordersheet;
+            $riwayat->delete();
+
+            // Jika tidak ada riwayat lain di ordersheet ini, hapus ordersheetnya juga
+            $sisaRiwayat = Timbangan_riwayat::where('id_ordersheet', $idOrdersheet)->count();
+            if ($sisaRiwayat === 0) {
+                Ordersheet::find($idOrdersheet)?->delete();
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Riwayat timbangan berhasil dihapus']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error hapus riwayat: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function updateRiwayat(Request $request, $id)
+    {
+        $riwayat = Timbangan_riwayat::find($id);
+
+        if (!$riwayat) {
+            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+        }
+
+        if ($riwayat->id_user !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Tidak diizinkan'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'berat'  => 'required|numeric|min:0.01',
+            'no_box' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->all()[0]], 422);
+        }
+
+        try {
+            $riwayat->update([
+                'berat'  => floatval($request->berat),
+                'no_box' => $request->no_box ?: $riwayat->no_box,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Riwayat berhasil diperbarui']);
+        } catch (\Exception $e) {
+            Log::error('Error update riwayat: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui'], 500);
+        }
     }
 }

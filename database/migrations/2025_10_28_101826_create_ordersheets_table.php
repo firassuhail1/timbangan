@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('PO')->nullable();
             $table->string('Style')->nullable();
             $table->integer('Line')->nullable();
-            $table->string('Line')->nullable();
+            $table->string('Subcon')->nullable();
             $table->string('Qty_order')->nullable();
             $table->decimal('Carton_weight_std', 8, 2)->nullable();
             $table->decimal('Pcs_weight_std', 8, 2)->nullable();

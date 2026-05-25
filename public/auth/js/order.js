@@ -1463,6 +1463,183 @@ async function reloadReport() {
     }
 }
 
+function showRiwayatDialog(el) {
+    let data;
+    try {
+        data = JSON.parse(el.dataset.riwayat);
+    } catch {
+        return;
+    }
+
+    const currentUserId = window.APP?.userId ?? null;
+    console.log(data.id_user);
+    console.log(currentUserId);
+    const isMine = parseInt(data.id_user) === parseInt(currentUserId);
+
+    const today = new Date().toISOString().split('T')[0];
+    const tglTimbang = (data.waktu_timbang || '').substring(0, 10);
+    const isToday = tglTimbang === today;
+
+    const canEdit = isMine && isToday;
+
+    const minF = parseFloat(data.rasio_min).toFixed(2);
+    const maxF = parseFloat(data.rasio_max).toFixed(2);
+    const berat = parseFloat(data.berat);
+    let statusBerat = '';
+    if (data.rasio_min > 0 && data.rasio_max > 0) {
+        if (berat < parseFloat(data.rasio_min)) {
+            statusBerat = '<span style="color:red;font-weight:700;">⚠ Di bawah batas minimal</span>';
+        } else if (berat > parseFloat(data.rasio_max)) {
+            statusBerat = '<span style="color:orange;font-weight:700;">⚠ Melebihi batas maksimal</span>';
+        } else {
+            statusBerat = '<span style="color:green;font-weight:700;">✓ Dalam batas normal</span>';
+        }
+    }
+
+    Swal.fire({
+        title: `<i class="fa-solid fa-weight-scale me-2"></i>Detail Timbangan`,
+        html: `
+            <div style="text-align:left;font-size:13px;line-height:2.2;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr>
+                        <td style="color:#888;width:40%;">No. Carton</td>
+                        <td><strong>${data.no_box}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="color:#888;">Berat</td>
+                        <td><strong style="font-size:16px;">${data.berat} kg</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="color:#888;">Status Berat</td>
+                        <td>${statusBerat || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#888;">Batas Min / Max</td>
+                        <td>${minF} kg / ${maxF} kg</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#888;">Waktu Timbang</td>
+                        <td>${data.waktu_timbang}</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#888;">Status</td>
+                        <td>${data.status}</td>
+                    </tr>
+                </table>
+
+                ${canEdit ? `
+                    <hr style="margin:12px 0;">
+                    <div style="font-weight:600;margin-bottom:8px;">Edit Timbangan</div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div style="flex:1;">
+                            <label style="font-size:11px;color:#888;">No. Carton</label>
+                            <input id="swal-nobox" class="swal2-input" style="margin:2px 0;height:36px;font-size:13px;"
+                                value="${data.no_box === '-' ? '' : data.no_box}" placeholder="No. Carton">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:11px;color:#888;">Berat (kg)</label>
+                            <input id="swal-berat" type="number" step="0.01" class="swal2-input"
+                                style="margin:2px 0;height:36px;font-size:13px;" value="${data.berat}" placeholder="Berat">
+                        </div>
+                    </div>
+                ` : `
+                    <div style="margin-top:10px;padding:8px 12px;background:#fff3cd;border-radius:6px;font-size:12px;color:#856404;">
+                        <i class="fa-solid fa-lock me-1"></i>
+                        ${!isMine 
+                            ? 'Hanya operator yang menimbang yang dapat mengubah data ini.' 
+                            : 'Data timbangan kemarin tidak dapat diubah.'}
+                    </div>
+                `}
+            </div>
+        `,
+        showCancelButton: true,
+        showDenyButton: isMine,
+        confirmButtonText: isMine ? '<i class="fa-solid fa-floppy-disk me-1"></i> Simpan' : 'Tutup',
+        denyButtonText: '<i class="fa-solid fa-trash me-1"></i> Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#435ebe',
+        denyButtonColor: '#dc3545',
+        focusConfirm: false,
+        preConfirm: () => {
+            if (!isMine) return null;
+            const berat = parseFloat(document.getElementById('swal-berat')?.value);
+            if (!berat || berat < 0.01) {
+                Swal.showValidationMessage('Berat tidak valid');
+                return false;
+            }
+            return {
+                berat:  berat,
+                no_box: document.getElementById('swal-nobox')?.value?.trim() || null,
+            };
+        },
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value && isMine) {
+            // UPDATE
+            try {
+                const res = await fetch(`/user/order/riwayat/${data.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(result.value),
+                });
+                const json = await res.json();
+                if (json.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: json.message, timer: 1500, showConfirmButton: false });
+                    // Update tampilan langsung di kotak tanpa reload
+                    el.textContent = parseFloat(result.value.berat).toFixed(2);
+                    el.dataset.riwayat = JSON.stringify({ ...data, berat: result.value.berat.toFixed(2), no_box: result.value.no_box || data.no_box });
+                } else {
+                    Swal.fire('Gagal', json.message, 'error');
+                }
+            } catch {
+                Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+            }
+
+        } else if (result.isDenied && isMine) {
+            // HAPUS — konfirmasi dua kali
+            const konfirmasi = await Swal.fire({
+                icon: 'warning',
+                title: 'Hapus Timbangan?',
+                html: `Data carton <strong>${data.no_box}</strong> berat <strong>${data.berat} kg</strong> akan dihapus permanen.`,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+            });
+
+            if (konfirmasi.isConfirmed) {
+                try {
+                    const res = await fetch(`/user/order/riwayat/${data.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        Swal.fire({ icon: 'success', title: 'Dihapus!', text: json.message, timer: 1500, showConfirmButton: false });
+                        // Ganti kotak dengan strip
+                        el.textContent = '-';
+                        el.classList.remove('w-ok', 'w-kurang', 'w-lebih');
+                        el.classList.add('td-empty');
+                        el.style.color = '#ddd';
+                        el.removeAttribute('onclick');
+                        el.removeAttribute('data-riwayat');
+                    } else {
+                        Swal.fire('Gagal', json.message, 'error');
+                    }
+                } catch {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            }
+        }
+    });
+}
+
 async function switchDevice(deviceId) {
     try {
         const res = await fetch('/user/devices/switch', {

@@ -220,7 +220,17 @@ class LoginController extends Controller
         ]);
 
         // =========================
-        // 5. PENCARIAN & RESET DEVICE
+        // 5. LEPAS DEVICE LAMA MILIK USER INI (jika ada)
+        // =========================
+        Device::where('user_id', $user->id)
+            ->where('esp_id', '!=', $request->esp_id)  // bukan device yang baru dipilih
+            ->update([
+                'user_id' => null,
+                'status'  => 'online',
+            ]);
+
+        // =========================
+        // 6. PENCARIAN & RESET DEVICE
         // =========================
         $device = Device::where('esp_id', $request->esp_id)->first();
 
@@ -252,7 +262,7 @@ class LoginController extends Controller
         }
 
         // =========================
-        // 6. KUNCI DEVICE UNTUK USER INI
+        // 7. KUNCI DEVICE UNTUK USER INI
         // =========================
         $device->update([
             'user_id'              => $user->id,
@@ -264,7 +274,7 @@ class LoginController extends Controller
         ]);
 
         // =========================
-        // 7. SETUP SESSION
+        // 8. SETUP SESSION
         // =========================
         session([
             'selected_device' => $device->id,
@@ -276,7 +286,7 @@ class LoginController extends Controller
         Log::info("User {$user->username} berhasil login menggunakan {$device->esp_id}");
 
         // =========================
-        // 8. REDIRECT BERDASARKAN TIPE TIMBANGAN
+        // 9. REDIRECT BERDASARKAN TIPE TIMBANGAN
         // =========================
         if ($user->role === 'user') {
             if (preg_match('/Timbangan-([OP])\d+/', $device->esp_id, $m)) {

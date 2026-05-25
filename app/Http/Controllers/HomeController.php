@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Update\Device;
 use App\Models\User;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
@@ -27,31 +26,10 @@ class HomeController extends Controller
             }
         }
 
-        $availableDevices = Device::where(function ($q) {
-            // 1. Kosong & online
-            $q->whereNull('user_id')
-                ->where('status', 'online');
-        })
-            ->orWhere(function ($q) use ($autoSelectedEspId) {
-                // 2. Device milik user ini sendiri yang sedang in_use
-                if ($autoSelectedEspId) {
-                    $q->where('esp_id', $autoSelectedEspId)
-                        ->where('status', 'in_use');
-                } else {
-                    // Jika tidak ada autoSelected, skip kondisi ini dengan impossible clause
-                    $q->whereRaw('1 = 0');
-                }
-            })
-            ->orWhere(function ($q) {
-                // 3. In_use tapi sudah timeout (> 5 menit) - dianggap tersedia
-                $q->where('status', 'in_use')
-                    ->whereNotNull('user_id')
-                    ->where('last_seen_at', '<', now()->subMinutes(5));
-            })
-            ->orderBy('esp_id')
+        // Tampil semua device, sertakan info user yang sedang pakai
+        $availableDevices = Device::with('user')
+            ->orderBy('name')
             ->get();
-
-        Log::info('available devices : ' . $availableDevices);
 
         return view('auth.login', compact(
             'availableDevices',

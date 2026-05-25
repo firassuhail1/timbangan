@@ -551,10 +551,21 @@
                                 @endphp
 
                                 @foreach ($availableDevices as $device)
-                                    {{-- Kita simpan MAC di atribut data-mac --}}
+                                    @php
+                                        $label = $device->name ?: $device->esp_id; // ← pakai ?: bukan ??
+
+                                        if ($device->status === 'in_use' && $device->user) {
+                                            $label .= ' (' . $device->user->username . ')';
+                                        }
+
+                                        $disabled =
+                                            $device->status === 'in_use' && $device->esp_id !== $autoSelectedEspId;
+                                    @endphp
+
                                     <option value="{{ $device->esp_id }}" data-mac="{{ $device->mac_esp }}"
-                                        {{ ($selectedEsp ?? null) === $device->esp_id ? 'selected' : '' }}>
-                                        {{ $device->name ?? $device->esp_id }}
+                                        {{ ($selectedEsp ?? null) === $device->esp_id ? 'selected' : '' }}
+                                        {{ $disabled ? 'disabled' : '' }}>
+                                        {{ $label }}
                                     </option>
                                 @endforeach
                             </select>
@@ -667,11 +678,22 @@
                     devices.forEach(d => {
                         const opt = document.createElement('option');
                         opt.value = d.esp_id;
-                        opt.textContent = d.name ?? d.esp_id;
-                        // Pertahankan selected jika cocok dengan old input
-                        if (d.esp_id === currentSelected) {
+
+                        // Label + username jika in_use
+                        let label = d.name || d.esp_id;
+                        if (d.status === 'in_use' && !d.is_mine) {
+                            label = label;
+                            opt.disabled = true;
+                        } else if (d.status === 'in_use' && d.is_mine) {
+                            label = label;
+                        }
+
+                        opt.textContent = label;
+
+                        if (d.esp_id === currentSelected || d.is_mine) {
                             opt.selected = true;
                         }
+
                         selectEl.appendChild(opt);
                     });
 

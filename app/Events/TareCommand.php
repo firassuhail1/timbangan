@@ -13,7 +13,7 @@ class TareCommand implements ShouldBroadcastNow
 
     public function broadcastOn(): Channel
     {
-        return new Channel("timbangan-global"); // ← ganti dari perintah.{espId}
+        return new Channel("timbangan-global"); // ← mengirim ke semua gateway, karna semua gateway subscribe ke timbangna-global
     }
 
     public function broadcastAs(): string

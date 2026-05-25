@@ -101,16 +101,20 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
         ->name('order.my-report');
 
     Route::get('/order/buyers',      [OrderSheetController::class, 'buyers']);
-    Route::get('/order/buyer-report',[OrderSheetController::class, 'buyerReport']);
+    Route::get('/order/buyer-report', [OrderSheetController::class, 'buyerReport']);
 
-    Route::get('/order/get-keterangan', [OrdersheetController::class, 'getKeterangan']);
-    Route::post('/order/update-keterangan', [OrdersheetController::class, 'updateKeterangan']);
+    Route::get('/order/get-keterangan', [OrderSheetController::class, 'getKeterangan']);
+    Route::post('/order/update-keterangan', [OrderSheetController::class, 'updateKeterangan']);
     Route::get('/order/checking-info', [OrderSheetController::class, 'getCheckingInfo']);
 
     // tambah data ordersheet
     Route::get('/ordersheet-view/create', [OrderSheetController::class, 'create'])->name('ordersheet.create');
     Route::post('/ordersheet/store', [OrderSheetController::class, 'store'])->name('ordersheet.store');
     Route::get('/order/report', [OrderSheetController::class, 'reportData']);
+
+    // Riwayat timbangan
+    Route::delete('/order/riwayat/{id}', [WeightController::class, 'deleteRiwayat']);
+    Route::put('/order/riwayat/{id}',    [WeightController::class, 'updateRiwayat']);
 
     // cetak timbangan
     Route::get('/order/print', [OrderSheetController::class, 'print'])->name('order.print');
