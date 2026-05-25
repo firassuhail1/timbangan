@@ -75,6 +75,16 @@ function getWeighedIds() {
     return JSON.parse(sessionStorage.getItem(WEIGHED_IDS_KEY) || '[]')
 }
 
+// Tambahkan fungsi helper ini di awal order.js
+function escapeForAttr(obj) {
+    return JSON.stringify(obj)
+        .replace(/&/g, '&amp;')
+        .replace(/'/g, '&#39;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+}
+
 let renderPage = null
 
 function initSearch() {
@@ -167,7 +177,7 @@ function initSearch() {
                 <td>${item.DocumentDate || '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary btn-timbang"
-                        data-item='${JSON.stringify(item)}'>
+                        data-item='${escapeForAttr(item)}'>
                         <i class="fa-solid fa-weight-scale"></i> Timbang
                     </button>
                     ${item.max_checking > 0
