@@ -56,7 +56,18 @@ class DeviceLoginController extends Controller
 
         $devices = Device::with('user')
             ->orderBy('name')
-            ->get(['esp_id', 'name', 'status', 'user_id']);
+            ->get()
+            ->map(function ($device) {
+                if (
+                    $device->status === 'in_use' &&
+                    $device->last_seen_at &&
+                    $device->last_seen_at->lt(now()->subMinutes(5))
+                ) {
+                    $device->update(['status' => 'online', 'user_id' => null]);
+                    $device->user = null;
+                }
+                return $device;
+            });
 
         return response()->json($devices->map(function ($device) use ($user) {
             $label = $device->name ?: $device->esp_id;
