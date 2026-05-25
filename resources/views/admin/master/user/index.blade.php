@@ -152,7 +152,7 @@
                     </div>
 
                     <div class="d-flex mt-2 justify-content-end">
-                        {{ $users->withQueryString()->links() }}
+                        {{ $users->withQueryString()->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>

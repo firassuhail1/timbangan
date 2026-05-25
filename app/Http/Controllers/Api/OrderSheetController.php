@@ -216,6 +216,111 @@ class OrderSheetController extends Controller
         return view('order.index', compact('auth', 'groupedByKJ'));
     }
 
+    /**
+     * Ambil daftar buyer unik yang sudah pernah ditimbang
+     */
+    public function buyers()
+    {
+        $buyers = \App\Models\Ordersheet::where('status', 'Success')
+            ->whereHas('timbangans')
+            ->select('Buyer')
+            ->distinct()
+            ->orderBy('Buyer')
+            ->pluck('Buyer')
+            ->filter()
+            ->values();
+
+        return response()->json(['success' => true, 'buyers' => $buyers]);
+    }
+
+    /**
+     * Laporan per buyer — struktur sama dengan formalReport tapi difilter Buyer
+     */
+    public function buyerReport(Request $request)
+    {
+        $start = $request->get('start', now()->format('Y-m-d'));
+        $end   = $request->get('end',   now()->format('Y-m-d'));
+        $buyer = $request->get('buyer', '');
+
+        if (!$buyer) {
+            return response()->json(['success' => false, 'message' => 'Buyer harus dipilih'], 422);
+        }
+
+        $orders = \App\Models\Ordersheet::with([
+            'timbangans' => function ($q) use ($start, $end) {
+                $q->select(
+                    'id', 'id_ordersheet', 'no_box', 'berat', 'pcs',
+                    'rasio_batas_beban_min', 'rasio_batas_beban_max', 'waktu_timbang'
+                )
+                ->whereDate('waktu_timbang', '>=', $start)
+                ->whereDate('waktu_timbang', '<=', $end)
+                ->orderBy('waktu_timbang');
+            }
+        ])
+        ->where('status', 'Success')
+        ->where('Buyer', $buyer)
+        ->whereHas('timbangans', function ($q) use ($start, $end) {
+            $q->whereDate('waktu_timbang', '>=', $start)
+            ->whereDate('waktu_timbang', '<=', $end);
+        })
+        ->select(
+            'id', 'Order_code', 'KJ', 'Buyer', 'PO', 'Style', 'ColorDescription',
+            'Line', 'Subcon', 'checking_ke', 'Qty_order', 'PCS', 'Ctn',
+            'Less_Ctn', 'Pcs_Less_Ctn', 'Carton_weight_std', 'Pcs_weight_std',
+            'Gac_date', 'Destination', 'Inspector', 'OPT_QC_TIMBANGAN',
+            'SPV_QC', 'CHIEF_FINISH_GOOD', 'keterangan', 'status', 'created_at'
+        )
+        ->get()
+        ->filter(fn($o) => $o->timbangans->isNotEmpty());
+
+        $nikeOrders    = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) === 'nike');
+        $nonNikeOrders = $orders->filter(fn($o) => strtolower(trim($o->Buyer)) !== 'nike');
+
+        $nikeRows = $nikeOrders->map(function ($o) {
+            $firstDate = optional($o->timbangans->first())->waktu_timbang;
+            return [
+                'ordersheet_id'     => $o->id,
+                'keterangan'        => $o->keterangan ?? '',
+                'order_code'        => $o->Order_code,
+                'kj'                => trim($o->KJ ?? '-'),
+                'buyer'             => $o->Buyer,
+                'style'             => $o->Style,
+                'color'             => $o->ColorDescription,
+                'pcs'               => $o->timbangans->groupBy('pcs')
+                                        ->sortByDesc(fn($g) => $g->count())
+                                        ->keys()->first() ?? $o->PCS,
+                'qty_order'         => $o->Qty_order,
+                'gac_date'          => $o->Gac_date
+                    ? \Carbon\Carbon::parse($o->Gac_date)->format('d-m-Y') : '-',
+                'destination'       => $o->Destination,
+                'line'              => $o->Line,
+                'subcon'            => $o->Subcon,
+                'checking_ke'       => (int) ($o->checking_ke ?? 1),
+                'carton_weight_std' => $o->Carton_weight_std,
+                'tanggal'           => $firstDate
+                    ? \Carbon\Carbon::parse($firstDate)->format('d-m-Y') : '-',
+                'timbangans'        => $o->timbangans->map(fn($t) => [
+                    'berat' => $t->berat,
+                    'waktu' => $t->waktu_timbang
+                        ? \Carbon\Carbon::parse($t->waktu_timbang)->format('H:i') : '-',
+                ])->values()->toArray(),
+            ];
+        })->values()->toArray();
+
+        $nonNikeBlocks = $nonNikeOrders
+            ->groupBy(fn($o) => $o->Order_code . '|' . (int) ($o->checking_ke ?? 1))
+            ->map(fn($grp) => $this->buildNonNikeBlock($grp))
+            ->sortBy('_earliest_ts')
+            ->values()
+            ->toArray();
+
+        return response()->json([
+            'success'  => true,
+            'nike'     => $nikeRows,
+            'non_nike' => $nonNikeBlocks,
+        ]);
+    }
+
     private function buildNonNikeBlock($orderGroup): array
     {
         $first      = $orderGroup->first();
