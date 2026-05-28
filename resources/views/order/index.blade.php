@@ -64,6 +64,12 @@
                         <button type="button" id="resetSearchBtn" class="btn btn-outline-primary">
                             <i class="fa-solid fa-arrow-rotate-left"></i> Reset
                         </button>
+
+                        <div id="searchScannerIndicator" class="scanner-indicator scanner-idle"
+                            title="Scan barcode karton untuk langsung mencari di tabel">
+                            <i class="fa-solid fa-barcode"></i>
+                            <span id="searchScannerText">Scan untuk cari</span>
+                        </div>
                     </div>
 
                     <!-- Modal Konfirmasi Pindah Device -->
@@ -706,11 +712,16 @@
                                                     <div class="input-group">
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="no_box" id="no_box" placeholder="A001">
-                                                        <button class="btn btn-outline-warning btn-sm" type="button"
+                                                        <!-- <button class="btn btn-outline-warning btn-sm" type="button"
                                                             id="btnScanBarcode">
                                                             <i class="fa-solid fa-barcode"></i>
                                                             <span class="d-none d-sm-inline"> Scan</span>
-                                                        </button>
+                                                        </button> -->
+                                                        <div id="scannerIndicator" class="scanner-indicator scanner-idle"
+                                                            title="Arahkan scanner ke barcode karton">
+                                                            <i class="fa-solid fa-barcode"></i>
+                                                            <span id="scannerText">Siap scan</span>
+                                                        </div>
                                                     </div>
                                                     <small class="text-muted">Tekan tombol scan atau ketik
                                                         manual</small>
@@ -817,7 +828,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <!-- <div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header text-dark">
@@ -847,10 +858,55 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     @push('css')
         <link rel="stylesheet" href="{{ asset('auth/css/order.css') }}">
+        <style>
+            .scanner-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid transparent;
+                transition: background 0.25s, color 0.25s, border-color 0.25s;
+                user-select: none;
+                min-width: 130px;
+            }
+            .scanner-idle {
+                background: #f0f4ff;
+                color: #435ebe;
+                border-color: #c5d0f5;
+            }
+            .scanner-scanning {
+                background: #fff8e1;
+                color: #856404;
+                border-color: #ffc107;
+                animation: scanner-pulse 0.4s ease-in-out infinite alternate;
+            }
+            .scanner-loading {
+                background: #e8f4fd;
+                color: #0a5fa0;
+                border-color: #90caf9;
+            }
+            .scanner-success {
+                background: #e6f9f0;
+                color: #1a6a3e;
+                border-color: #48c78e;
+            }
+            .scanner-error {
+                background: #fdecea;
+                color: #b71c1c;
+                border-color: #ef9a9a;
+            }
+            @keyframes scanner-pulse {
+                from { opacity: 1; }
+                to   { opacity: 0.65; }
+            }
+        </style>
     @endpush
 
     @push('js')
@@ -859,7 +915,7 @@
         <script src="{{ asset('assets/js/sweetalert2/sweetalert2.all.min.js') }}"></script>
         {{-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
-        <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+        <!-- <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script> -->
 
         <script>
             window.APP = {

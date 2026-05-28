@@ -1,11 +1,14 @@
 // Simpan order yang sedang aktif di variabel global/window
-window.currentSelectedItem = null; 
+window.currentSelectedItem = null;
+const FG_API_BASE = 'http://192.168.0.39/TimbanganApi/Qrcodefg.php'
 
 document.addEventListener('DOMContentLoaded', () => {
     initDateTime()
     initSearch()
     initTimbangModal()
-    initBarcodeScanner()
+    // initBarcodeScanner()
+    initHardwareScanner()
+    initSearchScanner()
     initManualMode()
     initTareButton()
     initLossWeightCalculation()
@@ -1074,174 +1077,553 @@ function initTareButton() {
     })
 }
 
-function initBarcodeScanner() {
-    const scanButton = document.getElementById('btnScanBarcode')
-    if (!scanButton) return
+// function initBarcodeScanner() {
+//     const scanButton = document.getElementById('btnScanBarcode')
+//     if (!scanButton) return
 
-    scanButton.addEventListener('click', startScanner)
+//     scanButton.addEventListener('click', startScanner)
 
-    function startScanner() {
-        const modalEl = document.getElementById('scannerModal')
-        if (!modalEl) return alert('Modal scanner tidak ditemukan!')
+//     function startScanner() {
+//         const modalEl = document.getElementById('scannerModal')
+//         if (!modalEl) return alert('Modal scanner tidak ditemukan!')
 
-        const modal = new bootstrap.Modal(modalEl, {
-            backdrop: 'static',
-            keyboard: false
-        })
-        const statusEl = document.getElementById('scanStatus')
-        const torchBtn = document.getElementById('torchToggle')
-        const switchBtn = document.getElementById('switchCamera')
+//         const modal = new bootstrap.Modal(modalEl, {
+//             backdrop: 'static',
+//             keyboard: false
+//         })
+//         const statusEl = document.getElementById('scanStatus')
+//         const torchBtn = document.getElementById('torchToggle')
+//         const switchBtn = document.getElementById('switchCamera')
 
-        let scannerInstance = null
-        let currentCamera = 'environment'
-        let torchOn = false
-        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(
-            navigator.userAgent
-        )
+//         let scannerInstance = null
+//         let currentCamera = 'environment'
+//         let torchOn = false
+//         const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(
+//             navigator.userAgent
+//         )
 
-        modal.show()
+//         modal.show()
 
-        const onSuccess = (decodedText) => {
-            const text = decodedText.trim()
-            if (!text) return
+//         const onSuccess = (decodedText) => {
+//             const text = decodedText.trim()
+//             if (!text) return
 
-            const noBoxInput = document.getElementById('no_box')
-            if (noBoxInput) {
-                noBoxInput.value = text
-                noBoxInput.dispatchEvent(
-                    new Event('input', {
-                        bubbles: true
-                    })
-                )
+//             const noBoxInput = document.getElementById('no_box')
+//             if (noBoxInput) {
+//                 noBoxInput.value = text
+//                 noBoxInput.dispatchEvent(
+//                     new Event('input', {
+//                         bubbles: true
+//                     })
+//                 )
+//             }
+
+//             statusEl.innerHTML = `<span class="text-success fw-bold">Berhasil Scan!</span><br><small class="text-light">${text}</small>`
+//             setTimeout(() => {
+//                 stopScanner()
+//                 modal.hide()
+//                 Swal.fire({
+//                     icon: 'success',
+//                     title: 'Scan Berhasil!',
+//                     text: text,
+//                     timer: 1500,
+//                     showConfirmButton: false
+//                 })
+//             }, 800)
+//         }
+
+//         const stopScanner = () => {
+//             if (scannerInstance) {
+//                 scannerInstance.stop().catch(() => {})
+//                 scannerInstance = null
+//             }
+//             torchOn = false
+//         }
+
+//         modalEl.addEventListener('shown.bs.modal', () => {
+//             statusEl.textContent = 'Memuat kamera...'
+//             torchBtn.disabled = true
+//             torchBtn.classList.add('d-none')
+
+//             const html5QrCode = new Html5Qrcode('reader')
+//             const config = {
+//                 fps: 10,
+//                 qrbox: {
+//                     width: 250,
+//                     height: 250
+//                 },
+//                 aspectRatio: 1,
+//                 disableFlip: false,
+//                 formatsToSupport: [
+//                     Html5QrcodeSupportedFormats.CODE_128,
+//                     Html5QrcodeSupportedFormats.CODE_39,
+//                     Html5QrcodeSupportedFormats.EAN_13,
+//                     Html5QrcodeSupportedFormats.EAN_8,
+//                     Html5QrcodeSupportedFormats.UPC_A
+//                 ]
+//             }
+
+//             html5QrCode
+//                 .start(
+//                     {
+//                         facingMode: currentCamera
+//                     },
+//                     config,
+//                     onSuccess,
+//                     () => {}
+//                 )
+//                 .then(() => {
+//                     scannerInstance = html5QrCode
+//                     statusEl.innerHTML =
+//                         '<span class="text-info">Arahkan kamera ke barcode...</span>'
+
+//                     if (isMobile) {
+//                         torchBtn.classList.remove('d-none')
+//                         torchBtn.disabled = false
+//                         setupTorch()
+//                     }
+
+//                     Html5Qrcode.getCameras().then((cameras) => {
+//                         if (cameras?.length > 1)
+//                             switchBtn.classList.remove('d-none')
+//                     })
+
+//                     switchBtn.onclick = () => {
+//                         currentCamera =
+//                             currentCamera === 'environment'
+//                                 ? 'user'
+//                                 : 'environment'
+//                         stopScanner()
+//                         setTimeout(() => {
+//                             html5QrCode
+//                                 .start(
+//                                     {
+//                                         facingMode: currentCamera
+//                                     },
+//                                     config,
+//                                     onSuccess,
+//                                     () => {}
+//                                 )
+//                                 .then(() => (scannerInstance = html5QrCode))
+//                         }, 500)
+//                     }
+//                 })
+//                 .catch((err) => {
+//                     statusEl.innerHTML = `<span class="text-danger">Gagal akses kamera:<br><small>${
+//                         err.message || err
+//                     }</small></span>`
+//                 })
+//         })
+
+//         function setupTorch() {
+//             torchBtn.onclick = () => {
+//                 if (!scannerInstance) return
+//                 torchOn = !torchOn
+//                 scannerInstance
+//                     .applyVideoConstraints({
+//                         advanced: [
+//                             {
+//                                 torch: torchOn
+//                             }
+//                         ]
+//                     })
+//                     .then(() => {
+//                         torchBtn.innerHTML = torchOn
+//                             ? 'Matikan Lampu'
+//                             : 'Nyalakan Lampu'
+//                         torchBtn.classList.toggle('btn-danger', torchOn)
+//                         torchBtn.classList.toggle('btn-warning', !torchOn)
+//                     })
+//                     .catch(() => {
+//                         torchOn = false
+//                         torchBtn.innerHTML = 'Lampu Tidak Didukung'
+//                         torchBtn.className = 'btn btn-secondary btn-sm px-3'
+//                         torchBtn.disabled = true
+//                     })
+//             }
+//         }
+
+//         modalEl.addEventListener('hidden.bs.modal', stopScanner, {
+//             once: true
+//         })
+//     }
+// }
+
+function initHardwareScanner() {
+    // Buffer menampung karakter yang dikirim scanner sebelum Enter
+    let scanBuffer   = ''
+    let scanTimer    = null
+    const SCAN_TIMEOUT = 80  // ms — scanner kirim semua char < 80ms, manusia lebih lambat
+
+    // ── Indikator di UI ──────────────────────────────────────
+    const indicatorEl = document.getElementById('scannerIndicator')
+    const scanTextEl  = document.getElementById('scannerText')
+
+    function setIndicator(state, msg) {
+        // state: 'idle' | 'scanning' | 'loading' | 'success' | 'error'
+        if (!indicatorEl) return
+        indicatorEl.className = `scanner-indicator scanner-${state}`
+        if (scanTextEl) scanTextEl.textContent = msg || ''
+    }
+
+    setIndicator('idle', 'Siap scan')
+
+    // ── Listener keyboard global ──────────────────────────────
+    // Hanya aktif saat modal timbangModal terbuka
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('timbangModal')
+        if (!modal || !modal.classList.contains('show')) return
+
+        const tag = document.activeElement?.tagName?.toLowerCase()
+        const activeId = document.activeElement?.id
+
+        // Jika focus di input SELAIN no_box → skip total
+        if (['input', 'textarea', 'select'].includes(tag) && activeId !== 'no_box') return
+
+        // Jika focus di no_box, paksa blur dulu agar tidak interferensi
+        if (activeId === 'no_box') {
+            document.activeElement.blur()
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            e.stopPropagation()
+            const code = scanBuffer.trim()
+            scanBuffer = ''
+            clearTimeout(scanTimer)
+
+            if (code.length >= 8) {
+                processScan(code)
+            } else {
+                scanBuffer = ''
             }
+            return
+        }
 
-            statusEl.innerHTML = `<span class="text-success fw-bold">Berhasil Scan!</span><br><small class="text-light">${text}</small>`
-            setTimeout(() => {
-                stopScanner()
-                modal.hide()
+        if (e.key.length === 1) {
+            scanBuffer += e.key
+            clearTimeout(scanTimer)
+            scanTimer = setTimeout(() => {
+                scanBuffer = ''
+            }, 500)
+        }
+    })
+
+    // ── Proses hasil scan ─────────────────────────────────────
+    async function processScan(qrcode) {
+        // Bersihkan whitespace tersembunyi
+        qrcode = qrcode.replace(/[\r\n\t]/g, '').trim()
+
+        if (qrcode.length < 8) return
+
+        setIndicator('loading', `Memuat: ${qrcode}`)
+
+        const url = `${FG_API_BASE}?qrcode=${encodeURIComponent(qrcode)}`
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: 'Debug Scanner',
+            html: `QR: <b>${qrcode}</b><br>URL: <small>${url}</small>`,
+            showConfirmButton: false,
+            timer: 5000,
+        })
+
+        try {
+            const url = `${FG_API_BASE}?qrcode=${encodeURIComponent(qrcode)}`
+            const res  = await fetch(url, { signal: AbortSignal.timeout(5000) })
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+            const json = await res.json()
+
+            if (json.status !== 'success' || !json.data?.length) {
+                setIndicator('error', `Tidak ditemukan: ${qrcode}`)
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Scan Berhasil!',
-                    text: text,
-                    timer: 1500,
-                    showConfirmButton: false
+                    icon: 'warning',
+                    title: 'Karton tidak ditemukan',
+                    text: `QR Code "${qrcode}" tidak ada di sistem FG.`,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end',
                 })
-            }, 800)
-        }
-
-        const stopScanner = () => {
-            if (scannerInstance) {
-                scannerInstance.stop().catch(() => {})
-                scannerInstance = null
-            }
-            torchOn = false
-        }
-
-        modalEl.addEventListener('shown.bs.modal', () => {
-            statusEl.textContent = 'Memuat kamera...'
-            torchBtn.disabled = true
-            torchBtn.classList.add('d-none')
-
-            const html5QrCode = new Html5Qrcode('reader')
-            const config = {
-                fps: 10,
-                qrbox: {
-                    width: 250,
-                    height: 250
-                },
-                aspectRatio: 1,
-                disableFlip: false,
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A
-                ]
+                return
             }
 
-            html5QrCode
-                .start(
-                    {
-                        facingMode: currentCamera
-                    },
-                    config,
-                    onSuccess,
-                    () => {}
-                )
-                .then(() => {
-                    scannerInstance = html5QrCode
-                    statusEl.innerHTML =
-                        '<span class="text-info">Arahkan kamera ke barcode...</span>'
+            const d = json.data[0]
+            fillFromFgApi(d)
+            setIndicator('success', `OK: ${d.id_karton}`)
 
-                    if (isMobile) {
-                        torchBtn.classList.remove('d-none')
-                        torchBtn.disabled = false
-                        setupTorch()
-                    }
+            playSuccessBeep()
 
-                    Html5Qrcode.getCameras().then((cameras) => {
-                        if (cameras?.length > 1)
-                            switchBtn.classList.remove('d-none')
-                    })
+            // Kembalikan ke idle setelah 2 detik
+            setTimeout(() => setIndicator('idle', 'Siap scan'), 2000)
 
-                    switchBtn.onclick = () => {
-                        currentCamera =
-                            currentCamera === 'environment'
-                                ? 'user'
-                                : 'environment'
-                        stopScanner()
-                        setTimeout(() => {
-                            html5QrCode
-                                .start(
-                                    {
-                                        facingMode: currentCamera
-                                    },
-                                    config,
-                                    onSuccess,
-                                    () => {}
-                                )
-                                .then(() => (scannerInstance = html5QrCode))
-                        }, 500)
-                    }
+        } catch (err) {
+            console.error('[Scanner] Fetch error:', err)
+            setIndicator('error', `Error: ${err.message}`)
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal mengambil data',
+                text: err.message,
+                timer: 3000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end',
+            })
+        }
+    }
+
+    // ── Isi field dari data API FG ────────────────────────────
+    function fillFromFgApi(d) {
+        // ── VALIDASI: cocokkan data scan vs data yang dipilih di tabel ──
+        const selectedItem = window.currentSelectedItem
+        if (selectedItem) {
+            const mismatch = []
+
+            // Normalisasi untuk perbandingan (trim + lowercase)
+            const norm = (v) => String(v || '').trim().toLowerCase()
+
+            // 1. Cek KJ
+            const scanKj     = norm(d.kj)
+            const selectedKj = norm(selectedItem.KJ)
+            if (scanKj && selectedKj && scanKj !== selectedKj) {
+                mismatch.push({
+                    field:    'Order No. (KJ)',
+                    expected: selectedItem.KJ,
+                    scanned:  d.kj,
                 })
-                .catch((err) => {
-                    statusEl.innerHTML = `<span class="text-danger">Gagal akses kamera:<br><small>${
-                        err.message || err
-                    }</small></span>`
+            }
+
+            // 2. Cek Style — bandingkan dengan ProductCode karena FG kirim style code
+            const scanStyle      = norm(d.style)
+            const selectedStyle  = norm(selectedItem.ProductCode)
+            if (scanStyle && selectedStyle && scanStyle !== selectedStyle) {
+                mismatch.push({
+                    field:    'Style',
+                    expected: selectedItem.ProductCode,
+                    scanned:  d.style,
                 })
+            }
+
+            // 3. Cek Qty Order
+            const scanQty      = parseInt(d.qty_order) || 0
+            const selectedQty  = parseInt(selectedItem.Qty) || 0
+            if (scanQty && selectedQty && scanQty !== selectedQty) {
+                mismatch.push({
+                    field:    'Qty Order',
+                    expected: selectedItem.Qty,
+                    scanned:  d.qty_order,
+                })
+            }
+
+            // Ada mismatch → tampilkan warning, JANGAN isi field
+            if (mismatch.length > 0) {
+                const rows = mismatch.map(m =>
+                    `<tr>
+                        <td style="padding:4px 10px;font-weight:600;color:#555;">${m.field}</td>
+                        <td style="padding:4px 10px;color:#1a6a3e;font-weight:700;">${m.expected}</td>
+                        <td style="padding:4px 10px;color:#b71c1c;font-weight:700;">${m.scanned}</td>
+                    </tr>`
+                ).join('')
+
+                setIndicator('error', 'Data tidak cocok!')
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Karton tidak sesuai!',
+                    html: `
+                        <p style="margin-bottom:12px;font-size:13px;color:#555;">
+                            Barcode yang Anda scan tidak cocok dengan data ordersheet yang dipilih.
+                        </p>
+                        <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
+                            <thead>
+                                <tr style="background:#f5f5f5;">
+                                    <th style="padding:4px 10px;">Field</th>
+                                    <th style="padding:4px 10px;color:#1a6a3e;">Dipilih</th>
+                                    <th style="padding:4px 10px;color:#b71c1c;">Di Scan</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                        <p style="margin-top:12px;font-size:12px;color:#888;">
+                            Pastikan karton yang ditimbang sesuai dengan ordersheet yang dipilih.
+                        </p>
+                    `,
+                    confirmButtonText: 'Mengerti',
+                    confirmButtonColor: '#435ebe',
+                })
+
+                setTimeout(() => setIndicator('idle', 'Siap scan'), 3000)
+                return  // STOP — tidak isi field apapun
+            }
+        }
+
+        // ── Tidak ada mismatch, lanjut isi field ────────────────
+
+        // No. Carton — dari karton_ke (urutan karton ke-N)
+        setVal('no_box', d.karton_ke || '')
+
+        // KJ / Order No.
+        setVal('info_kj', d.kj || '')
+        setVal('info_order_code', d.kj || '')   // hidden field order_code
+
+        // Style code dari FG
+        const styleEl = document.getElementById('info_style')
+        if (styleEl && d.style) {
+            // Pertahankan format "ProductCode - ProductName" jika sudah ada nama produk
+            // Cek apakah sudah berisi nama produk (ada ' - ')
+            const existing = styleEl.value || ''
+            if (existing.includes(' - ')) {
+                // Ganti bagian kode saja, pertahankan nama
+                const parts = existing.split(' - ')
+                styleEl.value = d.style + ' - ' + (parts[1] || '')
+            } else {
+                styleEl.value = d.style
+            }
+            styleEl.dispatchEvent(new Event('input',  { bubbles: true }))
+            styleEl.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+
+        // Qty Order
+        if (d.qty_order) setVal('info_qty_order', d.qty_order)
+
+        // Ctn — TIDAK diisi dari karton_ke karena karton_ke = urutan, bukan jumlah per ctn
+        // karton_ke sudah masuk ke no_box di atas
+        // Jika ingin jumlah_karton sebagai referensi, uncomment:
+        // if (d.jumlah_karton) setVal('info_ctn', d.jumlah_karton)
+
+        // Line sewing → set tipe_asal ke 'sewing' dan isi line
+        if (d.line_sewing) {
+            const tipeEl = document.getElementById('tipe_asal')
+            if (tipeEl) {
+                tipeEl.value = 'sewing'
+                toggleAsalInput('sewing')
+            }
+            setVal('info_line', d.line_sewing)
+        }
+
+        // ── Field tambahan (aktifkan jika API FG menambahkan di kemudian hari) ──
+        // if (d.po_number)    setVal('info_purchaseordernumber', d.po_number)
+        // if (d.buyer)        setVal('info_buyer', d.buyer)
+        // if (d.destination)  setVal('info_FinalDestination', d.destination)
+
+        // Log info karton
+        if (d.jumlah_karton) {
+            console.info(`[Scanner Modal] Karton ke-${d.karton_ke} dari total ${d.jumlah_karton}`)
+        }
+
+        // Trigger checkAndPromptChecking setelah line/subcon terisi
+        if (window.currentSelectedItem) {
+            setTimeout(() => checkAndPromptChecking(window.currentSelectedItem), 200)
+        }
+    }
+
+    // ── Helper setVal ────────────────────────────────────────
+    function setVal(id, value) {
+        const el = document.getElementById(id)
+        if (!el) return
+        el.value = value
+        // Trigger event agar listener lain (jika ada) ikut terupdate
+        el.dispatchEvent(new Event('input',  { bubbles: true }))
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SEARCH SCANNER — hardware scanner di area pencarian tabel
+//  Aktif saat modal TIDAK terbuka.
+//  Scan QR → fetch proxy FG → gunakan kj sebagai keyword search.
+// ─────────────────────────────────────────────────────────────
+function initSearchScanner() {
+    let searchScanBuffer = ''
+    let searchScanTimer  = null
+    const SCAN_TIMEOUT   = 500
+
+    const indicatorEl = document.getElementById('searchScannerIndicator')
+    const textEl      = document.getElementById('searchScannerText')
+
+    function setSearchIndicator(state, msg) {
+        if (!indicatorEl) return
+        indicatorEl.className = `scanner-indicator scanner-${state}`
+        if (textEl) textEl.textContent = msg || ''
+    }
+
+    setSearchIndicator('idle', 'Scan untuk cari')
+
+    document.addEventListener('keydown', (e) => {
+        // Hanya aktif saat modal timbangModal TIDAK terbuka
+        const modal = document.getElementById('timbangModal')
+        if (modal && modal.classList.contains('show')) return
+
+        const tag = document.activeElement?.tagName?.toLowerCase()
+        const isInputFocused = ['input', 'textarea', 'select'].includes(tag)
+        if (isInputFocused) return  // user sedang ketik manual, skip
+
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            const code = searchScanBuffer.trim()
+            searchScanBuffer = ''
+            clearTimeout(searchScanTimer)
+            if (code.length >= 4) processSearchScan(code)
+            return
+        }
+
+        if (e.key.length === 1) {
+            searchScanBuffer += e.key
+            clearTimeout(searchScanTimer)
+            searchScanTimer = setTimeout(() => {
+                const code = searchScanBuffer.trim()
+                searchScanBuffer = ''
+                if (code.length >= 3) processSearchScan(code)
+            }, SCAN_TIMEOUT)
+
+            setSearchIndicator('scanning', `Scanning: ${searchScanBuffer}`)
+        }
+    })
+
+    function processSearchScan(qrcode) {
+        setSearchIndicator('loading', `Memuat: ${qrcode}`)
+
+        // Fetch ke API FG untuk dapat KJ, style, qty
+        fetch(`http://192.168.0.39/TimbanganApi/Qrcodefg.php?qrcode=${encodeURIComponent(qrcode)}`, {
+            signal: AbortSignal.timeout(5000)
         })
-
-        function setupTorch() {
-            torchBtn.onclick = () => {
-                if (!scannerInstance) return
-                torchOn = !torchOn
-                scannerInstance
-                    .applyVideoConstraints({
-                        advanced: [
-                            {
-                                torch: torchOn
-                            }
-                        ]
-                    })
-                    .then(() => {
-                        torchBtn.innerHTML = torchOn
-                            ? 'Matikan Lampu'
-                            : 'Nyalakan Lampu'
-                        torchBtn.classList.toggle('btn-danger', torchOn)
-                        torchBtn.classList.toggle('btn-warning', !torchOn)
-                    })
-                    .catch(() => {
-                        torchOn = false
-                        torchBtn.innerHTML = 'Lampu Tidak Didukung'
-                        torchBtn.className = 'btn btn-secondary btn-sm px-3'
-                        torchBtn.disabled = true
-                    })
+        .then(res => res.json())
+        .then(json => {
+            if (json.status !== 'success' || !json.data?.length) {
+                setSearchIndicator('error', `Tidak ditemukan: ${qrcode}`)
+                setTimeout(() => setSearchIndicator('idle', 'Scan untuk cari'), 2500)
+                return
             }
-        }
 
-        modalEl.addEventListener('hidden.bs.modal', stopScanner, {
-            once: true
+            const d = json.data[0]
+
+            // Format: kj;style;qty — sesuai format multi-kolom yang sudah ada
+            const keyword = [
+                d.kj        || '',
+                d.style     || '',
+                d.qty_order || '',
+            ].join(';')
+
+            const searchInput = document.getElementById('search')
+            if (searchInput) searchInput.value = keyword
+
+            document.getElementById('searchBtn')?.click()
+
+            setSearchIndicator('success', `Cari: ${d.kj}`)
+            setTimeout(() => setSearchIndicator('idle', 'Scan untuk cari'), 2500)
+
+            setTimeout(() => {
+                document.getElementById('resultTable')?.scrollIntoView({
+                    behavior: 'smooth', block: 'start'
+                })
+            }, 500)
+        })
+        .catch(err => {
+            setSearchIndicator('error', `Error: ${err.message}`)
+            setTimeout(() => setSearchIndicator('idle', 'Scan untuk cari'), 3000)
         })
     }
 }
