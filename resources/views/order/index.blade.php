@@ -717,7 +717,8 @@
                                                             <i class="fa-solid fa-barcode"></i>
                                                             <span class="d-none d-sm-inline"> Scan</span>
                                                         </button> -->
-                                                        <div id="scannerIndicator" class="scanner-indicator scanner-idle"
+                                                        <div id="scannerIndicator"
+                                                            class="scanner-indicator scanner-idle"
                                                             title="Arahkan scanner ke barcode karton">
                                                             <i class="fa-solid fa-barcode"></i>
                                                             <span id="scannerText">Siap scan</span>
@@ -876,35 +877,46 @@
                 user-select: none;
                 min-width: 130px;
             }
+
             .scanner-idle {
                 background: #f0f4ff;
                 color: #435ebe;
                 border-color: #c5d0f5;
             }
+
             .scanner-scanning {
                 background: #fff8e1;
                 color: #856404;
                 border-color: #ffc107;
                 animation: scanner-pulse 0.4s ease-in-out infinite alternate;
             }
+
             .scanner-loading {
                 background: #e8f4fd;
                 color: #0a5fa0;
                 border-color: #90caf9;
             }
+
             .scanner-success {
                 background: #e6f9f0;
                 color: #1a6a3e;
                 border-color: #48c78e;
             }
+
             .scanner-error {
                 background: #fdecea;
                 color: #b71c1c;
                 border-color: #ef9a9a;
             }
+
             @keyframes scanner-pulse {
-                from { opacity: 1; }
-                to   { opacity: 0.65; }
+                from {
+                    opacity: 1;
+                }
+
+                to {
+                    opacity: 0.65;
+                }
             }
         </style>
     @endpush

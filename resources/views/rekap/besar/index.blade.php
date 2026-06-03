@@ -89,7 +89,7 @@
                                         </td>
                                         <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y') }}</td>
                                         <td>{{ \Carbon\Carbon::parse($item->created_at)->format('H:i') }}</td>
-                                        <td>{{ $item->Order_code }}</td>
+                                        <td>{{ $item->KJ }}</td>
                                         <td>{{ $item->Buyer }}</td>
                                         <td>{{ $item->PO }}</td>
                                         <td>
@@ -138,6 +138,151 @@
         </section>
     </div>
 
+    @push('css')
+        <style>
+            @media (max-width: 576px) {
+
+                /* tabel utama hasil pencarian */
+                #resultTable th,
+                #resultTable td {
+                    font-size: 10px !important;
+                    padding: 4px 3px !important;
+                    white-space: nowrap;
+                }
+
+                /* tabel dalam modal timbang */
+                #timbangModal .table th,
+                #timbangModal .table td {
+                    font-size: 10px !important;
+                    padding: 4px 5px !important;
+                }
+
+                /* tabel nike report */
+                .nike-table th,
+                .nike-table td {
+                    font-size: 9px !important;
+                    padding: 3px 3px !important;
+                }
+
+                /* tabel non-nike report */
+                .nn-carton-table th,
+                .nn-carton-table td {
+                    font-size: 9px !important;
+                    padding: 2px 3px !important;
+                }
+
+                .nn-info-table th,
+                .nn-info-table td {
+                    font-size: 10px !important;
+                    padding: 2px 4px !important;
+                }
+
+                /* sign table */
+                .nn-sign-table th,
+                .nn-sign-table td {
+                    font-size: 9px !important;
+                    padding: 2px !important;
+                }
+            }
+
+            @media (max-width: 576px) {
+
+                /* action bar lebih compact */
+                .action-bar {
+                    gap: 6px !important;
+                }
+
+                .action-bar .btn {
+                    font-size: 11px !important;
+                    padding: 4px 8px !important;
+                }
+
+                /* form label + input lebih kecil */
+                .form-label {
+                    font-size: 11px !important;
+                    margin-bottom: 2px !important;
+                }
+
+                .form-control,
+                .form-select {
+                    font-size: 12px !important;
+                    padding: 5px 8px !important;
+                }
+
+                /* carton card grid lebih rapat */
+                .carton-grid-wrap {
+                    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)) !important;
+                    gap: 5px !important;
+                }
+
+                .carton-card {
+                    padding: 5px 4px !important;
+                }
+
+                .carton-card .c-berat {
+                    font-size: 12px !important;
+                }
+
+                .carton-card .c-box {
+                    font-size: 10px !important;
+                }
+
+                /* formal report filter bar */
+                .formal-filter-bar {
+                    padding: 8px 10px !important;
+                    gap: 6px !important;
+                }
+
+                .formal-filter-bar input[type="date"] {
+                    font-size: 11px !important;
+                    padding: 4px 6px !important;
+                }
+
+                .formal-report-title {
+                    font-size: 13px !important;
+                }
+
+                /* po tabs scroll horizontal */
+                .po-tabs-wrap {
+                    padding: 8px 10px 0 !important;
+                }
+
+                .po-tab {
+                    padding: 6px 10px !important;
+                    font-size: 11px !important;
+                }
+
+                /* kj header */
+                .kj-header {
+                    padding: 10px 12px !important;
+                }
+
+                .kj-badge {
+                    font-size: 10px !important;
+                    padding: 3px 7px !important;
+                }
+
+                /* berat display lebih compact */
+                #currentWeight {
+                    font-size: 2rem !important;
+                }
+
+                /* sc-meta lebih rapat */
+                .sc-meta {
+                    padding: 7px 10px !important;
+                    gap: 8px !important;
+                }
+
+                .sc-meta-item .val {
+                    font-size: 11px !important;
+                }
+
+                .sc-meta-item .lbl {
+                    font-size: 9px !important;
+                }
+            }
+        </style>
+    @endpush
     @push('js')
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="{{ asset('assets/js/bootstrap/bootstrap.bundle.js') }}"></script>
@@ -255,7 +400,7 @@
                             <td>${no}</td>
                             <td>${day}/${month}/${year}</td>
                             <td>${hours}:${minutes}</td>
-                            <td>${item.Order_code || '-'}</td>
+                            <td>${item.KJ || '-'}</td>
                             <td>${item.Buyer || '-'}</td>
                             <td>${item.PO || '-'}</td>
                             <td>${semuaBox}</td>
