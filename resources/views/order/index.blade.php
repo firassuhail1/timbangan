@@ -947,12 +947,10 @@
             document.getElementById('timbangModal').addEventListener('show.bs.modal', function () {
                 const espId = window.APP?.espId?.trim();
 
-                // Hapus banner lama kalau ada
                 const oldBanner = document.getElementById('device-warning-banner');
                 if (oldBanner) oldBanner.remove();
 
                 if (!espId) {
-                    // Buat banner peringatan
                     const banner = document.createElement('div');
                     banner.id = 'device-warning-banner';
                     banner.innerHTML = `
@@ -962,28 +960,20 @@
                                 <strong>Device Timbangan Belum Dipilih</strong><br>
                                 <span class="small">
                                     Anda belum memilih device timbangan aktif. 
-                                    Silakan klik tombol <strong><i class="fa-solid fa-microchip"></i> Device</strong> 
-                                    di halaman utama untuk memilih device terlebih dahulu.
+                                    Berat bisa diisi manual, atau pilih device via tombol 
+                                    <strong><i class="fa-solid fa-microchip"></i> Device</strong> di halaman utama.
                                 </span>
                             </div>
-                            <button type="button" class="btn-close ms-auto" onclick="document.getElementById('device-warning-banner').remove()"></button>
+                            <button type="button" class="btn-close ms-auto" 
+                                onclick="document.getElementById('device-warning-banner').remove()">
+                            </button>
                         </div>
                     `;
 
-                    // Sisipkan di atas modal-body
                     const modalBody = this.querySelector('.modal-body');
                     modalBody.insertAdjacentElement('beforebegin', banner);
-
-                    // Disable tombol simpan & input timbangan
-                    document.getElementById('btnSimpanTimbang').disabled = true;
-                    document.getElementById('manualWeight').disabled = true;
-                    document.getElementById('manualMode').disabled = true;
-                    document.getElementById('tare').disabled = true;
-                } else {
-                    // Device ada → pastikan tombol aktif normal
-                    document.getElementById('btnSimpanTimbang').disabled = false;
-                    // manualWeight & tare dikendalikan logika existing, biarkan saja
                 }
+                // Tidak ada disable apapun — semua tetap normal
             });
         </script>
 

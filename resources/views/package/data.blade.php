@@ -136,7 +136,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="9" class="text-muted text-center py-4">
+                                    <td colspan="11" class="text-muted text-center py-4">
                                         Silakan cari data untuk memulai timbangan.
                                     </td>
                                 </tr>

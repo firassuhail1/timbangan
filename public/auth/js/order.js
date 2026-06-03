@@ -344,7 +344,7 @@ function initSearch() {
             // reset tabel
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="text-muted text-center py-4">
+                    <td colspan="11" class="text-muted text-center py-4">
                         Silakan cari data untuk memulai timbangan.
                     </td>
                 </tr>
@@ -1770,10 +1770,16 @@ async function loadAvailableDevices() {
             currentDeviceId = currentUserDevice.id
             document.getElementById('currentDeviceName').textContent =
                 currentUserDevice.name || currentUserDevice.esp_id
+
+            // Sync espId dari data fresh API
+            window.APP.espId = currentUserDevice.esp_id || ''
         } else {
             currentDeviceId = null
             document.getElementById('currentDeviceName').textContent =
                 'Pilih Device...'
+            
+            // Pastikan kosong jika tidak ada device
+            window.APP.espId = ''
         }
 
         devices.forEach((device) => {
