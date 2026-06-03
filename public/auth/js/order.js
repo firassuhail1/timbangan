@@ -105,8 +105,20 @@ function initSearch() {
 
     async function fetchData(page = 1) {
         const search = document.getElementById('search')?.value.trim() || ''
-        const start  = document.getElementById('start_date')?.value || ''
-        const end    = document.getElementById('end_date')?.value || ''
+        let start    = document.getElementById('start_date')?.value || ''
+        let end      = document.getElementById('end_date')?.value || ''
+
+        // PERBAIKAN LOGIKA:
+        // Jika Halaman Baru Dimuat (kondisi: tanggal kosong DAN kolom search juga kosong)
+        if (!start && !end && !search) {
+            const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            start = today;
+            end = today;
+            
+            // Isi input date di HTML sebagai penanda default awal
+            if(document.getElementById('start_date')) document.getElementById('start_date').value = today;
+            if(document.getElementById('end_date')) document.getElementById('end_date').value = today;
+        }
 
         saveSearchState({ search, start, end, page })
 
@@ -129,11 +141,8 @@ function initSearch() {
                 return
             }
 
-            // Simpan info pagination dari API
             apiLastPage    = json.last_page    || 1
             apiCurrentPage = json.current_page || 1
-
-            // Tidak perlu filter weighedIds di sini karena row tidak hilang
             allFilteredData = json.data
 
             renderTable(allFilteredData, apiCurrentPage, allFilteredData.length === 0)
@@ -2080,4 +2089,4 @@ async function switchDevice(deviceId) {
 
 // Load saat halaman dibuka & refresh tiap 10 detik
 loadAvailableDevices()
-setInterval(loadAvailableDevices, 10000)
+setInterval(loadAvailableDevices, 60000)

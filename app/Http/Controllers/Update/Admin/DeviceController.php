@@ -48,7 +48,7 @@ class DeviceController extends Controller
             'device_type' => $request->device_type ?: 'timbangan'
         ]);
         
-        Log::info('masuk ke validate');
+        // Log::info('masuk ke validate');
         $request->validate([
             'esp_id'      => 'required|string',
             'mac_esp'     => 'required|string',
@@ -59,7 +59,7 @@ class DeviceController extends Controller
             'wifi_password'   => 'nullable|string',
         ]);
 
-        Log::info('selesai');
+        // Log::info('selesai');
         // Ambil atau buat device baru berdasarkan ESP ID
         // $device = Device::firstOrNew(
         //     ['esp_id' => $request->esp_id],
