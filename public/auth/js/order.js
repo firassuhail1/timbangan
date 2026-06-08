@@ -1277,44 +1277,73 @@ function initHardwareScanner() {
 
     setIndicator('idle', 'Siap scan')
 
+    // ── Timestamp untuk deteksi kecepatan ketik ──
+    let lastKeyTime = 0
+
     // ── Listener keyboard global ──────────────────────────────
     // Hanya aktif saat modal timbangModal terbuka
     document.addEventListener('keydown', (e) => {
         const modal = document.getElementById('timbangModal')
         if (!modal || !modal.classList.contains('show')) return
 
-        const tag = document.activeElement?.tagName?.toLowerCase()
+        const tag      = document.activeElement?.tagName?.toLowerCase()
         const activeId = document.activeElement?.id
+        const isInput  = ['input', 'textarea', 'select'].includes(tag)
 
-        // Jika focus di input SELAIN no_box → skip total
-        if (['input', 'textarea', 'select'].includes(tag) && activeId !== 'no_box') return
+        // Input selain no_box → skip total
+        if (isInput && activeId !== 'no_box') return
 
-        // Jika focus di no_box, paksa blur dulu agar tidak interferensi
+        const now     = Date.now()
+        const elapsed = now - lastKeyTime
+        lastKeyTime   = now
+
         if (activeId === 'no_box') {
-            document.activeElement.blur()
+            // Manusia mengetik: interval > SCAN_TIMEOUT ms → biarkan, reset buffer
+            if (e.key !== 'Enter' && elapsed > SCAN_TIMEOUT) {
+                scanBuffer = ''
+                clearTimeout(scanTimer)
+                return  // serahkan ke browser sepenuhnya, keyboard tetap muncul
+            }
+
+            // Enter dari scanner saat focus di no_box
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                e.stopPropagation()
+                const noBoxVal = document.getElementById('no_box')?.value?.trim() || ''
+                const code     = scanBuffer.trim() || noBoxVal
+                scanBuffer     = ''
+                clearTimeout(scanTimer)
+                if (document.getElementById('no_box')) {
+                    document.getElementById('no_box').value = ''
+                }
+                if (code.length >= 8) processScan(code)
+                return
+            }
+
+            // Karakter cepat (scanner) saat focus di no_box
+            if (e.key.length === 1) {
+                scanBuffer += e.key
+                clearTimeout(scanTimer)
+                scanTimer = setTimeout(() => { scanBuffer = '' }, 500)
+            }
+            return
         }
 
+        // Tidak ada focus di input — tangkap semua keystroke sebagai scanner
         if (e.key === 'Enter') {
             e.preventDefault()
             e.stopPropagation()
             const code = scanBuffer.trim()
             scanBuffer = ''
             clearTimeout(scanTimer)
-
-            if (code.length >= 8) {
-                processScan(code)
-            } else {
-                scanBuffer = ''
-            }
+            if (code.length >= 8) processScan(code)
             return
         }
 
         if (e.key.length === 1) {
             scanBuffer += e.key
             clearTimeout(scanTimer)
-            scanTimer = setTimeout(() => {
-                scanBuffer = ''
-            }, 500)
+            scanTimer = setTimeout(() => { scanBuffer = '' }, 500)
         }
     })
 
@@ -1327,16 +1356,16 @@ function initHardwareScanner() {
 
         setIndicator('loading', `Memuat: ${qrcode}`)
 
-        const url = `${FG_API_BASE}?qrcode=${encodeURIComponent(qrcode)}`
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'info',
-            title: 'Debug Scanner',
-            html: `QR: <b>${qrcode}</b><br>URL: <small>${url}</small>`,
-            showConfirmButton: false,
-            timer: 5000,
-        })
+        // const url = `${FG_API_BASE}?qrcode=${encodeURIComponent(qrcode)}`
+        // Swal.fire({
+        //     toast: true,
+        //     position: 'top-end',
+        //     icon: 'info',
+        //     title: 'Debug Scanner',
+        //     html: `QR: <b>${qrcode}</b><br>URL: <small>${url}</small>`,
+        //     showConfirmButton: false,
+        //     timer: 5000,
+        // })
 
         try {
             const url = `${FG_API_BASE}?qrcode=${encodeURIComponent(qrcode)}`
