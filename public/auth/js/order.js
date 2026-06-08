@@ -1262,7 +1262,7 @@ function initHardwareScanner() {
     // Buffer menampung karakter yang dikirim scanner sebelum Enter
     let scanBuffer   = ''
     let scanTimer    = null
-    const SCAN_TIMEOUT = 80  // ms — scanner kirim semua char < 80ms, manusia lebih lambat
+    const SCAN_TIMEOUT = 300  // ms — scanner kirim semua char < 80ms, manusia lebih lambat
 
     // ── Indikator di UI ──────────────────────────────────────
     const indicatorEl = document.getElementById('scannerIndicator')
